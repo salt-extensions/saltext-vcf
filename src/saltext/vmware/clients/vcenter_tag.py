@@ -27,13 +27,16 @@ def get_or_none(opts, tag, profile=None):
 
 def create(opts, name, category_id, description="", profile=None):
     body = {
-        "create_spec": {
-            "name": name,
-            "category_id": category_id,
-            "description": description,
-        }
+        "name": name,
+        "category_id": category_id,
+        "description": description,
     }
     return vcenter.api_post(opts, PATH, body=body, profile=profile)
+
+
+def update(opts, tag, spec, profile=None):
+    """PATCH a tag. *spec* keys: ``name``, ``description``."""
+    return vcenter.api_patch(opts, f"{PATH}/{tag}", body=dict(spec), profile=profile)
 
 
 def delete(opts, tag, profile=None):

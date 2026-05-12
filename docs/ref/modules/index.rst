@@ -23,12 +23,15 @@ _________________
     vmware_nsx_edge_cluster
     vmware_nsx_firewall_rule
     vmware_nsx_group
+    vmware_nsx_ids
     vmware_nsx_ip_block
     vmware_nsx_ip_pool
     vmware_nsx_ipsec_vpn
+    vmware_nsx_l2_vpn
     vmware_nsx_lb
     vmware_nsx_nat
     vmware_nsx_node
+    vmware_nsx_qos_profile
     vmware_nsx_role_binding
     vmware_nsx_security_policy
     vmware_nsx_segment
@@ -52,12 +55,14 @@ _________________
     vmware_sddc_workload_domain
     vmware_vcenter_appliance
     vmware_vcenter_cluster
+    vmware_vcenter_compute_policy
     vmware_vcenter_content_library
     vmware_vcenter_datacenter
     vmware_vcenter_datastore
     vmware_vcenter_folder
     vmware_vcenter_host
     vmware_vcenter_kms
+    vmware_vcenter_lcm_depot
     vmware_vcenter_network
     vmware_vcenter_resource_pool
     vmware_vcenter_storage_policy
@@ -66,6 +71,7 @@ _________________
     vmware_vcenter_supervisor_service
     vmware_vcenter_supervisor_software
     vmware_vcenter_tag
+    vmware_vcenter_tag_category
     vmware_vcenter_vm
     vmware_vcenter_vm_class
     vmware_vcf_services
@@ -87,12 +93,15 @@ _________________
     vmware_vcfops_version
     vmware_vim_alarm
     vmware_vim_cluster_config
+    vmware_vim_cluster_overrides
     vmware_vim_custom_attribute
+    vmware_vim_datastore_cluster
     vmware_vim_drs_rule
     vmware_vim_dvs
     vmware_vim_dvs_portgroup
     vmware_vim_extension
     vmware_vim_host_config
+    vmware_vim_host_datastore
     vmware_vim_host_network
     vmware_vim_host_security
     vmware_vim_perf
