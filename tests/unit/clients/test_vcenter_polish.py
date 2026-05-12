@@ -93,5 +93,5 @@ def test_content_library_create_local_wraps_body(opts, vcenter_authed):
         == "lib-99"
     )
     body = json.loads(vcenter_authed.calls[-1].request.body)
-    assert body["create_spec"]["name"] == "MyLib"
-    assert body["create_spec"]["type"] == "LOCAL"
+    assert body["name"] == "MyLib"
+    assert body["type"] == "LOCAL"

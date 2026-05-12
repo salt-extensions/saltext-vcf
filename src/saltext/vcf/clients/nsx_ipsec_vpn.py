@@ -55,7 +55,10 @@ list_ike_profiles, get_ike_profile, get_ike_profile_or_none, delete_ike_profile 
 
 
 def create_ike_profile(opts, ike_profile, profile=None, **spec):
-    body = {"display_name": spec.pop("display_name", ike_profile)}
+    body = {
+        "resource_type": spec.pop("resource_type", "IPSecVpnIkeProfile"),
+        "display_name": spec.pop("display_name", ike_profile),
+    }
     body.update(spec)
     return nsx.api_put(opts, f"{IKE_PROFILES}/{ike_profile}", body=body, profile=profile)
 
@@ -67,7 +70,10 @@ list_tunnel_profiles, get_tunnel_profile, get_tunnel_profile_or_none, delete_tun
 
 
 def create_tunnel_profile(opts, tunnel_profile, profile=None, **spec):
-    body = {"display_name": spec.pop("display_name", tunnel_profile)}
+    body = {
+        "resource_type": spec.pop("resource_type", "IPSecVpnTunnelProfile"),
+        "display_name": spec.pop("display_name", tunnel_profile),
+    }
     body.update(spec)
     return nsx.api_put(opts, f"{TUNNEL_PROFILES}/{tunnel_profile}", body=body, profile=profile)
 
@@ -79,7 +85,10 @@ list_dpd_profiles, get_dpd_profile, get_dpd_profile_or_none, delete_dpd_profile 
 
 
 def create_dpd_profile(opts, dpd_profile, profile=None, **spec):
-    body = {"display_name": spec.pop("display_name", dpd_profile)}
+    body = {
+        "resource_type": spec.pop("resource_type", "IPSecVpnDpdProfile"),
+        "display_name": spec.pop("display_name", dpd_profile),
+    }
     body.update(spec)
     return nsx.api_put(opts, f"{DPD_PROFILES}/{dpd_profile}", body=body, profile=profile)
 
