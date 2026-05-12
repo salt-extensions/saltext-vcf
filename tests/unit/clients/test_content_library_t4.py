@@ -63,14 +63,13 @@ def test_find_libraries_posts_spec(opts, vcenter_authed):
     assert "action=find" in vcenter_authed.calls[-1].request.url
 
 
-def test_create_item_wraps_create_spec(opts, vcenter_authed):
+def test_create_item_posts_spec(opts, vcenter_authed):
     vcenter_authed.add(
         responses.POST, f"{BASE}/api/content/library/item", json="item-99", status=200
     )
     assert c.create_item(opts, "lib-1", "myitem", "ovf") == "item-99"
     body = json.loads(vcenter_authed.calls[-1].request.body)
-    assert body["create_spec"] == {"library_id": "lib-1", "name": "myitem", "type": "ovf"}
-    assert body["client_token"] == ""
+    assert body == {"library_id": "lib-1", "name": "myitem", "type": "ovf"}
 
 
 def test_update_item_wraps_body(opts, vcenter_authed):
@@ -104,7 +103,7 @@ def test_update_session_create(opts, vcenter_authed):
     )
     assert c.update_session_create(opts, "item-1") == "session-1"
     body = json.loads(vcenter_authed.calls[-1].request.body)
-    assert body["create_spec"]["library_item_id"] == "item-1"
+    assert body["library_item_id"] == "item-1"
 
 
 def test_update_session_lifecycle_actions(opts, vcenter_authed):

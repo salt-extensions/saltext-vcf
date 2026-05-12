@@ -46,10 +46,12 @@ def create_local(opts, name, storage_backings, profile=None, **spec):
         "name": name,
         "type": "LOCAL",
         "storage_backings": list(storage_backings),
-        "publish_info": spec.pop("publish_info", None),
     }
+    publish_info = spec.pop("publish_info", None)
+    if publish_info is not None:
+        body["publish_info"] = publish_info
     body.update(spec)
-    return vcenter.api_post(opts, LOCAL_LIBRARY, body={"create_spec": body, "client_token": ""})
+    return vcenter.api_post(opts, LOCAL_LIBRARY, body=body, profile=profile)
 
 
 def delete_local(opts, library_id, profile=None):
@@ -72,9 +74,7 @@ def create_subscribed(opts, name, subscription_url, storage_backings, profile=No
         "storage_backings": list(storage_backings),
     }
     body.update(spec)
-    return vcenter.api_post(
-        opts, SUBSCRIBED_LIBRARY, body={"create_spec": body, "client_token": ""}
-    )
+    return vcenter.api_post(opts, SUBSCRIBED_LIBRARY, body=body, profile=profile)
 
 
 def delete_subscribed(opts, library_id, profile=None):
@@ -166,9 +166,7 @@ def create_item(
     """Create an empty library item; populate via an update session."""
     body = {"library_id": library_id, "name": name, "type": type}
     body.update(spec)
-    return vcenter.api_post(
-        opts, ITEM, body={"create_spec": body, "client_token": ""}, profile=profile
-    )
+    return vcenter.api_post(opts, ITEM, body=body, profile=profile)
 
 
 def update_item(opts, item_id, spec, profile=None):
@@ -198,9 +196,7 @@ def update_session_create(opts, item_id, profile=None, **spec):
     """Open an update session against *item_id*. Returns the session id."""
     body = {"library_item_id": item_id}
     body.update(spec)
-    return vcenter.api_post(
-        opts, UPDATE_SESSION, body={"create_spec": body, "client_token": ""}, profile=profile
-    )
+    return vcenter.api_post(opts, UPDATE_SESSION, body=body, profile=profile)
 
 
 def update_session_get(opts, session_id, profile=None):
