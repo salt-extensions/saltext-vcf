@@ -230,6 +230,100 @@ def sdrs_vm_override_set(
     return task._moId  # noqa: SLF001
 
 
+def sdrs_rule_list(opts, pod, profile=None):
+    """Return SDRS VM affinity/anti-affinity rules on *pod*."""
+    pod_ref = _resolve_pod(opts, pod, profile=profile)
+    out = []
+    for rule in pod_ref.podStorageDrsEntry.storageDrsConfig.podConfig.rule or []:
+        kind = (
+            "vm-anti-affinity"
+            if isinstance(rule, vim.cluster.AntiAffinityRuleSpec)
+            else "vm-affinity"
+        )
+        out.append(
+            {
+                "key": rule.key,
+                "name": rule.name,
+                "kind": kind,
+                "enabled": bool(rule.enabled),
+                "mandatory": bool(rule.mandatory),
+                "vm_moids": [v._moId for v in (rule.vm or [])],  # noqa: SLF001
+            }
+        )
+    return out
+
+
+def sdrs_rule_get(opts, pod, name, profile=None):
+    for rule in sdrs_rule_list(opts, pod, profile=profile):
+        if rule["name"] == name:
+            return rule
+    raise LookupError(f"SDRS rule {name!r} not found on {pod!r}")
+
+
+def sdrs_rule_get_or_none(opts, pod, name, profile=None):
+    try:
+        return sdrs_rule_get(opts, pod, name, profile=profile)
+    except LookupError:
+        return None
+
+
+def _sdrs_rule_apply(opts, pod, rule, operation, profile=None):
+    pod_ref = _resolve_pod(opts, pod, profile=profile)
+    rule_spec = vim.cluster.RuleSpec(operation=operation, info=rule)
+    if operation == "edit":
+        rule_spec.removeKey = rule.key
+    pod_cfg = vim.storageDrs.PodConfigSpec(rule=[rule_spec])
+    spec = vim.storageDrs.ConfigSpec(podConfigSpec=pod_cfg)
+    mgr = _sdrs_mgr(opts, profile=profile)
+    task = mgr.ConfigureStorageDrsForPod_Task(pod=pod_ref, spec=spec, modify=True)
+    return task._moId  # noqa: SLF001
+
+
+def sdrs_rule_create_vm_anti_affinity(
+    opts, pod, name, vm_moids, *, enabled=True, mandatory=False, profile=None
+):
+    """Create an SDRS VM anti-affinity rule on *pod* (keeps VMDKs on different datastores)."""
+    rule = vim.cluster.AntiAffinityRuleSpec(
+        name=name,
+        enabled=enabled,
+        mandatory=mandatory,
+        vm=[vim.VirtualMachine(m, None) for m in vm_moids],
+    )
+    return _sdrs_rule_apply(opts, pod, rule, "add", profile=profile)
+
+
+def sdrs_rule_create_vm_affinity(
+    opts, pod, name, vm_moids, *, enabled=True, mandatory=False, profile=None
+):
+    """Create an SDRS VM affinity rule on *pod* (keeps VMDKs on the same datastore)."""
+    rule = vim.cluster.AffinityRuleSpec(
+        name=name,
+        enabled=enabled,
+        mandatory=mandatory,
+        vm=[vim.VirtualMachine(m, None) for m in vm_moids],
+    )
+    return _sdrs_rule_apply(opts, pod, rule, "add", profile=profile)
+
+
+def sdrs_rule_delete(opts, pod, name, profile=None):
+    """Delete an SDRS rule by name. Returns the vim.Task moId."""
+    pod_ref = _resolve_pod(opts, pod, profile=profile)
+    target = None
+    for rule in pod_ref.podStorageDrsEntry.storageDrsConfig.podConfig.rule or []:
+        if rule.name == name:
+            target = rule
+            break
+    if target is None:
+        raise LookupError(f"SDRS rule {name!r} not found")
+    pod_cfg = vim.storageDrs.PodConfigSpec(
+        rule=[vim.cluster.RuleSpec(operation="remove", removeKey=target.key)]
+    )
+    spec = vim.storageDrs.ConfigSpec(podConfigSpec=pod_cfg)
+    mgr = _sdrs_mgr(opts, profile=profile)
+    task = mgr.ConfigureStorageDrsForPod_Task(pod=pod_ref, spec=spec, modify=True)
+    return task._moId  # noqa: SLF001
+
+
 def sdrs_vm_override_remove(opts, pod, vm_moid, profile=None):
     pod_ref = _resolve_pod(opts, pod, profile=profile)
     spec = vim.storageDrs.ConfigSpec(

@@ -8,6 +8,7 @@ RelocateSpec / DatastoreSystem call shape goes out.
 from __future__ import annotations
 
 from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
 from pyVmomi import vim
@@ -237,3 +238,43 @@ def test_datastore_cluster_sdrs_get(pod_factory, opts):
     assert out["enabled"] is True
     assert out["automation_level"] == "automated"
     assert out["space_utilization_threshold"] == 80
+
+
+def test_sdrs_rule_list(pod_factory, opts):
+    rule = vim.cluster.AntiAffinityRuleSpec()
+    rule.key = 1
+    rule.name = "split-vmdks"
+    rule.enabled = True
+    rule.mandatory = False
+    rule.vm = [vim.VirtualMachine("vm-1", None), vim.VirtualMachine("vm-2", None)]
+    pod_factory["pod"].podStorageDrsEntry.storageDrsConfig.podConfig.rule = [rule]
+    out = vim_datastore_cluster.sdrs_rule_list(opts, "ds-cluster")
+    assert len(out) == 1
+    assert out[0]["kind"] == "vm-anti-affinity"
+    assert sorted(out[0]["vm_moids"]) == ["vm-1", "vm-2"]
+
+
+def test_sdrs_rule_get_or_none(pod_factory, opts):
+    pod_factory["pod"].podStorageDrsEntry.storageDrsConfig.podConfig.rule = []
+    assert vim_datastore_cluster.sdrs_rule_get_or_none(opts, "ds-cluster", "missing") is None
+
+
+def test_sdrs_rule_create_anti_affinity(pod_factory, opts):
+    mgr = MagicMock()
+    mgr.ConfigureStorageDrsForPod_Task.return_value = MagicMock(_moId="task-sdrs-rule")
+    with patch(
+        "saltext.vmware.clients.vim_datastore_cluster._sdrs_mgr",
+        return_value=mgr,
+    ):
+        out = vim_datastore_cluster.sdrs_rule_create_vm_anti_affinity(
+            opts, "ds-cluster", "split", ["vm-1", "vm-2"]
+        )
+    assert out == "task-sdrs-rule"
+    spec = mgr.ConfigureStorageDrsForPod_Task.call_args.kwargs["spec"]
+    assert spec.podConfigSpec.rule[0].operation == "add"
+
+
+def test_sdrs_rule_delete_raises_when_missing(pod_factory, opts):
+    pod_factory["pod"].podStorageDrsEntry.storageDrsConfig.podConfig.rule = []
+    with pytest.raises(LookupError):
+        vim_datastore_cluster.sdrs_rule_delete(opts, "ds-cluster", "missing")

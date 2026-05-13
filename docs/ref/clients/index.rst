@@ -104,6 +104,7 @@ ______________
     vcfops_version
     vim_alarm
     vim_cluster_config
+    vim_cluster_evc
     vim_cluster_overrides
     vim_custom_attribute
     vim_datastore_cluster
@@ -113,22 +114,29 @@ ______________
     vim_dvs_portgroup
     vim_extension
     vim_first_class_disk
+    vim_host_acceptance
     vim_host_config
     vim_host_datastore
     vim_host_dns
+    vim_host_hyperthreading
     vim_host_kernel_module
     vim_host_maintenance
     vim_host_network
     vim_host_passthrough
     vim_host_powermgmt
     vim_host_security
+    vim_host_snmp
     vim_host_ssl_thumbprint
+    vim_host_storage
+    vim_host_tcpip
+    vim_license
     vim_ovf
     vim_perf
     vim_permission
     vim_resource_pool
     vim_role
     vim_scheduled_task
+    vim_vapp
     vim_vm
     vim_vm_customization
     vim_vm_disk

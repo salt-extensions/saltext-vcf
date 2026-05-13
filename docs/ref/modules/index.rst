@@ -93,6 +93,7 @@ _________________
     vmware_vcfops_version
     vmware_vim_alarm
     vmware_vim_cluster_config
+    vmware_vim_cluster_evc
     vmware_vim_cluster_overrides
     vmware_vim_custom_attribute
     vmware_vim_datastore_cluster
@@ -102,22 +103,29 @@ _________________
     vmware_vim_dvs_portgroup
     vmware_vim_extension
     vmware_vim_first_class_disk
+    vmware_vim_host_acceptance
     vmware_vim_host_config
     vmware_vim_host_datastore
     vmware_vim_host_dns
+    vmware_vim_host_hyperthreading
     vmware_vim_host_kernel_module
     vmware_vim_host_maintenance
     vmware_vim_host_network
     vmware_vim_host_passthrough
     vmware_vim_host_powermgmt
     vmware_vim_host_security
+    vmware_vim_host_snmp
     vmware_vim_host_ssl_thumbprint
+    vmware_vim_host_storage
+    vmware_vim_host_tcpip
+    vmware_vim_license
     vmware_vim_ovf
     vmware_vim_perf
     vmware_vim_permission
     vmware_vim_resource_pool
     vmware_vim_role
     vmware_vim_scheduled_task
+    vmware_vim_vapp
     vmware_vim_vm
     vmware_vim_vm_customization
     vmware_vim_vm_disk

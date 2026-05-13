@@ -34,16 +34,20 @@ _____________
     vmware_vcfops_supermetric
     vmware_vcfops_user
     vmware_vim_cluster_config
+    vmware_vim_cluster_evc
     vmware_vim_datastore_file
     vmware_vim_drs_rule
     vmware_vim_dvs
     vmware_vim_extension
     vmware_vim_first_class_disk
+    vmware_vim_host_acceptance
     vmware_vim_host_config
     vmware_vim_host_dns
+    vmware_vim_host_hyperthreading
     vmware_vim_host_kernel_module
     vmware_vim_host_network
     vmware_vim_host_powermgmt
+    vmware_vim_host_snmp
     vmware_vim_permission
     vmware_vim_resource_pool
     vmware_vim_role
