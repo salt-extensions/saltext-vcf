@@ -185,3 +185,29 @@ def delete_group(cluster, name, profile=None):
         salt '*' vmware_vim_drs_rule.delete_group domain-c9 prod-vms
     """
     return c.delete_group(__opts__, cluster, name, profile=profile)
+
+
+def get_group(cluster, name, profile=None):
+    """Return one DRS group by name.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_drs_rule.get_group domain-c9 prod-vms
+    """
+    return c.get_group(__opts__, cluster, name, profile=profile)
+
+
+def update_group(cluster, name, vm_moids=None, host_moids=None, profile=None):
+    """Replace the members of an existing VM or host group.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_drs_rule.update_group domain-c9 prod-vms vm_moids='["vm-1","vm-2"]'
+    """
+    return c.update_group(
+        __opts__, cluster, name, vm_moids=vm_moids, host_moids=host_moids, profile=profile
+    )

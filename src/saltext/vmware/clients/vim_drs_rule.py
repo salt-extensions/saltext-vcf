@@ -190,6 +190,53 @@ def delete_group(opts, cluster, name, profile=None):
     return task._moId  # noqa: SLF001
 
 
+def get_group(opts, cluster, name, profile=None):
+    """Return ``{name, kind, members}`` for a single named group."""
+    cl = _cluster(opts, cluster, profile=profile)
+    for grp in cl.configurationEx.group or []:
+        if grp.name == name:
+            kind = "vm" if isinstance(grp, vim.cluster.VmGroup) else "host"
+            members = [
+                m._moId for m in (grp.vm if kind == "vm" else grp.host) or []
+            ]  # noqa: SLF001
+            return {"name": grp.name, "kind": kind, "members": members}
+    raise LookupError(f"group {name!r} not found on cluster {cluster!r}")
+
+
+def get_group_or_none(opts, cluster, name, profile=None):
+    try:
+        return get_group(opts, cluster, name, profile=profile)
+    except LookupError:
+        return None
+
+
+def update_group(opts, cluster, name, *, vm_moids=None, host_moids=None, profile=None):
+    """Replace the members of an existing VM or host group."""
+    cl = _cluster(opts, cluster, profile=profile)
+    target = None
+    for grp in cl.configurationEx.group or []:
+        if grp.name == name:
+            target = grp
+            break
+    if target is None:
+        raise LookupError(f"group {name!r} not found on cluster {cluster!r}")
+    if isinstance(target, vim.cluster.VmGroup):
+        if vm_moids is None:
+            return get_group(opts, cluster, name, profile=profile)
+        info = vim.cluster.VmGroup(
+            name=name, vm=[_vm_ref(opts, m, profile=profile) for m in vm_moids]
+        )
+    else:
+        if host_moids is None:
+            return get_group(opts, cluster, name, profile=profile)
+        info = vim.cluster.HostGroup(
+            name=name, host=[_host_ref(opts, m, profile=profile) for m in host_moids]
+        )
+    spec = vim.cluster.ConfigSpecEx(groupSpec=[vim.cluster.GroupSpec(operation="edit", info=info)])
+    task = cl.ReconfigureComputeResource_Task(spec=spec, modify=True)
+    return task._moId  # noqa: SLF001
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

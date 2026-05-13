@@ -214,3 +214,43 @@ def test_delete_group(cluster_factory, opts):
     spec = cluster_factory["cluster"].ReconfigureComputeResource_Task.call_args.kwargs["spec"]
     assert spec.groupSpec[0].operation == "remove"
     assert spec.groupSpec[0].removeKey == "prod-vms"
+
+
+def test_get_group_returns_vm_group(cluster_factory, opts):
+    cluster_factory["cluster"] = _fake_cluster(groups=[_vm_group("prod-vms", ["vm-1"])])
+    g = vim_drs_rule.get_group(opts, "domain-c9", "prod-vms")
+    assert g["kind"] == "vm"
+    assert g["members"] == ["vm-1"]
+
+
+def test_get_group_or_none_missing(cluster_factory, opts):
+    cluster_factory["cluster"] = _fake_cluster(groups=[])
+    assert vim_drs_rule.get_group_or_none(opts, "domain-c9", "missing") is None
+
+
+def test_create_host_group(cluster_factory, opts, monkeypatch):
+    monkeypatch.setattr(vim_drs_rule, "_host_ref", lambda o, m, profile=None: _host_moref(m))
+    vim_drs_rule.create_host_group(opts, "domain-c9", "prod-hosts", ["host-1", "host-2"])
+    spec = cluster_factory["cluster"].ReconfigureComputeResource_Task.call_args.kwargs["spec"]
+    assert spec.groupSpec[0].operation == "add"
+    assert isinstance(spec.groupSpec[0].info, vim.cluster.HostGroup)
+
+
+def test_update_group_replaces_vm_members(cluster_factory, opts, monkeypatch):
+    monkeypatch.setattr(vim_drs_rule, "_vm_ref", lambda o, m, profile=None: _moref(m))
+    cluster_factory["cluster"] = _fake_cluster(groups=[_vm_group("prod-vms", ["vm-1"])])
+    cluster_factory["cluster"].ReconfigureComputeResource_Task.return_value = MagicMock(
+        _moId="task-9"
+    )
+    out = vim_drs_rule.update_group(opts, "domain-c9", "prod-vms", vm_moids=["vm-7"])
+    assert out == "task-9"
+    spec = cluster_factory["cluster"].ReconfigureComputeResource_Task.call_args.kwargs["spec"]
+    assert spec.groupSpec[0].operation == "edit"
+    assert isinstance(spec.groupSpec[0].info, vim.cluster.VmGroup)
+    assert spec.groupSpec[0].info.vm[0]._moId == "vm-7"  # noqa: SLF001
+
+
+def test_update_group_missing_raises(cluster_factory, opts):
+    cluster_factory["cluster"] = _fake_cluster(groups=[])
+    with pytest.raises(LookupError):
+        vim_drs_rule.update_group(opts, "domain-c9", "nope", vm_moids=["vm-1"])

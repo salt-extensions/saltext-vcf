@@ -38,6 +38,7 @@ _____________
     vmware_vim_drs_rule
     vmware_vim_dvs
     vmware_vim_extension
+    vmware_vim_first_class_disk
     vmware_vim_host_config
     vmware_vim_host_dns
     vmware_vim_host_kernel_module

@@ -101,6 +101,7 @@ _________________
     vmware_vim_dvs
     vmware_vim_dvs_portgroup
     vmware_vim_extension
+    vmware_vim_first_class_disk
     vmware_vim_host_config
     vmware_vim_host_datastore
     vmware_vim_host_dns

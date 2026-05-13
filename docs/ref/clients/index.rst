@@ -112,6 +112,7 @@ ______________
     vim_dvs
     vim_dvs_portgroup
     vim_extension
+    vim_first_class_disk
     vim_host_config
     vim_host_datastore
     vim_host_dns

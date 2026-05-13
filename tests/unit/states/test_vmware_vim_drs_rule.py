@@ -120,3 +120,141 @@ def test_vm_affinity_test_mode(monkeypatch, opts):
     ret = st.vm_affinity("keep", cluster="domain-c9", vm_moids=["vm-1"])
     assert ret["result"] is None
     assert "would be created" in ret["comment"]
+
+
+# -- VM/host group state ----------------------------------------------------
+
+
+def test_vm_group_creates_when_missing(monkeypatch):
+    calls = []
+    monkeypatch.setattr(c, "get_group_or_none", lambda o, cl, n, profile=None: None)
+    monkeypatch.setattr(
+        c, "create_vm_group", lambda o, cl, n, vms, profile=None: calls.append((n, vms))
+    )
+    ret = st.vm_group("prod-vms", cluster="domain-c9", vm_moids=["vm-1", "vm-2"])
+    assert ret["changes"]["new"] == "prod-vms"
+    assert calls[0] == ("prod-vms", ["vm-1", "vm-2"])
+
+
+def test_vm_group_idempotent(monkeypatch):
+    monkeypatch.setattr(
+        c,
+        "get_group_or_none",
+        lambda o, cl, n, profile=None: {"kind": "vm", "members": ["vm-1", "vm-2"]},
+    )
+    monkeypatch.setattr(c, "update_group", lambda *a, **kw: pytest.fail("should not update"))
+    monkeypatch.setattr(c, "create_vm_group", lambda *a, **kw: pytest.fail("should not create"))
+    ret = st.vm_group("prod-vms", cluster="domain-c9", vm_moids=["vm-1", "vm-2"])
+    assert ret["changes"] == {}
+
+
+def test_vm_group_drift_replaces_members(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        c,
+        "get_group_or_none",
+        lambda o, cl, n, profile=None: {"kind": "vm", "members": ["vm-1"]},
+    )
+    monkeypatch.setattr(
+        c,
+        "update_group",
+        lambda o, cl, n, vm_moids=None, host_moids=None, profile=None: calls.append((n, vm_moids)),
+    )
+    ret = st.vm_group("prod-vms", cluster="domain-c9", vm_moids=["vm-1", "vm-2"])
+    assert ret["changes"]["members"] == (["vm-1"], ["vm-1", "vm-2"])
+    assert calls[0] == ("prod-vms", ["vm-1", "vm-2"])
+
+
+def test_host_group_kind_mismatch(monkeypatch):
+    monkeypatch.setattr(
+        c, "get_group_or_none", lambda o, cl, n, profile=None: {"kind": "vm", "members": []}
+    )
+    ret = st.host_group("name", cluster="domain-c9", host_moids=["h-1"])
+    assert ret["result"] is False
+
+
+def test_group_absent_idempotent(monkeypatch):
+    monkeypatch.setattr(c, "get_group_or_none", lambda o, cl, n, profile=None: None)
+    ret = st.group_absent("missing", cluster="domain-c9")
+    assert ret["changes"] == {}
+
+
+def test_group_absent_deletes(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        c, "get_group_or_none", lambda o, cl, n, profile=None: {"kind": "vm", "members": []}
+    )
+    monkeypatch.setattr(c, "delete_group", lambda o, cl, n, profile=None: calls.append(n))
+    ret = st.group_absent("prod-vms", cluster="domain-c9")
+    assert ret["changes"]["deleted"] == "prod-vms"
+
+
+# -- VM-Host rule state -----------------------------------------------------
+
+
+def test_vm_host_creates(monkeypatch):
+    calls = []
+    monkeypatch.setattr(c, "get_or_none", lambda o, cl, n, profile=None: None)
+    monkeypatch.setattr(
+        c,
+        "create_vm_host",
+        lambda o, cl, n, vmg, hg, affine=True, enabled=True, mandatory=False, profile=None: calls.append(
+            (n, vmg, hg, affine)
+        ),
+    )
+    ret = st.vm_host(
+        "pin-prod", cluster="domain-c9", vm_group_name="prod-vms", host_group_name="prod-hosts"
+    )
+    assert ret["changes"]["new"] == "pin-prod"
+    assert calls[0] == ("pin-prod", "prod-vms", "prod-hosts", True)
+
+
+def test_vm_host_idempotent(monkeypatch):
+    monkeypatch.setattr(
+        c,
+        "get_or_none",
+        lambda o, cl, n, profile=None: {
+            "kind": "vm-host",
+            "vm_group_name": "prod-vms",
+            "affine_host_group_name": "prod-hosts",
+            "anti_affine_host_group_name": None,
+            "enabled": True,
+            "mandatory": False,
+        },
+    )
+    monkeypatch.setattr(c, "delete", lambda *a, **kw: pytest.fail("no-op expected"))
+    ret = st.vm_host(
+        "pin", cluster="domain-c9", vm_group_name="prod-vms", host_group_name="prod-hosts"
+    )
+    assert ret["changes"] == {}
+
+
+def test_vm_host_drift_recreates(monkeypatch):
+    deleted = []
+    created = []
+    monkeypatch.setattr(
+        c,
+        "get_or_none",
+        lambda o, cl, n, profile=None: {
+            "kind": "vm-host",
+            "vm_group_name": "prod-vms",
+            "affine_host_group_name": "old-hosts",
+            "anti_affine_host_group_name": None,
+            "enabled": True,
+            "mandatory": False,
+        },
+    )
+    monkeypatch.setattr(c, "delete", lambda o, cl, n, profile=None: deleted.append(n))
+    monkeypatch.setattr(
+        c,
+        "create_vm_host",
+        lambda o, cl, n, vmg, hg, affine=True, enabled=True, mandatory=False, profile=None: created.append(
+            hg
+        ),
+    )
+    ret = st.vm_host(
+        "pin", cluster="domain-c9", vm_group_name="prod-vms", host_group_name="new-hosts"
+    )
+    assert deleted == ["pin"]
+    assert created == ["new-hosts"]
+    assert "host_group_name" in ret["changes"]
