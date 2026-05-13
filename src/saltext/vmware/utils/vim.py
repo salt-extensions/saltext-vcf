@@ -138,3 +138,21 @@ def root_folder(opts, profile=None):
 
 def authorization_manager(opts, profile=None):
     return content(opts, profile=profile).authorizationManager
+
+
+def session_cookie(opts, profile=None):
+    """Return the ``vmware_soap_session`` cookie from the cached ServiceInstance.
+
+    Used to authenticate HTTP requests to vCenter ``/folder/?dsName=…`` style
+    file-transfer endpoints (datastore upload/download, OVF push/pull).
+    The cookie value is wrapped as ``vmware_soap_session=<token>`` ready for
+    a ``Cookie`` header.
+    """
+    si = get_service_instance(opts, profile=profile)
+    stub = si._stub  # noqa: SLF001
+    raw_cookie = stub.cookie
+    # pyVmomi formats it as: vmware_soap_session="<token>"; Path=/; ...
+    # Extract just the name=value pair, stripping quotes.
+    pair = raw_cookie.split(";", 1)[0]
+    name, _, value = pair.partition("=")
+    return f"{name}={value.strip().strip(chr(34))}"

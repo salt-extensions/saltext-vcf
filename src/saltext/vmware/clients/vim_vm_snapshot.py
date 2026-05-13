@@ -52,13 +52,43 @@ def create(
     description="",
     memory=False,
     quiesce=False,
+    vss_options=None,
     profile=None,
 ):
-    """Create a snapshot, return the ``vim.Task`` moId."""
+    """Create a snapshot, return the ``vim.Task`` moId.
+
+    *vss_options* — optional dict for Windows-guest VSS quiesce. Supported keys:
+    ``vss_backup_type`` (1=full, 2=incremental, 5=differential, 6=log),
+    ``vss_backup_context`` (e.g. ``backup_context_backup``),
+    ``vss_partial_file_support`` (bool),
+    ``vss_bootable_system_state`` (bool),
+    ``timeout`` (seconds).
+    Setting any value implies ``quiesce=True`` and uses
+    ``CreateSnapshotEx_Task`` with a WindowsQuiesceSpec.
+    """
     vm = _find_vm(opts, vm_id_or_name, profile=profile)
-    task = vm.CreateSnapshot_Task(
-        name=name, description=description, memory=bool(memory), quiesce=bool(quiesce)
-    )
+    if vss_options:
+        spec = vim.vm.WindowsQuiesceSpec()
+        if "timeout" in vss_options:
+            spec.timeout = int(vss_options["timeout"])
+        if "vss_backup_type" in vss_options:
+            spec.vssBackupType = int(vss_options["vss_backup_type"])
+        if "vss_backup_context" in vss_options:
+            spec.vssBackupContext = vss_options["vss_backup_context"]
+        if "vss_partial_file_support" in vss_options:
+            spec.vssPartialFileSupport = bool(vss_options["vss_partial_file_support"])
+        if "vss_bootable_system_state" in vss_options:
+            spec.vssBootableSystemState = bool(vss_options["vss_bootable_system_state"])
+        task = vm.CreateSnapshotEx_Task(
+            name=name,
+            description=description,
+            memory=bool(memory),
+            quiesceSpec=spec,
+        )
+    else:
+        task = vm.CreateSnapshot_Task(
+            name=name, description=description, memory=bool(memory), quiesce=bool(quiesce)
+        )
     return task._moId  # noqa: SLF001
 
 
@@ -87,6 +117,40 @@ def remove_all(opts, vm_id_or_name, profile=None):
     vm = _find_vm(opts, vm_id_or_name, profile=profile)
     task = vm.RemoveAllSnapshots_Task()
     return task._moId  # noqa: SLF001
+
+
+def consolidate(opts, vm_id_or_name, profile=None):
+    """Consolidate VM disks (merge orphaned snapshot deltas). Returns vim.Task moId."""
+    vm = _find_vm(opts, vm_id_or_name, profile=profile)
+    task = vm.ConsolidateVMDisks_Task()
+    return task._moId  # noqa: SLF001
+
+
+def state(opts, vm_id_or_name, snapshot_name, profile=None):
+    """Return ``{present, is_current, has_memory, has_quiesce, children}`` for one named snapshot.
+
+    Returns ``{"present": False}`` if the named snapshot does not exist.
+    """
+    vm = _find_vm(opts, vm_id_or_name, profile=profile)
+    if not vm.snapshot:
+        return {"present": False}
+    node = _find_snap_by_name(vm.snapshot.rootSnapshotList, snapshot_name)
+    if node is None:
+        return {"present": False}
+    current_id = (
+        vm.snapshot.currentSnapshot._moId if vm.snapshot.currentSnapshot else None  # noqa: SLF001
+    )
+    snap_id = node.snapshot._moId  # noqa: SLF001
+    return {
+        "present": True,
+        "id": snap_id,
+        "is_current": snap_id == current_id,
+        "has_memory": bool(getattr(node, "backupManifest", None))
+        or bool(getattr(node, "vmsd", None)),  # heuristic; pyVmomi exposes via state metadata
+        "has_quiesce": bool(getattr(node, "quiesced", False)),
+        "state": str(node.state) if getattr(node, "state", None) else None,
+        "children": [child.name for child in (node.childSnapshotList or [])],
+    }
 
 
 # ---------------------------------------------------------------------------

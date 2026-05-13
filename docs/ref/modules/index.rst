@@ -96,17 +96,27 @@ _________________
     vmware_vim_cluster_overrides
     vmware_vim_custom_attribute
     vmware_vim_datastore_cluster
+    vmware_vim_datastore_file
     vmware_vim_drs_rule
     vmware_vim_dvs
     vmware_vim_dvs_portgroup
     vmware_vim_extension
     vmware_vim_host_config
     vmware_vim_host_datastore
+    vmware_vim_host_dns
+    vmware_vim_host_kernel_module
+    vmware_vim_host_maintenance
     vmware_vim_host_network
+    vmware_vim_host_passthrough
+    vmware_vim_host_powermgmt
     vmware_vim_host_security
+    vmware_vim_host_ssl_thumbprint
+    vmware_vim_ovf
     vmware_vim_perf
     vmware_vim_permission
+    vmware_vim_resource_pool
     vmware_vim_role
+    vmware_vim_scheduled_task
     vmware_vim_vm
     vmware_vim_vm_customization
     vmware_vim_vm_disk
