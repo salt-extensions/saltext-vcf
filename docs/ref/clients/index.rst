@@ -23,9 +23,11 @@ ______________
     nsx_edge_cluster
     nsx_firewall_rule
     nsx_group
+    nsx_ids
     nsx_ip_block
     nsx_ip_pool
     nsx_ipsec_vpn
+    nsx_l2_vpn
     nsx_lb_app_profile
     nsx_lb_monitor
     nsx_lb_persistence
@@ -34,6 +36,7 @@ ______________
     nsx_lb_virtual_server
     nsx_nat
     nsx_node
+    nsx_qos_profile
     nsx_role_binding
     nsx_security_policy
     nsx_segment
@@ -63,12 +66,14 @@ ______________
     sddc_vcf_services
     vcenter_appliance
     vcenter_cluster
+    vcenter_compute_policy
     vcenter_content_library
     vcenter_datacenter
     vcenter_datastore
     vcenter_folder
     vcenter_host
     vcenter_kms
+    vcenter_lcm_depot
     vcenter_network
     vcenter_resource_pool
     vcenter_storage_policy
@@ -78,6 +83,7 @@ ______________
     vcenter_supervisor_service
     vcenter_supervisor_software
     vcenter_tag
+    vcenter_tag_category
     vcenter_vm
     vcenter_vm_class
     vcfops_adapter
@@ -98,12 +104,15 @@ ______________
     vcfops_version
     vim_alarm
     vim_cluster_config
+    vim_cluster_overrides
     vim_custom_attribute
+    vim_datastore_cluster
     vim_drs_rule
     vim_dvs
     vim_dvs_portgroup
     vim_extension
     vim_host_config
+    vim_host_datastore
     vim_host_network
     vim_host_security
     vim_perf

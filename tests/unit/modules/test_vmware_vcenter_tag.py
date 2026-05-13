@@ -32,8 +32,7 @@ def test_create(vcenter_authed):
     )
     assert mod.create("env", "cat-1", description="environment") == "urn:tag-1"
     body = json.loads(vcenter_authed.calls[-1].request.body)
-    assert body["create_spec"]["name"] == "env"
-    assert body["create_spec"]["category_id"] == "cat-1"
+    assert body == {"name": "env", "category_id": "cat-1", "description": "environment"}
 
 
 def test_delete(vcenter_authed):

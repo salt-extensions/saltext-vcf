@@ -35,6 +35,30 @@ def create(name, category_id, description="", profile=None):
     return r.create(__opts__, name, category_id, description=description, profile=profile)
 
 
+def get(tag, profile=None):
+    """Return a tag by id.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vcenter_tag.get <tag>
+    """
+    return r.get(__opts__, tag, profile=profile)
+
+
+def update(tag, spec, profile=None):
+    """PATCH a tag.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vcenter_tag.update <tag> spec='{"name": "newname"}'
+    """
+    return r.update(__opts__, tag, spec, profile=profile)
+
+
 def delete(tag, profile=None):
     """Delete a tag by id.
 
