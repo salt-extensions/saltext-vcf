@@ -66,10 +66,11 @@ def set_(
         else list(read_only_communities)
     )
     if trap_targets is not None:
+        # pyVmomi exposes the nested SnmpTrapTarget at runtime via vmodl reflection;
+        # pylint can't see it statically.
+        trap_cls = vim.host.SnmpSystem.SnmpConfigSpec.SnmpTrapTarget  # pylint: disable=no-member
         spec.trapTargets = [
-            vim.host.SnmpSystem.SnmpConfigSpec.SnmpTrapTarget(
-                hostName=t["host"], port=int(t["port"]), community=t["community"]
-            )
+            trap_cls(hostName=t["host"], port=int(t["port"]), community=t["community"])
             for t in trap_targets
         ]
     else:
