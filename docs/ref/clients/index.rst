@@ -16,6 +16,7 @@ ______________
     esxi_ntp
     esxi_service
     esxi_syslog
+    fleet_password
     installer_bringup
     installer_credentials
     installer_logs

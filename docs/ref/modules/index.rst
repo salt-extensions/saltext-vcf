@@ -16,6 +16,7 @@ _________________
     vmware_esxi_ntp
     vmware_esxi_service
     vmware_esxi_syslog
+    vmware_fleet_password
     vmware_installer_bringup
     vmware_installer_credentials
     vmware_installer_logs
