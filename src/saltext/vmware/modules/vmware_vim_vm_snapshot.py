@@ -35,8 +35,11 @@ def current(vm, profile=None):
     return c.current(__opts__, vm, profile=profile)
 
 
-def create(vm, name, description="", memory=False, quiesce=False, profile=None):
+def create(vm, name, description="", memory=False, quiesce=False, vss_options=None, profile=None):
     """Create.
+
+    Pass ``vss_options`` as a dict to use Windows VSS quiesce
+    (``CreateSnapshotEx_Task`` with WindowsQuiesceSpec).
 
     CLI Example:
 
@@ -52,6 +55,7 @@ def create(vm, name, description="", memory=False, quiesce=False, profile=None):
         description=description,
         memory=memory,
         quiesce=quiesce,
+        vss_options=vss_options,
         profile=profile,
     )
 
@@ -99,3 +103,29 @@ def remove_all(vm, profile=None):
 
     """
     return c.remove_all(__opts__, vm, profile=profile)
+
+
+def consolidate(vm, profile=None):
+    """Consolidate VM disks (merge orphaned snapshot deltas).
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_vm_snapshot.consolidate <vm>
+
+    """
+    return c.consolidate(__opts__, vm, profile=profile)
+
+
+def state(vm, snapshot_name, profile=None):
+    """Return ``{present, is_current, has_memory, has_quiesce, children}`` for a named snapshot.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_vm_snapshot.state <vm> <snapshot_name>
+
+    """
+    return c.state(__opts__, vm, snapshot_name, profile=profile)

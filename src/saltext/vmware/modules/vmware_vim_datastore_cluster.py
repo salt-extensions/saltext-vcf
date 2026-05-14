@@ -173,3 +173,69 @@ def sdrs_vm_override_remove(pod, vm_moid, profile=None):
         salt '*' vmware_vim_datastore_cluster.sdrs_vm_override_remove <pod> <vm_moid>
     """
     return c.sdrs_vm_override_remove(__opts__, pod, vm_moid, profile=profile)
+
+
+def sdrs_rule_list(pod, profile=None):
+    """List SDRS rules on *pod*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_datastore_cluster.sdrs_rule_list <pod>
+    """
+    return c.sdrs_rule_list(__opts__, pod, profile=profile)
+
+
+def sdrs_rule_get(pod, name, profile=None):
+    """Return one SDRS rule by name.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_datastore_cluster.sdrs_rule_get <pod> <name>
+    """
+    return c.sdrs_rule_get(__opts__, pod, name, profile=profile)
+
+
+def sdrs_rule_create_vm_anti_affinity(
+    pod, name, vm_moids, enabled=True, mandatory=False, profile=None
+):
+    """Create an SDRS VM anti-affinity rule (keeps VMDKs on different datastores).
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_datastore_cluster.sdrs_rule_create_vm_anti_affinity <pod> <name> '["vm-1","vm-2"]'
+    """
+    return c.sdrs_rule_create_vm_anti_affinity(
+        __opts__, pod, name, vm_moids, enabled=enabled, mandatory=mandatory, profile=profile
+    )
+
+
+def sdrs_rule_create_vm_affinity(pod, name, vm_moids, enabled=True, mandatory=False, profile=None):
+    """Create an SDRS VM affinity rule (keeps VMDKs on the same datastore).
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_datastore_cluster.sdrs_rule_create_vm_affinity <pod> <name> '["vm-1","vm-2"]'
+    """
+    return c.sdrs_rule_create_vm_affinity(
+        __opts__, pod, name, vm_moids, enabled=enabled, mandatory=mandatory, profile=profile
+    )
+
+
+def sdrs_rule_delete(pod, name, profile=None):
+    """Delete an SDRS rule by name.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_datastore_cluster.sdrs_rule_delete <pod> <name>
+    """
+    return c.sdrs_rule_delete(__opts__, pod, name, profile=profile)

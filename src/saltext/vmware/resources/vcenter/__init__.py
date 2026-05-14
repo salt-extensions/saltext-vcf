@@ -201,6 +201,37 @@ def vm_reset(vm):
     return vcenter_vm.reset(_opts(), vm)
 
 
+def vm_search(
+    power_states=None,
+    names=None,
+    hosts=None,
+    clusters=None,
+    folders=None,
+    datacenters=None,
+    resource_pools=None,
+    vms=None,
+):
+    return vcenter_vm.search(
+        _opts(),
+        power_states=power_states,
+        names=names,
+        hosts=hosts,
+        clusters=clusters,
+        folders=folders,
+        datacenters=datacenters,
+        resource_pools=resource_pools,
+        vms=vms,
+    )
+
+
+def vm_tree():
+    return vcenter_vm.tree(_opts())
+
+
+def vm_summary():
+    return vcenter_vm.summary(_opts())
+
+
 def datacenter_list():
     return vcenter_datacenter.list_(_opts())
 

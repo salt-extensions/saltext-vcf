@@ -59,3 +59,16 @@ def delete(rp_id, profile=None):
 
     """
     return c.delete(__opts__, rp_id, profile=profile)
+
+
+def tree(profile=None):
+    """Return resource pools as a parent/children tree.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vcenter_resource_pool.tree
+
+    """
+    return c.tree(__opts__, profile=profile)

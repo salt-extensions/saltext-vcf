@@ -102,3 +102,32 @@ def test_vks_ops_routed_to_current_resource(
     assert vc.supervisor_service_list()[0]["supervisor_service"] == "tkg"
     assert vc.vm_class_list()[0]["id"] == "guaranteed-small"
     assert "TINY" in vc.supervisor_size_info()
+
+
+def test_vm_search_tree_summary_route(inject_resource_dunders, framework_opts, vcenter_authed):
+    instances = framework_opts["pillar"]["resources"]["vcenter"]["instances"]
+    inject_resource_dunders(vc, "mgmt-vc", INSTANCES_KEY, instances)
+    # search
+    vcenter_authed.add(
+        responses.GET,
+        "https://vc.test/api/vcenter/vm",
+        json=[{"vm": "vm-1", "power_state": "POWERED_ON"}],
+        status=200,
+    )
+    out = vc.vm_search(power_states=["POWERED_ON"])
+    assert out[0]["vm"] == "vm-1"
+    assert "power_states=POWERED_ON" in vcenter_authed.calls[-1].request.url
+    # summary (single list call)
+    vcenter_authed.add(
+        responses.GET,
+        "https://vc.test/api/vcenter/vm",
+        json=[{"vm": "vm-1", "power_state": "POWERED_ON"}],
+        status=200,
+    )
+    assert vc.vm_summary()["total"] == 1
+    # tree (4 endpoints)
+    for endpoint in ("datacenter", "cluster", "host", "vm"):
+        vcenter_authed.add(
+            responses.GET, f"https://vc.test/api/vcenter/{endpoint}", json=[], status=200
+        )
+    assert vc.vm_tree() == {}

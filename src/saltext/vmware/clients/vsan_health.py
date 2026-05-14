@@ -15,7 +15,8 @@ def summary(opts, cluster, *, fetch_from_cache=True, profile=None):
     cluster_obj = vsan.find_cluster(opts, cluster, profile=profile)
     hs = vsan.cluster_health_system(opts, profile=profile)
     try:
-        result = hs.QueryClusterHealthSummary(
+        # pyVmomi vmodl methods carry many optional args that pylint sees as required.
+        result = hs.QueryClusterHealthSummary(  # pylint: disable=no-value-for-parameter
             cluster=cluster_obj,
             fetchFromCache=fetch_from_cache,
         )
@@ -54,6 +55,7 @@ def silence(opts, cluster, checks, profile=None):
     """Silence a list of health-test ids on *cluster*."""
     cluster_obj = vsan.find_cluster(opts, cluster, profile=profile)
     hs = vsan.cluster_health_system(opts, profile=profile)
+    # pylint: disable=no-value-for-parameter
     hs.SetVsanClusterSilentChecks(cluster=cluster_obj, addSilentChecks=list(checks))
 
 
@@ -61,6 +63,7 @@ def unsilence(opts, cluster, checks, profile=None):
     """Re-enable silenced health-test ids on *cluster*."""
     cluster_obj = vsan.find_cluster(opts, cluster, profile=profile)
     hs = vsan.cluster_health_system(opts, profile=profile)
+    # pylint: disable=no-value-for-parameter
     hs.SetVsanClusterSilentChecks(cluster=cluster_obj, removeSilentChecks=list(checks))
 
 

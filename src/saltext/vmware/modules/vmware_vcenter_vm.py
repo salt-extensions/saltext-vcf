@@ -72,3 +72,67 @@ def reset(vm, profile=None):
 
     """
     return r.reset(__opts__, vm, profile=profile)
+
+
+def search(
+    power_states=None,
+    names=None,
+    hosts=None,
+    clusters=None,
+    folders=None,
+    datacenters=None,
+    resource_pools=None,
+    vms=None,
+    profile=None,
+):
+    """Server-side VM filtering.
+
+    Pass any combination of ``power_states``, ``names``, ``hosts``, ``clusters``,
+    ``folders``, ``datacenters``, ``resource_pools``, ``vms`` as lists. Returns
+    the same shape as :func:`list_`.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vcenter_vm.search power_states='[POWERED_ON]'
+
+    """
+    return r.search(
+        __opts__,
+        power_states=power_states,
+        names=names,
+        hosts=hosts,
+        clusters=clusters,
+        folders=folders,
+        datacenters=datacenters,
+        resource_pools=resource_pools,
+        vms=vms,
+        profile=profile,
+    )
+
+
+def tree(profile=None):
+    """Return a nested ``{datacenter: {clusters: {cluster: {hosts: {host: {vms: [...]}}}}}}`` map.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vcenter_vm.tree
+
+    """
+    return r.tree(__opts__, profile=profile)
+
+
+def summary(profile=None):
+    """Aggregate counts: total, by_power_state, by_cpu_count, total_memory_MiB.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vcenter_vm.summary
+
+    """
+    return r.summary(__opts__, profile=profile)
