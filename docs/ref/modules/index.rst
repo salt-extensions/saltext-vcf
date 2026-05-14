@@ -16,6 +16,11 @@ _________________
     vmware_esxi_ntp
     vmware_esxi_service
     vmware_esxi_syslog
+    vmware_fleet_password
+    vmware_installer_bringup
+    vmware_installer_credentials
+    vmware_installer_logs
+    vmware_installer_system
     vmware_nsx_cluster
     vmware_nsx_compute_collection
     vmware_nsx_context_profile
@@ -104,6 +109,7 @@ _________________
     vmware_vim_extension
     vmware_vim_first_class_disk
     vmware_vim_host_acceptance
+    vmware_vim_host_certificate
     vmware_vim_host_config
     vmware_vim_host_datastore
     vmware_vim_host_dns
@@ -118,6 +124,7 @@ _________________
     vmware_vim_host_ssl_thumbprint
     vmware_vim_host_storage
     vmware_vim_host_tcpip
+    vmware_vim_infra_profile
     vmware_vim_license
     vmware_vim_ovf
     vmware_vim_perf
@@ -126,8 +133,11 @@ _________________
     vmware_vim_role
     vmware_vim_scheduled_task
     vmware_vim_vapp
+    vmware_vim_vasa
     vmware_vim_vm
+    vmware_vim_vm_console
     vmware_vim_vm_customization
+    vmware_vim_vm_devices
     vmware_vim_vm_disk
     vmware_vim_vm_features
     vmware_vim_vm_guest
@@ -135,6 +145,7 @@ _________________
     vmware_vim_vm_nic
     vmware_vim_vm_power
     vmware_vim_vm_snapshot
+    vmware_vim_vm_tools
     vmware_vks
     vmware_vsan_cluster
     vmware_vsan_disk

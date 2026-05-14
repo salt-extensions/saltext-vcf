@@ -162,3 +162,89 @@ def mark_as_virtual_machine(template, resource_pool, host=None, profile=None):
         salt '*' vmware_vim_vm.mark_as_virtual_machine tmpl-rhel9 resgroup-c9
     """
     return c.mark_as_virtual_machine(__opts__, template, resource_pool, host=host, profile=profile)
+
+
+def instant_clone(
+    source,
+    name,
+    folder=None,
+    datastore=None,
+    host=None,
+    resource_pool=None,
+    extra_config=None,
+    profile=None,
+):
+    """Instant-clone a running *source* VM into a new VM named *name*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_vm.instant_clone <source> <name>
+    """
+    return c.instant_clone(
+        __opts__,
+        source,
+        name,
+        folder=folder,
+        datastore=datastore,
+        host=host,
+        resource_pool=resource_pool,
+        extra_config=extra_config,
+        profile=profile,
+    )
+
+
+def move_to_folder(vm, folder, profile=None):
+    """Reparent *vm* under *folder*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_vm.move_to_folder <vm> <folder>
+    """
+    return c.move_to_folder(__opts__, vm, folder, profile=profile)
+
+
+def register(
+    vmx_path,
+    name,
+    folder,
+    resource_pool=None,
+    cluster=None,
+    host=None,
+    as_template=False,
+    profile=None,
+):
+    """Register an existing .vmx file as a new VM in inventory.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_vm.register '[ds1] vm/vm.vmx' <name> <folder> cluster=<cluster>
+    """
+    return c.register(
+        __opts__,
+        vmx_path,
+        name,
+        folder,
+        resource_pool=resource_pool,
+        cluster=cluster,
+        host=host,
+        as_template=as_template,
+        profile=profile,
+    )
+
+
+def unregister(vm, profile=None):
+    """Remove a VM from inventory without deleting its files.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_vm.unregister <vm>
+    """
+    return c.unregister(__opts__, vm, profile=profile)

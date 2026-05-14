@@ -270,6 +270,42 @@ def vmkernel_remove(opts, host, device, profile=None):
     _net(opts, host, profile=profile).RemoveVirtualNic(device=device)
 
 
+def vmkernel_migrate(opts, host, device, dst_portgroup, profile=None):
+    """Move VMkernel *device* from its current portgroup to *dst_portgroup*.
+
+    Preserves IP/MTU/MAC by reading the current spec, removing, and re-adding
+    on the destination portgroup. The device name (e.g. ``vmk2``) may change
+    after the migration; the new name is returned.
+    """
+    existing = vmkernel_get(opts, host, device, profile=profile)
+    vmkernel_remove(opts, host, device, profile=profile)
+    return vmkernel_add(
+        opts,
+        host,
+        dst_portgroup,
+        dhcp=bool(existing.get("dhcp")),
+        ip_address=existing.get("ip_address"),
+        subnet_mask=existing.get("subnet_mask"),
+        mtu=existing.get("mtu", 1500),
+        mac_address=existing.get("mac_address"),
+        profile=profile,
+    )
+
+
+def ipv6_get(opts, host, profile=None):
+    """Return ``{enabled}`` for IPv6 on *host*'s network config."""
+    h = _host(opts, host, profile=profile)
+    return {"enabled": bool(getattr(h.config.network, "ipV6Enabled", False))}
+
+
+def ipv6_set(opts, host, enabled, profile=None):
+    """Enable or disable IPv6 on *host*. Reboot required to take effect."""
+    cfg = vim.host.NetworkConfig()
+    cfg.ipV6Enabled = bool(enabled)
+    _net(opts, host, profile=profile).UpdateNetworkConfig(config=cfg, changeMode="modify")
+    return ipv6_get(opts, host, profile=profile)
+
+
 def vmkernel_set_traffic_types(opts, host, device, nic_types, profile=None):
     """Replace the traffic-type bitmap on a VMkernel adapter.
 
