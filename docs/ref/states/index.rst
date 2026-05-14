@@ -16,6 +16,7 @@ _____________
     vmware_esxi_ntp
     vmware_esxi_service
     vmware_esxi_syslog
+    vmware_installer_bringup
     vmware_nsx_firewall_rule
     vmware_nsx_group
     vmware_nsx_role_binding

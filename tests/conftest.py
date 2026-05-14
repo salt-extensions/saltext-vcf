@@ -40,6 +40,12 @@ def opts():
                     "password": "p",
                     "verify_ssl": False,
                 },
+                "vcf_installer": {
+                    "host": "installer.test",
+                    "username": "admin",
+                    "password": "p",
+                    "verify_ssl": False,
+                },
                 "profiles": {
                     "alt": {
                         "vcenter": {
@@ -68,6 +74,7 @@ def reset_caches():
     """Clear util-level session/token caches between tests."""
     from saltext.vmware.utils import cim
     from saltext.vmware.utils import esxi
+    from saltext.vmware.utils import installer
     from saltext.vmware.utils import sddc
     from saltext.vmware.utils import vcenter
     from saltext.vmware.utils import vcfops
@@ -79,6 +86,7 @@ def reset_caches():
         sddc._TOKEN_CACHE,
         esxi._SESSION_CACHE,
         vcfops._TOKEN_CACHE,
+        installer._SESSION_CACHE,
         soap._SI_CACHE,
         cim._CONN_CACHE,
         vsan._VSAN_STUB_CACHE,
@@ -123,6 +131,14 @@ def sddc_authed(mocked_responses):
         json={"accessToken": "jwt-abc", "refreshToken": {"id": "r"}},
         status=200,
     )
+    return mocked_responses
+
+
+@pytest.fixture
+def vcf_installer_authed(mocked_responses):
+    """No token endpoint — installer uses HTTP Basic on every request. This
+    fixture just returns the response context so tests can register
+    endpoint mocks directly."""
     return mocked_responses
 
 

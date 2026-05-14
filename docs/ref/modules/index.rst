@@ -16,6 +16,10 @@ _________________
     vmware_esxi_ntp
     vmware_esxi_service
     vmware_esxi_syslog
+    vmware_installer_bringup
+    vmware_installer_credentials
+    vmware_installer_logs
+    vmware_installer_system
     vmware_nsx_cluster
     vmware_nsx_compute_collection
     vmware_nsx_context_profile

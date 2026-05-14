@@ -11,6 +11,7 @@ _________
 
     cim
     esxi
+    installer
     nsx
     sddc
     vcenter

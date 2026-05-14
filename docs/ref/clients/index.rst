@@ -16,6 +16,10 @@ ______________
     esxi_ntp
     esxi_service
     esxi_syslog
+    installer_bringup
+    installer_credentials
+    installer_logs
+    installer_system
     nsx_cluster
     nsx_compute_collection
     nsx_context_profile
