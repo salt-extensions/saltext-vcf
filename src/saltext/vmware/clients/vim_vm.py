@@ -227,3 +227,111 @@ def mark_as_virtual_machine(opts, template_id_or_name, resource_pool, host=None,
     pool = _find_by_type(opts, vim.ResourcePool, resource_pool, profile=profile)
     host_obj = _find_by_type(opts, vim.HostSystem, host, profile=profile) if host else None
     template.MarkAsVirtualMachine(pool=pool, host=host_obj)
+
+
+# ---------------------------------------------------------------------------
+# Instant clone (memory-state + disk-delta from a running source)
+# ---------------------------------------------------------------------------
+
+
+def instant_clone(
+    opts,
+    source,
+    name,
+    *,
+    folder=None,
+    datastore=None,
+    host=None,
+    resource_pool=None,
+    extra_config=None,
+    profile=None,
+):
+    """Instant-clone *source* (must be powered on) into a new VM *name*.
+
+    Returns task moId. Source must be running; the new VM inherits memory
+    state. Far cheaper than a regular clone but defaults to same-host
+    placement.
+
+    *extra_config* — optional ``{key: value}`` dict applied as VM extraConfig
+    options (e.g. ``{"guestinfo.role": "worker"}``).
+    """
+    src = _vm(opts, source, profile=profile)
+    spec = vim.vm.InstantCloneSpec(name=name)
+    location = vim.vm.RelocateSpec()
+    if folder is not None:
+        location.folder = _find_by_type(opts, vim.Folder, folder, profile=profile)
+    if datastore is not None:
+        location.datastore = _find_by_type(opts, vim.Datastore, datastore, profile=profile)
+    if host is not None:
+        location.host = _find_by_type(opts, vim.HostSystem, host, profile=profile)
+    if resource_pool is not None:
+        location.pool = _find_by_type(opts, vim.ResourcePool, resource_pool, profile=profile)
+    spec.location = location
+    if extra_config:
+        spec.config = [vim.option.OptionValue(key=k, value=v) for k, v in extra_config.items()]
+    task = src.InstantClone_Task(spec=spec)
+    return task._moId  # noqa: SLF001
+
+
+# ---------------------------------------------------------------------------
+# Move to folder
+# ---------------------------------------------------------------------------
+
+
+def move_to_folder(opts, vm_id_or_name, folder, profile=None):
+    """Reparent *vm_id_or_name* under *folder*. Returns task moId."""
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    target_folder = _find_by_type(opts, vim.Folder, folder, profile=profile)
+    task = target_folder.MoveIntoFolder_Task(list=[vm])
+    return task._moId  # noqa: SLF001
+
+
+# ---------------------------------------------------------------------------
+# Register / unregister existing VMX
+# ---------------------------------------------------------------------------
+
+
+def register(
+    opts,
+    vmx_path,
+    name,
+    folder,
+    *,
+    resource_pool=None,
+    cluster=None,
+    host=None,
+    as_template=False,
+    profile=None,
+):
+    """Register an existing .vmx as a new VM. Returns task moId.
+
+    *vmx_path* is the datastore path (e.g. ``[ds1] vm/vm.vmx``). One of
+    *resource_pool*, *cluster*, or *host* is required.
+    """
+    target_folder = _find_by_type(opts, vim.Folder, folder, profile=profile)
+    if resource_pool:
+        pool = _find_by_type(opts, vim.ResourcePool, resource_pool, profile=profile)
+    elif cluster:
+        cluster_obj = _find_by_type(opts, vim.ClusterComputeResource, cluster, profile=profile)
+        pool = cluster_obj.resourcePool
+    elif host:
+        host_obj = _find_by_type(opts, vim.HostSystem, host, profile=profile)
+        pool = host_obj.parent.resourcePool
+    else:
+        raise ValueError("provide cluster, host, or resource_pool for VM placement")
+    host_obj = _find_by_type(opts, vim.HostSystem, host, profile=profile) if host else None
+    task = target_folder.RegisterVM_Task(
+        path=vmx_path,
+        name=name,
+        asTemplate=bool(as_template),
+        pool=pool,
+        host=host_obj,
+    )
+    return task._moId  # noqa: SLF001
+
+
+def unregister(opts, vm_id_or_name, profile=None):
+    """Remove the VM from inventory but leave its files on disk."""
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    vm.UnregisterVM()
+    return True

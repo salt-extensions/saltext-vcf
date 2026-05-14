@@ -312,3 +312,39 @@ def physical_nic_list(host, profile=None):
         salt '*' vmware_vim_host_network.physical_nic_list esxi-01
     """
     return c.physical_nic_list(__opts__, host, profile=profile)
+
+
+def vmkernel_migrate(host, device, dst_portgroup, profile=None):
+    """Move a VMkernel adapter to a different portgroup.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_host_network.vmkernel_migrate <host> vmk2 <dst_portgroup>
+    """
+    return c.vmkernel_migrate(__opts__, host, device, dst_portgroup, profile=profile)
+
+
+def ipv6_get(host, profile=None):
+    """Return IPv6 enable state for *host*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_host_network.ipv6_get <host>
+    """
+    return c.ipv6_get(__opts__, host, profile=profile)
+
+
+def ipv6_set(host, enabled, profile=None):
+    """Enable or disable IPv6 on *host*. Reboot required to take effect.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vmware_vim_host_network.ipv6_set <host> True
+    """
+    return c.ipv6_set(__opts__, host, enabled, profile=profile)

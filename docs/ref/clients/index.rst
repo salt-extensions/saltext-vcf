@@ -115,6 +115,7 @@ ______________
     vim_extension
     vim_first_class_disk
     vim_host_acceptance
+    vim_host_certificate
     vim_host_config
     vim_host_datastore
     vim_host_dns
@@ -129,6 +130,7 @@ ______________
     vim_host_ssl_thumbprint
     vim_host_storage
     vim_host_tcpip
+    vim_infra_profile
     vim_license
     vim_ovf
     vim_perf
@@ -137,8 +139,11 @@ ______________
     vim_role
     vim_scheduled_task
     vim_vapp
+    vim_vasa
     vim_vm
+    vim_vm_console
     vim_vm_customization
+    vim_vm_devices
     vim_vm_disk
     vim_vm_features
     vim_vm_guest

@@ -41,6 +41,7 @@ _____________
     vmware_vim_extension
     vmware_vim_first_class_disk
     vmware_vim_host_acceptance
+    vmware_vim_host_certificate
     vmware_vim_host_config
     vmware_vim_host_dns
     vmware_vim_host_hyperthreading
@@ -52,5 +53,6 @@ _____________
     vmware_vim_resource_pool
     vmware_vim_role
     vmware_vim_scheduled_task
+    vmware_vim_vm_devices
     vmware_vsan_cluster
     vmware_vsan_fault_domain
