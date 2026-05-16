@@ -136,9 +136,13 @@ def sddc_authed(mocked_responses):
 
 @pytest.fixture
 def vcf_installer_authed(mocked_responses):
-    """No token endpoint — installer uses HTTP Basic on every request. This
-    fixture just returns the response context so tests can register
-    endpoint mocks directly."""
+    """Pre-register the VCF Installer /v1/tokens POST."""
+    mocked_responses.add(
+        responses_lib.POST,
+        "https://installer.test/v1/tokens",
+        json={"accessToken": "installer-jwt-abc"},
+        status=200,
+    )
     return mocked_responses
 
 

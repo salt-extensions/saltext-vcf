@@ -18,9 +18,6 @@ _________________
     vcf_esxi_syslog
     vcf_fleet_password
     vcf_installer_bringup
-    vcf_installer_credentials
-    vcf_installer_logs
-    vcf_installer_system
     vcf_nsx_cluster
     vcf_nsx_compute_collection
     vcf_nsx_context_profile

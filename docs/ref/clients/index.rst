@@ -18,9 +18,6 @@ ______________
     esxi_syslog
     fleet_password
     installer_bringup
-    installer_credentials
-    installer_logs
-    installer_system
     nsx_cluster
     nsx_compute_collection
     nsx_context_profile

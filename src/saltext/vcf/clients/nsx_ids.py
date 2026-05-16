@@ -16,7 +16,13 @@ from saltext.vcf.utils import nsx
 GLOBAL_CONFIG = "/policy/api/v1/infra/settings/firewall/security/intrusion-services"
 CLUSTER_CONFIGS = f"{GLOBAL_CONFIG}/cluster-configs"
 PROFILES = f"{GLOBAL_CONFIG}/profiles"
-SIGNATURES = f"{GLOBAL_CONFIG}/signatures"
+SIGNATURE_VERSIONS = f"{GLOBAL_CONFIG}/signature-versions"
+
+
+def _signatures_path(version="DEFAULT"):
+    """Signatures live under a signature-version (NSX 9+ surfaces). ``DEFAULT``
+    is the currently-active version maintained by NSX."""
+    return f"{SIGNATURE_VERSIONS}/{version}/signatures"
 
 
 def _policy_path(domain, policy=None):
@@ -104,12 +110,12 @@ def delete_profile(opts, profile_id, profile=None):
 # Signatures (read-only catalog managed by NSX)
 
 
-def list_signatures(opts, profile=None):
-    return nsx.api_get(opts, SIGNATURES, profile=profile)
+def list_signatures(opts, version="DEFAULT", profile=None):
+    return nsx.api_get(opts, _signatures_path(version), profile=profile)
 
 
-def get_signature(opts, signature_id, profile=None):
-    return nsx.api_get(opts, f"{SIGNATURES}/{signature_id}", profile=profile)
+def get_signature(opts, signature_id, version="DEFAULT", profile=None):
+    return nsx.api_get(opts, f"{_signatures_path(version)}/{signature_id}", profile=profile)
 
 
 # IDS policies (per-domain)

@@ -1,4 +1,4 @@
-"""vCenter Compute Policy (`/api/vcenter/vm/compute/policies`).
+"""vCenter Compute Policy (`/api/vcenter/compute/policies`).
 
 Compute policies are Tanzu / Workload Management constructs that influence
 DRS placement decisions for VMs and pods (VM-VM affinity, VM-host affinity,
@@ -9,7 +9,7 @@ import requests
 
 from saltext.vcf.utils import vcenter
 
-PATH = "/api/vcenter/vm/compute/policies"
+PATH = "/api/vcenter/compute/policies"
 
 
 def list_(opts, profile=None):

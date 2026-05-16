@@ -88,5 +88,14 @@ def sync(opts, profile=None):
 
 
 def get_content(opts, profile=None):
-    """Return the union of bundles + components currently in the depot."""
-    return vcenter.api_get(opts, f"{DEPOTS}/content", profile=profile)
+    """Return the union of base-images + add-ons + components currently in
+    the depot.  vCenter splits depot content across three sibling endpoints
+    under ``/api/esx/settings/depot-content``; this helper aggregates them
+    into a single dict keyed by content type.
+    """
+    base = "/api/esx/settings/depot-content"
+    return {
+        "base_images": vcenter.api_get(opts, f"{base}/base-images", profile=profile),
+        "add_ons": vcenter.api_get(opts, f"{base}/add-ons", profile=profile),
+        "components": vcenter.api_get(opts, f"{base}/components", profile=profile),
+    }

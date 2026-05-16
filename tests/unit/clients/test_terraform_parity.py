@@ -172,12 +172,12 @@ VC = "https://vc.test"
 
 
 def test_compute_policy_crud(opts, vcenter_authed):
-    vcenter_authed.add(responses.GET, f"{VC}/api/vcenter/vm/compute/policies", json=[], status=200)
+    vcenter_authed.add(responses.GET, f"{VC}/api/vcenter/compute/policies", json=[], status=200)
     vcenter_authed.add(
-        responses.POST, f"{VC}/api/vcenter/vm/compute/policies", json="pol-1", status=200
+        responses.POST, f"{VC}/api/vcenter/compute/policies", json="pol-1", status=200
     )
     vcenter_authed.add(
-        responses.DELETE, f"{VC}/api/vcenter/vm/compute/policies/pol-1", json=None, status=200
+        responses.DELETE, f"{VC}/api/vcenter/compute/policies/pol-1", json=None, status=200
     )
     vcenter_compute_policy.list_(opts)
     assert (
@@ -196,7 +196,7 @@ def test_compute_policy_crud(opts, vcenter_authed):
 
 
 def test_compute_policy_get_or_none_404(opts, vcenter_authed):
-    vcenter_authed.add(responses.GET, f"{VC}/api/vcenter/vm/compute/policies/missing", status=404)
+    vcenter_authed.add(responses.GET, f"{VC}/api/vcenter/compute/policies/missing", status=404)
     assert vcenter_compute_policy.get_or_none(opts, "missing") is None
 
 
