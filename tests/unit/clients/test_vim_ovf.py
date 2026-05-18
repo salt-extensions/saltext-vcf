@@ -23,9 +23,7 @@ def vm_env(monkeypatch):
     descriptor_result.warning = []
     content.ovfManager.CreateDescriptor.return_value = descriptor_result
 
-    monkeypatch.setattr(
-        "saltext.vcf.clients.vim_ovf.soap.content", lambda o, profile=None: content
-    )
+    monkeypatch.setattr("saltext.vcf.clients.vim_ovf.soap.content", lambda o, profile=None: content)
     return {"vm": vm, "content": content, "descriptor_result": descriptor_result}
 
 

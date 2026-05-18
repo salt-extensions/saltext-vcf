@@ -131,9 +131,7 @@ def test_permission_list_attaches_role_name(opts):
     mgr.RetrieveEntityPermissions.return_value = [_perm("vm-100", "alice@vsphere.local", 7)]
     entity = MagicMock()
     entity._moId = "vm-100"
-    with patch(
-        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
-    ):
+    with patch("saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr):
         with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=entity):
             result = vim_permission.list_(opts, "vm-100")
     assert result[0]["role"] == "Admin"
@@ -150,9 +148,7 @@ def test_permission_set_builds_permission_object(opts):
         captured.update(kwargs)
         return MagicMock(**kwargs)
 
-    with patch(
-        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
-    ):
+    with patch("saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr):
         with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=entity):
             with patch(
                 "saltext.vcf.clients.vim_permission.vim.AuthorizationManager.Permission",
@@ -168,12 +164,8 @@ def test_permission_set_builds_permission_object(opts):
 def test_permission_set_unknown_role_raises(opts):
     mgr = MagicMock()
     mgr.roleList = []
-    with patch(
-        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
-    ):
-        with patch(
-            "saltext.vcf.clients.vim_permission._resolve_entity", return_value=MagicMock()
-        ):
+    with patch("saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr):
+        with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=MagicMock()):
             with pytest.raises(LookupError, match="role 'Admin' not found"):
                 vim_permission.set_(opts, "vm-100", "alice@vsphere.local", "Admin")
 
@@ -181,9 +173,7 @@ def test_permission_set_unknown_role_raises(opts):
 def test_permission_remove(opts):
     mgr = MagicMock()
     entity = MagicMock()
-    with patch(
-        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
-    ):
+    with patch("saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr):
         with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=entity):
             vim_permission.remove(opts, "vm-100", "alice@vsphere.local")
     mgr.RemoveEntityPermission.assert_called_once_with(
@@ -194,9 +184,7 @@ def test_permission_remove(opts):
 def test_permission_reset(opts):
     mgr = MagicMock()
     entity = MagicMock()
-    with patch(
-        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
-    ):
+    with patch("saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr):
         with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=entity):
             vim_permission.reset(opts, "vm-100")
     mgr.ResetEntityPermissions.assert_called_once_with(entity=entity, permission=[])

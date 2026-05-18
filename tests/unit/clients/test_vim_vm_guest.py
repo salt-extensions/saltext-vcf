@@ -156,9 +156,7 @@ def test_download_file_writes_local(factories, opts, tmp_path):
     fake_resp.__exit__.return_value = False
     fake_resp.read.return_value = b"hello"
     dst = tmp_path / "got.txt"
-    with patch(
-        "saltext.vcf.clients.vim_vm_guest.urllib.request.urlopen", return_value=fake_resp
-    ):
+    with patch("saltext.vcf.clients.vim_vm_guest.urllib.request.urlopen", return_value=fake_resp):
         size = vim_vm_guest.download_file(
             opts,
             "vm-100",
