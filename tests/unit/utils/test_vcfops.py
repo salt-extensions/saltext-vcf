@@ -1,11 +1,11 @@
-"""Tests for saltext.vmware.utils.vcfops."""
+"""Tests for saltext.vcf.utils.vcfops."""
 
 import json
 
 import pytest
 import responses
 
-from saltext.vmware.utils import vcfops
+from saltext.vcf.utils import vcfops
 
 
 def test_get_config_default(opts):

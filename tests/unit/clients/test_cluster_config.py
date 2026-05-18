@@ -3,7 +3,7 @@
 import pytest
 import responses
 
-from saltext.vmware.clients import cluster_config as c
+from saltext.vcf.clients import cluster_config as c
 
 
 def test_enablement_get(opts, vcenter_authed):

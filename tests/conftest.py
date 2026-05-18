@@ -1,4 +1,4 @@
-"""Shared pytest fixtures for saltext-vmware unit tests."""
+"""Shared pytest fixtures for saltext-vcf unit tests."""
 
 import pytest
 import responses as responses_lib
@@ -9,7 +9,7 @@ def opts():
     """Salt-style opts dict with all three components configured for the test host."""
     return {
         "pillar": {
-            "saltext.vmware": {
+            "saltext.vcf": {
                 "vcenter": {
                     "host": "vc.test",
                     "username": "u",
@@ -72,14 +72,14 @@ def mocked_responses():
 @pytest.fixture(autouse=True)
 def reset_caches():
     """Clear util-level session/token caches between tests."""
-    from saltext.vmware.utils import cim
-    from saltext.vmware.utils import esxi
-    from saltext.vmware.utils import installer
-    from saltext.vmware.utils import sddc
-    from saltext.vmware.utils import vcenter
-    from saltext.vmware.utils import vcfops
-    from saltext.vmware.utils import vim as soap
-    from saltext.vmware.utils import vsan
+    from saltext.vcf.utils import cim
+    from saltext.vcf.utils import esxi
+    from saltext.vcf.utils import installer
+    from saltext.vcf.utils import sddc
+    from saltext.vcf.utils import vcenter
+    from saltext.vcf.utils import vcfops
+    from saltext.vcf.utils import vim as soap
+    from saltext.vcf.utils import vsan
 
     caches = [
         vcenter._SESSION_CACHE,

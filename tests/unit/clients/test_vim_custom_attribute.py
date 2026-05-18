@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from saltext.vmware.clients import vim_custom_attribute
+from saltext.vcf.clients import vim_custom_attribute
 
 
 def _make_field(key, name, mo_type=None):
@@ -21,7 +21,7 @@ def test_list_returns_dicts(opts):
     cfm = MagicMock()
     cfm.field = [_make_field(1, "owner", "VirtualMachine"), _make_field(2, "team")]
     with patch(
-        "saltext.vmware.clients.vim_custom_attribute.soap.custom_fields_manager",
+        "saltext.vcf.clients.vim_custom_attribute.soap.custom_fields_manager",
         return_value=cfm,
     ):
         result = vim_custom_attribute.list_(opts)
@@ -34,7 +34,7 @@ def test_get_finds_by_name(opts):
     cfm = MagicMock()
     cfm.field = [_make_field(1, "owner")]
     with patch(
-        "saltext.vmware.clients.vim_custom_attribute.soap.custom_fields_manager",
+        "saltext.vcf.clients.vim_custom_attribute.soap.custom_fields_manager",
         return_value=cfm,
     ):
         assert vim_custom_attribute.get(opts, "owner")["key"] == 1
@@ -48,7 +48,7 @@ def test_add_creates_field(opts):
     new_field.configure_mock(name="owner")
     cfm.AddCustomFieldDef.return_value = new_field
     with patch(
-        "saltext.vmware.clients.vim_custom_attribute.soap.custom_fields_manager",
+        "saltext.vcf.clients.vim_custom_attribute.soap.custom_fields_manager",
         return_value=cfm,
     ):
         result = vim_custom_attribute.add(opts, "owner", managed_object_type="VirtualMachine")
@@ -60,7 +60,7 @@ def test_remove_by_name(opts):
     cfm = MagicMock()
     cfm.field = [_make_field(7, "owner")]
     with patch(
-        "saltext.vmware.clients.vim_custom_attribute.soap.custom_fields_manager",
+        "saltext.vcf.clients.vim_custom_attribute.soap.custom_fields_manager",
         return_value=cfm,
     ):
         vim_custom_attribute.remove(opts, "owner")
@@ -71,7 +71,7 @@ def test_remove_missing_raises(opts):
     cfm = MagicMock()
     cfm.field = []
     with patch(
-        "saltext.vmware.clients.vim_custom_attribute.soap.custom_fields_manager",
+        "saltext.vcf.clients.vim_custom_attribute.soap.custom_fields_manager",
         return_value=cfm,
     ):
         with pytest.raises(LookupError):

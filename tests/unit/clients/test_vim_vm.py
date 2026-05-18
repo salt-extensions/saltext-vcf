@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_vm
+from saltext.vcf.clients import vim_vm
 
 
 def _fake_vm(name="src-vm", moid="vm-100", power_state="poweredOff", extra_config=None):

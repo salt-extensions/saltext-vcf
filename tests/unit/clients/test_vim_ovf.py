@@ -6,7 +6,7 @@ import pytest
 import responses
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_ovf
+from saltext.vcf.clients import vim_ovf
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def vm_env(monkeypatch):
     content.ovfManager.CreateDescriptor.return_value = descriptor_result
 
     monkeypatch.setattr(
-        "saltext.vmware.clients.vim_ovf.soap.content", lambda o, profile=None: content
+        "saltext.vcf.clients.vim_ovf.soap.content", lambda o, profile=None: content
     )
     return {"vm": vm, "content": content, "descriptor_result": descriptor_result}
 
@@ -38,11 +38,11 @@ def test_descriptor_returns_xml(opts, vm_env):
 
 def test_export_walks_lease_and_completes(opts, vm_env, tmp_path, monkeypatch):
     monkeypatch.setattr(
-        "saltext.vmware.clients.vim_ovf.vc_rest.get_config",
+        "saltext.vcf.clients.vim_ovf.vc_rest.get_config",
         lambda o, profile=None: {"host": "vc.test", "verify_ssl": False},
     )
     monkeypatch.setattr(
-        "saltext.vmware.clients.vim_ovf.soap.session_cookie",
+        "saltext.vcf.clients.vim_ovf.soap.session_cookie",
         lambda o, profile=None: "vmware_soap_session=token",
     )
     lease = MagicMock()

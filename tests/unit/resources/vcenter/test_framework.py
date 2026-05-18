@@ -3,7 +3,7 @@
 import pytest
 import responses
 
-from saltext.vmware.resources import vcenter as vc
+from saltext.vcf.resources import vcenter as vc
 
 INSTANCES_KEY = vc.CONTEXT_KEY
 

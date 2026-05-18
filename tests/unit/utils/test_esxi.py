@@ -1,9 +1,9 @@
-"""Tests for saltext.vmware.utils.esxi (direct/standalone mode)."""
+"""Tests for saltext.vcf.utils.esxi (direct/standalone mode)."""
 
 import pytest
 import responses
 
-from saltext.vmware.utils import esxi
+from saltext.vcf.utils import esxi
 
 
 def test_get_config_default(opts):

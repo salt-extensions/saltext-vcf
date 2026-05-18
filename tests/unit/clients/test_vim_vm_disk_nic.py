@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_vm_disk
-from saltext.vmware.clients import vim_vm_nic
+from saltext.vcf.clients import vim_vm_disk
+from saltext.vcf.clients import vim_vm_nic
 
 
 def _scsi_controller(key=1000):

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_host_network
+from saltext.vcf.clients import vim_host_network
 
 
 def _vswitch(name="vSwitch0", num_ports=128, num_avail=120, mtu=1500, pnics=None, portgroups=()):

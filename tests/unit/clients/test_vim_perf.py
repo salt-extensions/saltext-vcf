@@ -5,7 +5,7 @@ from datetime import timezone
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-from saltext.vmware.clients import vim_perf
+from saltext.vcf.clients import vim_perf
 
 
 def test_counters_returns_dict(opts):
@@ -19,7 +19,7 @@ def test_counters_returns_dict(opts):
     counter.level = 1
     pm = MagicMock()
     pm.perfCounter = [counter]
-    with patch("saltext.vmware.clients.vim_perf.soap.perf_manager", return_value=pm):
+    with patch("saltext.vcf.clients.vim_perf.soap.perf_manager", return_value=pm):
         result = vim_perf.counters(opts)
     assert result == {
         1: {
@@ -37,9 +37,9 @@ def test_available_metrics(opts):
     m = MagicMock(counterId=1, instance="*")
     pm = MagicMock()
     pm.QueryAvailablePerfMetric.return_value = [m]
-    with patch("saltext.vmware.clients.vim_perf.soap.perf_manager", return_value=pm):
+    with patch("saltext.vcf.clients.vim_perf.soap.perf_manager", return_value=pm):
         with patch(
-            "saltext.vmware.clients.vim_perf.soap.get_service_instance",
+            "saltext.vcf.clients.vim_perf.soap.get_service_instance",
             return_value=MagicMock(),
         ):
             result = vim_perf.available_metrics(opts, "vm-1")
@@ -54,9 +54,9 @@ def test_query_builds_querySpec(opts):  # noqa: N802  pylint: disable=invalid-na
     result = MagicMock(entity=MagicMock(_moId="vm-1"), sampleInfo=[sample], value=[val])
     pm = MagicMock()
     pm.QueryPerf.return_value = [result]
-    with patch("saltext.vmware.clients.vim_perf.soap.perf_manager", return_value=pm):
+    with patch("saltext.vcf.clients.vim_perf.soap.perf_manager", return_value=pm):
         with patch(
-            "saltext.vmware.clients.vim_perf.soap.get_service_instance",
+            "saltext.vcf.clients.vim_perf.soap.get_service_instance",
             return_value=MagicMock(),
         ):
             out = vim_perf.query(opts, "vm-1", [1], max_samples=10)
@@ -69,9 +69,9 @@ def test_query_builds_querySpec(opts):  # noqa: N802  pylint: disable=invalid-na
 def test_last_n_seconds_passes_time_window(opts):
     pm = MagicMock()
     pm.QueryPerf.return_value = []
-    with patch("saltext.vmware.clients.vim_perf.soap.perf_manager", return_value=pm):
+    with patch("saltext.vcf.clients.vim_perf.soap.perf_manager", return_value=pm):
         with patch(
-            "saltext.vmware.clients.vim_perf.soap.get_service_instance",
+            "saltext.vcf.clients.vim_perf.soap.get_service_instance",
             return_value=MagicMock(),
         ):
             vim_perf.last_n_seconds(opts, "vm-1", [1], seconds=60)

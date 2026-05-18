@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_host_powermgmt
+from saltext.vcf.clients import vim_host_powermgmt
 
 
 def _policy(key, short, name=None, description=""):

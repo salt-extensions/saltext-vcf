@@ -4,11 +4,11 @@ import json
 
 import responses
 
-from saltext.vmware.clients import nsx_dhcp
-from saltext.vmware.clients import nsx_edge_cluster
-from saltext.vmware.clients import nsx_ip_block
-from saltext.vmware.clients import nsx_ip_pool
-from saltext.vmware.clients import nsx_nat
+from saltext.vcf.clients import nsx_dhcp
+from saltext.vcf.clients import nsx_edge_cluster
+from saltext.vcf.clients import nsx_ip_block
+from saltext.vcf.clients import nsx_ip_pool
+from saltext.vcf.clients import nsx_nat
 
 
 def test_nat_list_uses_t1_scope(opts, mocked_responses):

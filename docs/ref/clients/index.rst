@@ -1,10 +1,10 @@
-.. all-saltext.vmware.clients:
+.. all-saltext.vcf.clients:
 
 ______________
 Client Modules
 ______________
 
-.. currentmodule:: saltext.vmware.clients
+.. currentmodule:: saltext.vcf.clients
 
 .. autosummary::
     :toctree:

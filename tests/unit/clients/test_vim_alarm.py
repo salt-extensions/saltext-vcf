@@ -6,7 +6,7 @@ from unittest.mock import patch
 import pytest
 from pyVmomi import vim as pyvim
 
-from saltext.vmware.clients import vim_alarm
+from saltext.vcf.clients import vim_alarm
 
 
 @pytest.fixture
@@ -24,8 +24,8 @@ def fake_alarm():
 def test_list_returns_dicts(opts, fake_alarm):
     am = MagicMock()
     am.GetAlarm.return_value = [fake_alarm]
-    with patch("saltext.vmware.clients.vim_alarm.soap.alarm_manager", return_value=am):
-        with patch("saltext.vmware.clients.vim_alarm.soap.root_folder", return_value=object()):
+    with patch("saltext.vcf.clients.vim_alarm.soap.alarm_manager", return_value=am):
+        with patch("saltext.vcf.clients.vim_alarm.soap.root_folder", return_value=object()):
             result = vim_alarm.list_(opts)
     assert result == [
         {
@@ -42,8 +42,8 @@ def test_list_returns_dicts(opts, fake_alarm):
 def test_get_finds_by_name(opts, fake_alarm):
     am = MagicMock()
     am.GetAlarm.return_value = [fake_alarm]
-    with patch("saltext.vmware.clients.vim_alarm.soap.alarm_manager", return_value=am):
-        with patch("saltext.vmware.clients.vim_alarm.soap.root_folder", return_value=object()):
+    with patch("saltext.vcf.clients.vim_alarm.soap.alarm_manager", return_value=am):
+        with patch("saltext.vcf.clients.vim_alarm.soap.root_folder", return_value=object()):
             assert vim_alarm.get(opts, "Test Alarm")["key"] == "alarm-1"
             assert vim_alarm.get(opts, "Nope") is None
 
@@ -53,8 +53,8 @@ def test_create_calls_create_alarm(opts):
     am.CreateAlarm.return_value = MagicMock(_moId="alarm-99")
     # Use a real EventAlarmExpression — pyVmomi type-checks AlarmSpec.expression
     expression = pyvim.alarm.EventAlarmExpression()
-    with patch("saltext.vmware.clients.vim_alarm.soap.alarm_manager", return_value=am):
-        with patch("saltext.vmware.clients.vim_alarm.soap.root_folder", return_value="root"):
+    with patch("saltext.vcf.clients.vim_alarm.soap.alarm_manager", return_value=am):
+        with patch("saltext.vcf.clients.vim_alarm.soap.root_folder", return_value="root"):
             mo_id = vim_alarm.create(opts, "name", "desc", expression=expression)
     assert mo_id == "alarm-99"
     am.CreateAlarm.assert_called_once()
@@ -62,9 +62,9 @@ def test_create_calls_create_alarm(opts):
 
 def test_delete_calls_remove(opts):
     si = MagicMock()
-    with patch("saltext.vmware.clients.vim_alarm.soap.get_service_instance", return_value=si):
+    with patch("saltext.vcf.clients.vim_alarm.soap.get_service_instance", return_value=si):
         with patch(
-            "saltext.vmware.clients.vim_alarm.vim.alarm.Alarm"
+            "saltext.vcf.clients.vim_alarm.vim.alarm.Alarm"
         ) as Alarm:  # pylint: disable=invalid-name
             mo = MagicMock()
             Alarm.return_value = mo

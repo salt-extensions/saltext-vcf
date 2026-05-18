@@ -8,6 +8,6 @@ nsx
 sddc-manager
 vcf-operations
 vks
-vmware-vm-resource
+vcf-vm-resource
 states-declarative
 ```

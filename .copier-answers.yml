@@ -7,7 +7,7 @@ author_email: vcf-platform@broadcom.net
 coc_contact: vcf-platform@broadcom.net
 copyright_begin: 2025
 deploy_docs: rolling
-docs_url: https://salt-extensions.github.io/saltext-vmware/
+docs_url: https://salt-extensions.github.io/saltext-vcf/
 integration_name: VMware
 license: apache
 loaders:
@@ -19,15 +19,15 @@ os_support:
   - Linux
   - macOS
   - Windows
-package_name: vmware
-project_name: vmware
+package_name: vcf
+project_name: vcf
 python_requires: '3.10'
 relax_pylint: false
 salt_version: '3006'
-source_url: https://github.com/salt-extensions/saltext-vmware
+source_url: https://github.com/salt-extensions/saltext-vcf
 ssh_fixtures: false
 summary: Salt Extension for VMware VCF infrastructure management (vCenter, NSX, SDDC
   Manager, VCF Operations, VKS, VMSP)
 test_containers: false
-tracker_url: https://github.com/salt-extensions/saltext-vmware/issues
-url: https://github.com/salt-extensions/saltext-vmware
+tracker_url: https://github.com/salt-extensions/saltext-vcf/issues
+url: https://github.com/salt-extensions/saltext-vcf

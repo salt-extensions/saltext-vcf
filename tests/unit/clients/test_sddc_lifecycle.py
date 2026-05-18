@@ -2,13 +2,13 @@
 
 import responses
 
-from saltext.vmware.clients import sddc_bundles
-from saltext.vmware.clients import sddc_certificates
-from saltext.vmware.clients import sddc_manager
-from saltext.vmware.clients import sddc_network_pools
-from saltext.vmware.clients import sddc_releases
-from saltext.vmware.clients import sddc_upgrades
-from saltext.vmware.clients import sddc_vcenters
+from saltext.vcf.clients import sddc_bundles
+from saltext.vcf.clients import sddc_certificates
+from saltext.vcf.clients import sddc_manager
+from saltext.vcf.clients import sddc_network_pools
+from saltext.vcf.clients import sddc_releases
+from saltext.vcf.clients import sddc_upgrades
+from saltext.vcf.clients import sddc_vcenters
 
 
 def test_vcenters_list(opts, sddc_authed):

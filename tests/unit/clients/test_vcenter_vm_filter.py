@@ -2,7 +2,7 @@
 
 import responses
 
-from saltext.vmware.clients import vcenter_vm
+from saltext.vcf.clients import vcenter_vm
 
 
 def test_search_no_filters_omits_params(opts, vcenter_authed):

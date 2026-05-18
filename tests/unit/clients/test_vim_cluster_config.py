@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_cluster_config
+from saltext.vcf.clients import vim_cluster_config
 
 
 def _fake_cluster(drs=None, das=None, dpm=None, summary=None):

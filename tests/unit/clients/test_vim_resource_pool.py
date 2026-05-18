@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_resource_pool
+from saltext.vcf.clients import vim_resource_pool
 
 
 def _make_rp(mo_id="rp-1", name="Resources"):

@@ -2,8 +2,8 @@
 
 import responses
 
-from saltext.vmware.clients import vcenter_kms
-from saltext.vmware.clients import vcenter_supervisor
+from saltext.vcf.clients import vcenter_kms
+from saltext.vcf.clients import vcenter_supervisor
 
 
 def test_supervisor_list_clusters(opts, vcenter_authed):

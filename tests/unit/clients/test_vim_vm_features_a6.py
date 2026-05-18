@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_vm_features
+from saltext.vcf.clients import vim_vm_features
 
 
 def _fake_vm(**overrides):
@@ -108,7 +108,7 @@ def test_upgrade_hardware_explicit_version(factory, opts):
 
 
 def test_module_wrappers_delegate(factory, opts, monkeypatch):
-    from saltext.vmware.modules import vmware_vim_vm_features as m
+    from saltext.vcf.modules import vcf_vim_vm_features as m
 
     monkeypatch.setattr(m, "__opts__", opts, raising=False)
     assert m.get_features("vm-100")["hardwareVersion"] == "vmx-20"

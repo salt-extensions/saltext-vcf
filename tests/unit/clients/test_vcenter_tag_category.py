@@ -8,8 +8,8 @@ import json
 
 import responses
 
-from saltext.vmware.clients import vcenter_tag
-from saltext.vmware.clients import vcenter_tag_category as c
+from saltext.vcf.clients import vcenter_tag
+from saltext.vcf.clients import vcenter_tag_category as c
 
 BASE = "https://vc.test"
 CATEGORY = f"{BASE}/api/cis/tagging/category"
@@ -76,16 +76,16 @@ def test_tag_update(opts, vcenter_authed):
 
 
 def test_module_wrappers_delegate(opts, monkeypatch, vcenter_authed):
-    from saltext.vmware.modules import vmware_vcenter_tag
-    from saltext.vmware.modules import vmware_vcenter_tag_category
+    from saltext.vcf.modules import vcf_vcenter_tag
+    from saltext.vcf.modules import vcf_vcenter_tag_category
 
-    monkeypatch.setattr(vmware_vcenter_tag, "__opts__", opts, raising=False)
-    monkeypatch.setattr(vmware_vcenter_tag_category, "__opts__", opts, raising=False)
+    monkeypatch.setattr(vcf_vcenter_tag, "__opts__", opts, raising=False)
+    monkeypatch.setattr(vcf_vcenter_tag_category, "__opts__", opts, raising=False)
 
     vcenter_authed.add(responses.POST, CATEGORY, json="cat-z", status=200)
     vcenter_authed.add(responses.POST, TAG, json="tag-z", status=200)
     vcenter_authed.add(responses.PATCH, f"{TAG}/tag-z", json={}, status=200)
 
-    assert vmware_vcenter_tag_category.create("owner") == "cat-z"
-    assert vmware_vcenter_tag.create("prod", "cat-z") == "tag-z"
-    vmware_vcenter_tag.update("tag-z", {"description": "x"})
+    assert vcf_vcenter_tag_category.create("owner") == "cat-z"
+    assert vcf_vcenter_tag.create("prod", "cat-z") == "tag-z"
+    vcf_vcenter_tag.update("tag-z", {"description": "x"})

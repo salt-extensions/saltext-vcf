@@ -4,12 +4,12 @@ import json
 
 import responses
 
-from saltext.vmware.clients import nsx_lb_app_profile
-from saltext.vmware.clients import nsx_lb_monitor
-from saltext.vmware.clients import nsx_lb_persistence
-from saltext.vmware.clients import nsx_lb_pool
-from saltext.vmware.clients import nsx_lb_service
-from saltext.vmware.clients import nsx_lb_virtual_server
+from saltext.vcf.clients import nsx_lb_app_profile
+from saltext.vcf.clients import nsx_lb_monitor
+from saltext.vcf.clients import nsx_lb_persistence
+from saltext.vcf.clients import nsx_lb_pool
+from saltext.vcf.clients import nsx_lb_service
+from saltext.vcf.clients import nsx_lb_virtual_server
 
 BASE = "https://nsx.test"
 INFRA = f"{BASE}/policy/api/v1/infra"
@@ -123,13 +123,13 @@ def test_lb_persistence_get_or_none_404(opts, mocked_responses):
 
 
 def test_module_wrappers_delegate(opts, monkeypatch, mocked_responses):
-    from saltext.vmware.modules import vmware_nsx_lb
+    from saltext.vcf.modules import vcf_nsx_lb
 
-    monkeypatch.setattr(vmware_nsx_lb, "__opts__", opts, raising=False)
+    monkeypatch.setattr(vcf_nsx_lb, "__opts__", opts, raising=False)
 
     mocked_responses.add(responses.GET, f"{INFRA}/lb-services", json={"results": []}, status=200)
     mocked_responses.add(responses.PUT, f"{INFRA}/lb-pools/p-1", json={"id": "p-1"}, status=200)
-    assert vmware_nsx_lb.list_services() == {"results": []}
-    vmware_nsx_lb.create_pool("p-1", algorithm="LEAST_CONNECTION")
+    assert vcf_nsx_lb.list_services() == {"results": []}
+    vcf_nsx_lb.create_pool("p-1", algorithm="LEAST_CONNECTION")
     body = json.loads(mocked_responses.calls[-1].request.body)
     assert body["algorithm"] == "LEAST_CONNECTION"

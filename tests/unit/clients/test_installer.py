@@ -2,10 +2,10 @@
 
 import responses
 
-from saltext.vmware.clients import installer_bringup
-from saltext.vmware.clients import installer_credentials
-from saltext.vmware.clients import installer_logs
-from saltext.vmware.clients import installer_system
+from saltext.vcf.clients import installer_bringup
+from saltext.vcf.clients import installer_credentials
+from saltext.vcf.clients import installer_logs
+from saltext.vcf.clients import installer_system
 
 BASE = "https://installer.test"
 

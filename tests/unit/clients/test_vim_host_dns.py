@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_host_dns
+from saltext.vcf.clients import vim_host_dns
 
 
 def _dns(dhcp=False, hostname="esx-1", domain="example.com", servers=None, search=None, vnic=None):

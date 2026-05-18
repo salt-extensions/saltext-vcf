@@ -4,7 +4,7 @@ import json
 
 import responses
 
-from saltext.vmware.clients import nsx_ipsec_vpn
+from saltext.vcf.clients import nsx_ipsec_vpn
 
 BASE = "https://nsx.test"
 INFRA = f"{BASE}/policy/api/v1/infra"
@@ -115,7 +115,7 @@ def test_session_get_or_none_404(opts, mocked_responses):
 
 
 def test_module_wrappers_delegate(opts, monkeypatch, mocked_responses):
-    from saltext.vmware.modules import vmware_nsx_ipsec_vpn as m
+    from saltext.vcf.modules import vcf_nsx_ipsec_vpn as m
 
     monkeypatch.setattr(m, "__opts__", opts, raising=False)
 

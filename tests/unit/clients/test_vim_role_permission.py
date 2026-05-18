@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-from saltext.vmware.clients import vim_permission
-from saltext.vmware.clients import vim_role
+from saltext.vcf.clients import vim_permission
+from saltext.vcf.clients import vim_role
 
 
 def _role(role_id, name, system, privileges):
@@ -36,7 +36,7 @@ def test_role_list_shape(opts):
             _role(123, "MyRole", False, ["System.View"]),
         ]
     )
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         result = vim_role.list_(opts)
     assert {r["name"] for r in result} == {"Admin", "MyRole"}
     admin = next(r for r in result if r["name"] == "Admin")
@@ -46,7 +46,7 @@ def test_role_list_shape(opts):
 
 def test_role_get_found(opts):
     mgr = _mgr([_role(7, "MyRole", False, ["System.View"])])
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         result = vim_role.get(opts, "MyRole")
     assert result["role_id"] == 7
     assert result["system"] is False
@@ -54,21 +54,21 @@ def test_role_get_found(opts):
 
 def test_role_get_missing_raises(opts):
     mgr = _mgr([])
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         with pytest.raises(LookupError):
             vim_role.get(opts, "Nope")
 
 
 def test_role_get_or_none(opts):
     mgr = _mgr([])
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         assert vim_role.get_or_none(opts, "Nope") is None
 
 
 def test_role_create_returns_new_id(opts):
     mgr = MagicMock()
     mgr.AddAuthorizationRole.return_value = 99
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         new_id = vim_role.create(opts, "MyRole", ["System.View"])
     assert new_id == 99
     mgr.AddAuthorizationRole.assert_called_once_with(name="MyRole", privIds=["System.View"])
@@ -76,7 +76,7 @@ def test_role_create_returns_new_id(opts):
 
 def test_role_update_replaces_privileges(opts):
     mgr = _mgr([_role(7, "MyRole", False, ["System.View"])])
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         vim_role.update(opts, "MyRole", ["System.View", "System.Read"])
     mgr.UpdateAuthorizationRole.assert_called_once_with(
         roleId=7, newName="MyRole", privIds=["System.View", "System.Read"]
@@ -85,7 +85,7 @@ def test_role_update_replaces_privileges(opts):
 
 def test_role_rename_preserves_privileges(opts):
     mgr = _mgr([_role(7, "OldName", False, ["System.View"])])
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         vim_role.rename(opts, "OldName", "NewName")
     mgr.UpdateAuthorizationRole.assert_called_once_with(
         roleId=7, newName="NewName", privIds=["System.View"]
@@ -94,7 +94,7 @@ def test_role_rename_preserves_privileges(opts):
 
 def test_role_delete_forwards_fail_if_used(opts):
     mgr = _mgr([_role(7, "MyRole", False, [])])
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         vim_role.delete(opts, "MyRole", fail_if_used=False)
     mgr.RemoveAuthorizationRole.assert_called_once_with(roleId=7, failIfUsed=False)
 
@@ -107,7 +107,7 @@ def test_role_list_privileges(opts):
     priv.onParent = False
     mgr = MagicMock()
     mgr.privilegeList = [priv]
-    with patch("saltext.vmware.clients.vim_role.soap.authorization_manager", return_value=mgr):
+    with patch("saltext.vcf.clients.vim_role.soap.authorization_manager", return_value=mgr):
         out = vim_role.list_privileges(opts)
     assert out == [{"id": "System.View", "name": "View", "group": "System", "on_parent": False}]
 
@@ -132,9 +132,9 @@ def test_permission_list_attaches_role_name(opts):
     entity = MagicMock()
     entity._moId = "vm-100"
     with patch(
-        "saltext.vmware.clients.vim_permission.soap.authorization_manager", return_value=mgr
+        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
     ):
-        with patch("saltext.vmware.clients.vim_permission._resolve_entity", return_value=entity):
+        with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=entity):
             result = vim_permission.list_(opts, "vm-100")
     assert result[0]["role"] == "Admin"
     assert result[0]["principal"] == "alice@vsphere.local"
@@ -151,11 +151,11 @@ def test_permission_set_builds_permission_object(opts):
         return MagicMock(**kwargs)
 
     with patch(
-        "saltext.vmware.clients.vim_permission.soap.authorization_manager", return_value=mgr
+        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
     ):
-        with patch("saltext.vmware.clients.vim_permission._resolve_entity", return_value=entity):
+        with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=entity):
             with patch(
-                "saltext.vmware.clients.vim_permission.vim.AuthorizationManager.Permission",
+                "saltext.vcf.clients.vim_permission.vim.AuthorizationManager.Permission",
                 side_effect=fake_permission_ctor,
             ):
                 vim_permission.set_(opts, "vm-100", "alice@vsphere.local", "Admin")
@@ -169,10 +169,10 @@ def test_permission_set_unknown_role_raises(opts):
     mgr = MagicMock()
     mgr.roleList = []
     with patch(
-        "saltext.vmware.clients.vim_permission.soap.authorization_manager", return_value=mgr
+        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
     ):
         with patch(
-            "saltext.vmware.clients.vim_permission._resolve_entity", return_value=MagicMock()
+            "saltext.vcf.clients.vim_permission._resolve_entity", return_value=MagicMock()
         ):
             with pytest.raises(LookupError, match="role 'Admin' not found"):
                 vim_permission.set_(opts, "vm-100", "alice@vsphere.local", "Admin")
@@ -182,9 +182,9 @@ def test_permission_remove(opts):
     mgr = MagicMock()
     entity = MagicMock()
     with patch(
-        "saltext.vmware.clients.vim_permission.soap.authorization_manager", return_value=mgr
+        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
     ):
-        with patch("saltext.vmware.clients.vim_permission._resolve_entity", return_value=entity):
+        with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=entity):
             vim_permission.remove(opts, "vm-100", "alice@vsphere.local")
     mgr.RemoveEntityPermission.assert_called_once_with(
         entity=entity, user="alice@vsphere.local", isGroup=False
@@ -195,8 +195,8 @@ def test_permission_reset(opts):
     mgr = MagicMock()
     entity = MagicMock()
     with patch(
-        "saltext.vmware.clients.vim_permission.soap.authorization_manager", return_value=mgr
+        "saltext.vcf.clients.vim_permission.soap.authorization_manager", return_value=mgr
     ):
-        with patch("saltext.vmware.clients.vim_permission._resolve_entity", return_value=entity):
+        with patch("saltext.vcf.clients.vim_permission._resolve_entity", return_value=entity):
             vim_permission.reset(opts, "vm-100")
     mgr.ResetEntityPermissions.assert_called_once_with(entity=entity, permission=[])

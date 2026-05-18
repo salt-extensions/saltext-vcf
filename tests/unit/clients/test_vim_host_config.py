@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_host_config
+from saltext.vcf.clients import vim_host_config
 
 
 def _service(key, running=False, policy="off"):

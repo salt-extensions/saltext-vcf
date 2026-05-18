@@ -2,7 +2,7 @@
 
 import responses
 
-from saltext.vmware.resources import nsx as nx
+from saltext.vcf.resources import nsx as nx
 
 KEY = nx.CONTEXT_KEY
 

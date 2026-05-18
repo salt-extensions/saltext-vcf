@@ -7,7 +7,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_first_class_disk
+from saltext.vcf.clients import vim_first_class_disk
 
 
 def _make_fcd(fcd_id="vslm-1", name="disk", capacity_mb=1024, keep=False, ds_moid="ds-1"):

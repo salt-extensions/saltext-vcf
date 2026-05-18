@@ -10,13 +10,13 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_host_certificate
-from saltext.vmware.clients import vim_host_network
-from saltext.vmware.clients import vim_infra_profile
-from saltext.vmware.clients import vim_vasa
-from saltext.vmware.clients import vim_vm
-from saltext.vmware.clients import vim_vm_console
-from saltext.vmware.clients import vim_vm_devices
+from saltext.vcf.clients import vim_host_certificate
+from saltext.vcf.clients import vim_host_network
+from saltext.vcf.clients import vim_infra_profile
+from saltext.vcf.clients import vim_vasa
+from saltext.vcf.clients import vim_vm
+from saltext.vcf.clients import vim_vm_console
+from saltext.vcf.clients import vim_vm_devices
 
 # ---------------------------------------------------------------------------
 # Host certificate

@@ -7,11 +7,11 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "src/saltext/vmware/version.py"
+write_to = "src/saltext/vcf/version.py"
 write_to_template = "__version__ = \"{version}\"\n"
 
 [project]
-name = "saltext.vmware"
+name = "saltext.vcf"
 description = "Salt Extension for VMware VCF infrastructure management (vCenter, NSX, SDDC Manager, VCF Operations, VKS, VMSP)"
 authors = [
     {name = "VCF Platform Engineering", email = "vcf-platform@broadcom.net"},
@@ -49,10 +49,10 @@ file = "README.md"
 content-type = "text/markdown"
 
 [project.urls]
-Homepage = "https://github.com/salt-extensions/saltext-vmware"
-Documentation = "https://salt-extensions.github.io/saltext-vmware/"
-Source = "https://github.com/salt-extensions/saltext-vmware"
-Tracker = "https://github.com/salt-extensions/saltext-vmware/issues"
+Homepage = "https://github.com/salt-extensions/saltext-vcf"
+Documentation = "https://salt-extensions.github.io/saltext-vcf/"
+Source = "https://github.com/salt-extensions/saltext-vcf"
+Tracker = "https://github.com/salt-extensions/saltext-vcf/issues"
 
 [project.optional-dependencies]
 vcenter = ["vmware-vcenter>=9.0.0.0"]
@@ -110,7 +110,7 @@ tests = [
 ]
 
 [project.entry-points."salt.loader"]
-"saltext.vmware" = "saltext.vmware"
+"saltext.vcf" = "saltext.vcf"
 
 [tool.uv]
 # Salt's legacy setup.py requires old setuptools.
@@ -143,19 +143,19 @@ line-length = 100
 
 [tool.isort]
 force_single_line = true
-skip = ["src/saltext/vmware/__init__.py"]
+skip = ["src/saltext/vcf/__init__.py"]
 profile = "black"
 line_length = 100
 
 [tool.towncrier]
-package = "saltext.vmware"
+package = "saltext.vcf"
 filename = "CHANGELOG.md"
 template = "changelog/.template.jinja"
 directory = "changelog/"
 start_string = "# Changelog\n"
 underlines = ["", "", ""]
 title_format = "## {version} ({project_date})"
-issue_format = "[#{issue}](https://github.com/salt-extensions/saltext-vmware/issues/{issue})"
+issue_format = "[#{issue}](https://github.com/salt-extensions/saltext-vcf/issues/{issue})"
 
 [[tool.towncrier.type]]
 directory = "breaking"

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_vapp
+from saltext.vcf.clients import vim_vapp
 
 
 def _make_vapp(mo_id="vapp-1", name="prod"):

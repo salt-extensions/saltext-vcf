@@ -38,7 +38,7 @@ ignore_errors = True
 
 [paths]
 source =
-  saltext/vmware
-  src/saltext/vmware
+  saltext/vcf
+  src/saltext/vcf
 testsuite =
   tests/

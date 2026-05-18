@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from saltext.vmware.clients import vim_vm_guest
+from saltext.vcf.clients import vim_vm_guest
 
 
 def _process(pid, name="bash", owner="root", cmd_line="bash -c x", end_time=None, exit_code=None):
@@ -121,7 +121,7 @@ def test_upload_file_uses_returned_url(factories, opts, tmp_path):
     fake_resp.__exit__.return_value = False
     fake_resp.read.return_value = b""
     with patch(
-        "saltext.vmware.clients.vim_vm_guest.urllib.request.urlopen", return_value=fake_resp
+        "saltext.vcf.clients.vim_vm_guest.urllib.request.urlopen", return_value=fake_resp
     ) as urlopen:
         url = vim_vm_guest.upload_file(
             opts,
@@ -157,7 +157,7 @@ def test_download_file_writes_local(factories, opts, tmp_path):
     fake_resp.read.return_value = b"hello"
     dst = tmp_path / "got.txt"
     with patch(
-        "saltext.vmware.clients.vim_vm_guest.urllib.request.urlopen", return_value=fake_resp
+        "saltext.vcf.clients.vim_vm_guest.urllib.request.urlopen", return_value=fake_resp
     ):
         size = vim_vm_guest.download_file(
             opts,

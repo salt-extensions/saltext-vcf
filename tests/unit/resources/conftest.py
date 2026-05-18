@@ -70,7 +70,7 @@ def resources_pillar():
                     },
                 },
             },
-            "vmware_vm": {
+            "vcf_vm": {
                 "instances": {
                     "web-01": {
                         "vcenter": "mgmt-vc",

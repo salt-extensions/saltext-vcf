@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_host_kernel_module
+from saltext.vcf.clients import vim_host_kernel_module
 
 
 def _module(name, version="1.0", loaded=True, enabled=True, use_count=0, deps=None):

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_license
+from saltext.vcf.clients import vim_license
 
 
 def _make_lic(key="00000-X1-Y2", name="vSphere Std", used=2, total=10):

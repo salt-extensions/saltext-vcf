@@ -4,21 +4,21 @@ Install into the same Python environment Salt uses.
 
 :::{tab} salt-pip (Onedir)
 ```bash
-salt-pip install saltext-vmware
+salt-pip install saltext-vcf
 ```
 :::
 
 :::{tab} pip
 ```bash
-pip install saltext-vmware
+pip install saltext-vcf
 ```
 :::
 
 :::{tab} Salt state
 ```yaml
-Install saltext-vmware:
+Install saltext-vcf:
   pip.installed:
-    - name: saltext-vmware
+    - name: saltext-vcf
 ```
 :::
 
@@ -36,14 +36,14 @@ Base install pulls `pyvmomi` (SOAP/VMODL) and `pywbem` (CIM/WBEM).
 | `[vks]` | `saltext-kubernetes` + `kubernetes` for the VKS kubeconfig bridge |
 
 ```bash
-pip install 'saltext-vmware[vks]'
+pip install 'saltext-vcf[vks]'
 ```
 
 ## Verify
 
 ```bash
-salt-call --local sys.list_modules | grep vmware_
-salt-call --local sys.list_states  | grep vmware_
+salt-call --local sys.list_modules | grep vcf_
+salt-call --local sys.list_states  | grep vcf_
 ```
 
 Expect ~80 modules and ~27 states. If empty, the install landed in a
@@ -51,12 +51,12 @@ different Python than Salt's:
 
 ```bash
 salt-call --local config.get pip_target
-salt-call --local sys.doc vmware_vcenter_cluster
+salt-call --local sys.doc vcf_vcenter_cluster
 ```
 
 ## Salt version
 
-Targets Salt 3006+. The `saltext.vmware.resources` subpackage requires
+Targets Salt 3006+. The `saltext.vcf.resources` subpackage requires
 `salt.utils.resources`; on builds without it, `__virtual__` returns
 `False` and the resources framework integration is unavailable. The
 flat-pillar path still works.

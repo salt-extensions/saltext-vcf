@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_cluster_evc
+from saltext.vcf.clients import vim_cluster_evc
 
 
 @pytest.fixture

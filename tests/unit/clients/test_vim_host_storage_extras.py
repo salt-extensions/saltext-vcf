@@ -4,11 +4,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_host_acceptance
-from saltext.vmware.clients import vim_host_hyperthreading
-from saltext.vmware.clients import vim_host_snmp
-from saltext.vmware.clients import vim_host_storage
-from saltext.vmware.clients import vim_host_tcpip
+from saltext.vcf.clients import vim_host_acceptance
+from saltext.vcf.clients import vim_host_hyperthreading
+from saltext.vcf.clients import vim_host_snmp
+from saltext.vcf.clients import vim_host_storage
+from saltext.vcf.clients import vim_host_tcpip
 
 
 @pytest.fixture

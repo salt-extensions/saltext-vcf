@@ -1,4 +1,4 @@
-``saltext-vmware``: Salt for VMware Cloud Foundation
+``saltext-vcf``: Salt for VMware Cloud Foundation
 =====================================================
 
 Salt extension for VCF 9.x. Covers vCenter, NSX, SDDC Manager, VCF
@@ -34,11 +34,11 @@ Quickstart
 
 .. code-block:: bash
 
-   pip install saltext.vmware
+   pip install saltext.vcf
 
 .. code-block:: yaml
 
-   saltext.vmware:
+   saltext.vcf:
      vcenter:
        host: mgmt-vc.example.com
        username: administrator@vsphere.local
@@ -47,9 +47,9 @@ Quickstart
 
 .. code-block:: bash
 
-   salt-call vmware_vcenter_cluster.list_
-   salt-call vmware_vcfops_resource.list_ page_size=10
-   salt-call vmware_sddc_domain.list_
+   salt-call vcf_vcenter_cluster.list_
+   salt-call vcf_vcfops_resource.list_ page_size=10
+   salt-call vcf_sddc_domain.list_
 
 See :doc:`topics/configuration` for the full pillar shape.
 

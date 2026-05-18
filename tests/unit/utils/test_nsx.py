@@ -1,9 +1,9 @@
-"""Tests for saltext.vmware.utils.nsx."""
+"""Tests for saltext.vcf.utils.nsx."""
 
 import pytest
 import responses
 
-from saltext.vmware.utils import nsx
+from saltext.vcf.utils import nsx
 
 
 def test_get_config_default(opts):

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_scheduled_task
+from saltext.vcf.clients import vim_scheduled_task
 
 
 def _make_task(mo_id, name, enabled=True):

@@ -1,10 +1,10 @@
-.. all-saltext.vmware.utils:
+.. all-saltext.vcf.utils:
 
 _________
 Utilities
 _________
 
-.. currentmodule:: saltext.vmware.utils
+.. currentmodule:: saltext.vcf.utils
 
 .. autosummary::
     :toctree:

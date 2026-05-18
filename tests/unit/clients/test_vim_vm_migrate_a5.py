@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_vm_migrate
+from saltext.vcf.clients import vim_vm_migrate
 
 
 def _fake_vm():
@@ -92,7 +92,7 @@ def test_relocate_with_disk_format(factory, opts):
 
 
 def test_module_wrappers_delegate(factory, opts, monkeypatch):
-    from saltext.vmware.modules import vmware_vim_vm_migrate as m
+    from saltext.vcf.modules import vcf_vim_vm_migrate as m
 
     monkeypatch.setattr(m, "__opts__", opts, raising=False)
     assert m.migrate("vm-100", host="esxi-2") == "task-mig"

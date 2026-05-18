@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_dvs_portgroup
+from saltext.vcf.clients import vim_dvs_portgroup
 
 
 def _vlan_pg(

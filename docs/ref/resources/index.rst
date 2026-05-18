@@ -1,10 +1,10 @@
-.. all-saltext.vmware.resources:
+.. all-saltext.vcf.resources:
 
 ______________________________
 Salt Resources Framework Types
 ______________________________
 
-.. currentmodule:: saltext.vmware.resources
+.. currentmodule:: saltext.vcf.resources
 
 .. autosummary::
     :toctree:
@@ -14,4 +14,4 @@ ______________________________
     sddc
     vcenter
     vcfops
-    vmware_vm
+    vcf_vm

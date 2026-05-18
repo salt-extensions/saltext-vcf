@@ -4,7 +4,7 @@ import json
 
 import responses
 
-from saltext.vmware.clients import fleet_password
+from saltext.vcf.clients import fleet_password
 
 BASE = "https://sm.test/api/fleet-management/password-management"
 

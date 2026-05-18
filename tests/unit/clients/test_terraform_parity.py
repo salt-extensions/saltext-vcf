@@ -17,11 +17,11 @@ import json
 
 import responses
 
-from saltext.vmware.clients import nsx_ids
-from saltext.vmware.clients import nsx_l2_vpn
-from saltext.vmware.clients import nsx_qos_profile
-from saltext.vmware.clients import vcenter_compute_policy
-from saltext.vmware.clients import vcenter_lcm_depot
+from saltext.vcf.clients import nsx_ids
+from saltext.vcf.clients import nsx_l2_vpn
+from saltext.vcf.clients import nsx_qos_profile
+from saltext.vcf.clients import vcenter_compute_policy
+from saltext.vcf.clients import vcenter_lcm_depot
 
 NSX_BASE = "https://nsx.test"
 INFRA = f"{NSX_BASE}/policy/api/v1/infra"

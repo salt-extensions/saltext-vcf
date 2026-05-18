@@ -10,7 +10,7 @@ through SDDC Manager's `/v1/vcf-services`.
 
 | Module | Purpose |
 |---|---|
-| `vmware_vcf_services` | List/get the VMSP service catalog mediated by SDDC Manager |
+| `vcf_vcf_services` | List/get the VMSP service catalog mediated by SDDC Manager |
 
 No separate `vmsp:` pillar block; uses the existing `sddc_manager`
 connection.
@@ -33,18 +33,18 @@ Each entry: `id`, `name`, `version`, `status` (`UP`, `DOWN`,
 ## Examples
 
 ```bash
-salt-call vmware_vcf_services.list_
-salt-call vmware_vcf_services.get <uuid>
-salt-call vmware_vcf_services.get_by_name COMMON_SERVICES
-salt-call vmware_vcf_services.status_map
-salt-call vmware_vcf_services.healthy
+salt-call vcf_vcf_services.list_
+salt-call vcf_vcf_services.get <uuid>
+salt-call vcf_vcf_services.get_by_name COMMON_SERVICES
+salt-call vcf_vcf_services.status_map
+salt-call vcf_vcf_services.healthy
 ```
 
 ## State (read-only)
 
 ```yaml
 Assert COMMON_SERVICES UP:
-  vmware_vcf_services.healthy:
+  vcf_vcf_services.healthy:
     - name: COMMON_SERVICES
 ```
 

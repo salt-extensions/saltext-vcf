@@ -4,7 +4,7 @@ Each minion can publish multiple addressable instances of a managed
 component as Salt resources. Operators then target subsets by grain.
 
 The Resources framework requires `salt.utils.resources`. On builds
-without it, the `saltext.vmware.resources` subpackage is dormant
+without it, the `saltext.vcf.resources` subpackage is dormant
 (`__virtual__` returns `False`); use the flat-pillar config from
 [Configuration](configuration.md) instead.
 
@@ -17,7 +17,7 @@ without it, the `saltext.vmware.resources` subpackage is dormant
 | `nsx` | NSX Manager | `resources.nsx.instances` |
 | `vcfops` | VCF Operations appliance | `resources.vcf_ops.instances` |
 | `esxi` | Standalone ESXi host | `resources.esxi.instances` |
-| `vmware_vm` | Virtual machine (references a `vcenter` id) | `resources.vmware_vm.instances` |
+| `vcf_vm` | Virtual machine (references a `vcenter` id) | `resources.vcf_vm.instances` |
 
 ## Pillar
 
@@ -63,20 +63,20 @@ resources:
 
 Each resource publishes `resource_type`, `resource_id`, and `host` as
 grains, plus type-specific live fields (e.g. `name`, `power_state` for
-`vmware_vm`).
+`vcf_vm`).
 
 ```bash
 # Minions managing vCenter resource 'mgmt-vc'
-salt -C 'T@vcenter:mgmt-vc' vmware_vcenter_cluster.list_
+salt -C 'T@vcenter:mgmt-vc' vcf_vcenter_cluster.list_
 
 # VMs labeled tier=production
-salt -G 'tier:production' vmware_vm.power_off
+salt -G 'tier:production' vcf_vm.power_off
 
 # VMs labeled app=web (across every minion's vCenters)
-salt -G 'app:web' vmware_vm.snapshot_create name=before-deploy
+salt -G 'app:web' vcf_vm.snapshot_create name=before-deploy
 ```
 
-## `vmware_vm` resource
+## `vcf_vm` resource
 
 Each entry references a `vcenter` instance by id; one minion can
 manage VMs across multiple vCenters.
@@ -89,7 +89,7 @@ resources:
         host: mgmt-vc.example.com
         username: administrator@vsphere.local
         password: secret
-  vmware_vm:
+  vcf_vm:
     instances:
       web-prod-01:
         vcenter: mgmt-vc
@@ -127,7 +127,7 @@ VM auto-discovery from vCenter (phase 10b) is deferred pending
 
 The Supervisor cluster's Kubernetes API is consumed via
 `saltext-kubernetes`. After
-`vmware_vks.fetch_kubeconfig(<cluster_id>)`:
+`vcf_vks.fetch_kubeconfig(<cluster_id>)`:
 
 ```yaml
 resources:

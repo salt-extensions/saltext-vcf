@@ -13,9 +13,9 @@ from unittest.mock import patch
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_cluster_overrides
-from saltext.vmware.clients import vim_datastore_cluster
-from saltext.vmware.clients import vim_host_datastore
+from saltext.vcf.clients import vim_cluster_overrides
+from saltext.vcf.clients import vim_datastore_cluster
+from saltext.vcf.clients import vim_host_datastore
 
 # ---------------------------------------------------------------------------
 # Cluster overrides
@@ -111,7 +111,7 @@ def test_drs_vm_list_shape(cluster_factory, opts):
 
 
 def test_module_wrappers_delegate(cluster_factory, opts, monkeypatch):
-    from saltext.vmware.modules import vmware_vim_cluster_overrides as m
+    from saltext.vcf.modules import vcf_vim_cluster_overrides as m
 
     monkeypatch.setattr(m, "__opts__", opts, raising=False)
     assert m.drs_vm_set("test-cluster", "vm-1", "manual") == "task-x"
@@ -263,7 +263,7 @@ def test_sdrs_rule_create_anti_affinity(pod_factory, opts):
     mgr = MagicMock()
     mgr.ConfigureStorageDrsForPod_Task.return_value = MagicMock(_moId="task-sdrs-rule")
     with patch(
-        "saltext.vmware.clients.vim_datastore_cluster._sdrs_mgr",
+        "saltext.vcf.clients.vim_datastore_cluster._sdrs_mgr",
         return_value=mgr,
     ):
         out = vim_datastore_cluster.sdrs_rule_create_vm_anti_affinity(

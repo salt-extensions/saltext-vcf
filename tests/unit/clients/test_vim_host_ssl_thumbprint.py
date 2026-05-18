@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from saltext.vmware.clients import vim_host_ssl_thumbprint
+from saltext.vcf.clients import vim_host_ssl_thumbprint
 
 
 @pytest.fixture
@@ -34,11 +34,11 @@ def test_fetch_returns_colon_separated_sha1():
     fake_sock.__enter__ = MagicMock(return_value=fake_sock)
     fake_sock.__exit__ = MagicMock(return_value=False)
     with patch(
-        "saltext.vmware.clients.vim_host_ssl_thumbprint.ssl.create_default_context",
+        "saltext.vcf.clients.vim_host_ssl_thumbprint.ssl.create_default_context",
         return_value=fake_ctx,
     ):
         with patch(
-            "saltext.vmware.clients.vim_host_ssl_thumbprint.socket.create_connection",
+            "saltext.vcf.clients.vim_host_ssl_thumbprint.socket.create_connection",
             return_value=fake_sock,
         ):
             tp = vim_host_ssl_thumbprint.fetch("esx-1")
@@ -49,7 +49,7 @@ def test_fetch_returns_colon_separated_sha1():
 
 def test_validate_matches(opts, host_factory):
     with patch(
-        "saltext.vmware.clients.vim_host_ssl_thumbprint.fetch",
+        "saltext.vcf.clients.vim_host_ssl_thumbprint.fetch",
         return_value="AA:BB:CC",
     ):
         out = vim_host_ssl_thumbprint.validate(opts, "esx-1")
@@ -58,7 +58,7 @@ def test_validate_matches(opts, host_factory):
 
 def test_validate_mismatch(opts, host_factory):
     with patch(
-        "saltext.vmware.clients.vim_host_ssl_thumbprint.fetch",
+        "saltext.vcf.clients.vim_host_ssl_thumbprint.fetch",
         return_value="DD:EE:FF",
     ):
         out = vim_host_ssl_thumbprint.validate(opts, "esx-1")
@@ -67,7 +67,7 @@ def test_validate_mismatch(opts, host_factory):
 
 def test_validate_unreachable(opts, host_factory):
     with patch(
-        "saltext.vmware.clients.vim_host_ssl_thumbprint.fetch",
+        "saltext.vcf.clients.vim_host_ssl_thumbprint.fetch",
         side_effect=OSError("connection refused"),
     ):
         out = vim_host_ssl_thumbprint.validate(opts, "esx-1")

@@ -2,7 +2,7 @@
 
 import responses
 
-from saltext.vmware.clients import sddc_vcf_services
+from saltext.vcf.clients import sddc_vcf_services
 
 SAMPLE = {
     "elements": [

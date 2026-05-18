@@ -1,8 +1,8 @@
-"""Tests for saltext.vmware.utils.cim (pywbem wrapper)."""
+"""Tests for saltext.vcf.utils.cim (pywbem wrapper)."""
 
 from unittest.mock import patch
 
-from saltext.vmware.utils import cim
+from saltext.vcf.utils import cim
 
 
 def test_get_config_inherits_esxi_pillar(opts):
@@ -13,14 +13,14 @@ def test_get_config_inherits_esxi_pillar(opts):
 
 
 def test_get_config_respects_custom_port(opts):
-    opts["pillar"]["saltext.vmware"]["esxi"]["cim_port"] = 5988
+    opts["pillar"]["saltext.vcf"]["esxi"]["cim_port"] = 5988
     cfg = cim.get_config(opts)
     assert cfg["cim_port"] == 5988
 
 
 def test_get_connection_caches(opts):
     with patch(
-        "saltext.vmware.utils.cim.pywbem.WBEMConnection"
+        "saltext.vcf.utils.cim.pywbem.WBEMConnection"
     ) as Conn:  # pylint: disable=invalid-name
         Conn.return_value = object()
         c1 = cim.get_connection(opts)
@@ -31,7 +31,7 @@ def test_get_connection_caches(opts):
 
 def test_get_connection_passes_url_and_creds(opts):
     with patch(
-        "saltext.vmware.utils.cim.pywbem.WBEMConnection"
+        "saltext.vcf.utils.cim.pywbem.WBEMConnection"
     ) as Conn:  # pylint: disable=invalid-name
         cim.get_connection(opts)
     args, kwargs = Conn.call_args
@@ -42,7 +42,7 @@ def test_get_connection_passes_url_and_creds(opts):
 
 def test_invalidate_clears_cache(opts):
     with patch(
-        "saltext.vmware.utils.cim.pywbem.WBEMConnection"
+        "saltext.vcf.utils.cim.pywbem.WBEMConnection"
     ) as Conn:  # pylint: disable=invalid-name
         Conn.return_value = object()
         cim.get_connection(opts)

@@ -3,17 +3,17 @@
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-from saltext.vmware.utils import vsan
+from saltext.vcf.utils import vsan
 
 
 def test_get_stub_caches(opts):
     fake_si = MagicMock()
     fake_si._stub.cookie = "cookie-1"  # noqa: SLF001
     with patch(
-        "saltext.vmware.utils.vsan.vim_utils.get_service_instance",
+        "saltext.vcf.utils.vsan.vim_utils.get_service_instance",
         return_value=fake_si,
     ):
-        with patch("saltext.vmware.utils.vsan.SoapStubAdapter") as adapter:
+        with patch("saltext.vcf.utils.vsan.SoapStubAdapter") as adapter:
             adapter.return_value = MagicMock()
             stub1 = vsan.get_stub(opts)
             stub2 = vsan.get_stub(opts)
@@ -25,11 +25,11 @@ def test_get_stub_reuses_session_cookie(opts):
     fake_si = MagicMock()
     fake_si._stub.cookie = "session-cookie-X"  # noqa: SLF001
     with patch(
-        "saltext.vmware.utils.vsan.vim_utils.get_service_instance",
+        "saltext.vcf.utils.vsan.vim_utils.get_service_instance",
         return_value=fake_si,
     ):
         with patch(
-            "saltext.vmware.utils.vsan.SoapStubAdapter"
+            "saltext.vcf.utils.vsan.SoapStubAdapter"
         ) as Adapter:  # pylint: disable=invalid-name
             stub_instance = MagicMock()
             Adapter.return_value = stub_instance
@@ -44,10 +44,10 @@ def test_invalidate_clears_cache(opts):
     fake_si = MagicMock()
     fake_si._stub.cookie = "c"  # noqa: SLF001
     with patch(
-        "saltext.vmware.utils.vsan.vim_utils.get_service_instance",
+        "saltext.vcf.utils.vsan.vim_utils.get_service_instance",
         return_value=fake_si,
     ):
-        with patch("saltext.vmware.utils.vsan.SoapStubAdapter"):
+        with patch("saltext.vcf.utils.vsan.SoapStubAdapter"):
             vsan.get_stub(opts)
             assert vsan._VSAN_STUB_CACHE
             vsan.invalidate_stub(opts)
@@ -58,11 +58,11 @@ def test_managed_object_accessors_use_stub(opts):
     fake_si = MagicMock()
     fake_si._stub.cookie = "c"  # noqa: SLF001
     with patch(
-        "saltext.vmware.utils.vsan.vim_utils.get_service_instance",
+        "saltext.vcf.utils.vsan.vim_utils.get_service_instance",
         return_value=fake_si,
     ):
         with patch(
-            "saltext.vmware.utils.vsan.SoapStubAdapter"
+            "saltext.vcf.utils.vsan.SoapStubAdapter"
         ) as Adapter:  # pylint: disable=invalid-name
             stub = MagicMock()
             Adapter.return_value = stub

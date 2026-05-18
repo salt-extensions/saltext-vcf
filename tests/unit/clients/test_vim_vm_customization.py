@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_vm_customization
+from saltext.vcf.clients import vim_vm_customization
 
 # ---------- linux_spec ----------
 
@@ -94,7 +94,7 @@ def test_windows_spec_time_zone_passed():
 
 
 def test_apply_calls_customize_vm_task(monkeypatch, opts):
-    from saltext.vmware.clients import vim_vm
+    from saltext.vcf.clients import vim_vm
 
     vm = MagicMock()
     vm.CustomizeVM_Task.return_value = MagicMock(_moId="task-cust-1")

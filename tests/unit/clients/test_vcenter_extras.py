@@ -2,10 +2,10 @@
 
 import responses
 
-from saltext.vmware.clients import vcenter_appliance
-from saltext.vmware.clients import vcenter_datastore
-from saltext.vmware.clients import vcenter_network
-from saltext.vmware.clients import vcenter_storage_policy
+from saltext.vcf.clients import vcenter_appliance
+from saltext.vcf.clients import vcenter_datastore
+from saltext.vcf.clients import vcenter_network
+from saltext.vcf.clients import vcenter_storage_policy
 
 
 def test_datastore_list(opts, vcenter_authed):

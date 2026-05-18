@@ -2,11 +2,11 @@
 
 import responses
 
-from saltext.vmware.clients import vcfops_adapter
-from saltext.vmware.clients import vcfops_alert
-from saltext.vmware.clients import vcfops_policy
-from saltext.vmware.clients import vcfops_resource
-from saltext.vmware.clients import vcfops_version
+from saltext.vcf.clients import vcfops_adapter
+from saltext.vcf.clients import vcfops_alert
+from saltext.vcf.clients import vcfops_policy
+from saltext.vcf.clients import vcfops_resource
+from saltext.vcf.clients import vcfops_version
 
 
 def test_version(opts, vcfops_authed):

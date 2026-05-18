@@ -2,7 +2,7 @@
 
 import responses
 
-from saltext.vmware.resources import vcfops as op
+from saltext.vcf.resources import vcfops as op
 
 KEY = op.CONTEXT_KEY
 

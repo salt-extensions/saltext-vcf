@@ -1,10 +1,10 @@
 # Configuration
 
-All connection details live under `saltext.vmware` in pillar, one
+All connection details live under `saltext.vcf` in pillar, one
 block per component.
 
 ```yaml
-saltext.vmware:
+saltext.vcf:
   vcenter:
     host: mgmt-vc.example.com
     username: administrator@vsphere.local
@@ -37,17 +37,17 @@ saltext.vmware:
 
 | Block | Auth | Used by |
 |---|---|---|
-| `vcenter` | `POST /api/session` → session token | `vmware_vcenter_*`, `vmware_vsan_*`, `vmware_vim_*` |
-| `sddc_manager` | `POST /v1/tokens` → bearer JWT | `vmware_sddc_*`, `vmware_vcf_services` |
-| `nsx` | HTTP Basic | `vmware_nsx_*` (Policy + Management APIs) |
-| `vcf_ops` | `POST /suite-api/api/auth/token/acquire` → `Authorization: vRealizeOpsToken <token>` | `vmware_vcfops_*` |
-| `esxi` | `POST /api/session` (same shape as vCenter) | `vmware_esxi_*` |
+| `vcenter` | `POST /api/session` → session token | `vcf_vcenter_*`, `vcf_vsan_*`, `vcf_vim_*` |
+| `sddc_manager` | `POST /v1/tokens` → bearer JWT | `vcf_sddc_*`, `vcf_vcf_services` |
+| `nsx` | HTTP Basic | `vcf_nsx_*` (Policy + Management APIs) |
+| `vcf_ops` | `POST /suite-api/api/auth/token/acquire` → `Authorization: vRealizeOpsToken <token>` | `vcf_vcfops_*` |
+| `esxi` | `POST /api/session` (same shape as vCenter) | `vcf_esxi_*` |
 
 Session tokens cache per `(host, username)` for the Python process
 lifetime. Call `<util>.invalidate_session(opts)` to force re-auth.
 
 The `esxi` block applies only to direct-mode hosts. vCenter-managed
-ESXi has its direct REST locked; use `vmware_cluster_config` (Cluster
+ESXi has its direct REST locked; use `vcf_cluster_config` (Cluster
 Configuration Profile API) instead.
 
 For `vcf_ops`, override `auth_source` when authenticating against a
@@ -56,10 +56,10 @@ non-local IdP source.
 ## Profiles
 
 `profile=<name>` selects a named override under
-`saltext.vmware.profiles.<name>`:
+`saltext.vcf.profiles.<name>`:
 
 ```yaml
-saltext.vmware:
+saltext.vcf:
   vcenter:
     host: mgmt-vc-prod.example.com
     username: administrator@vsphere.local
@@ -73,8 +73,8 @@ saltext.vmware:
 ```
 
 ```bash
-salt-call vmware_vcenter_cluster.list_
-salt-call vmware_vcenter_cluster.list_ profile=staging
+salt-call vcf_vcenter_cluster.list_
+salt-call vcf_vcenter_cluster.list_ profile=staging
 ```
 
 ## Multi-instance fleets

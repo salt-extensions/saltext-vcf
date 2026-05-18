@@ -3,7 +3,7 @@
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
-from saltext.vmware.clients import vsan_fault_domain
+from saltext.vcf.clients import vsan_fault_domain
 
 
 def _make_cluster():
@@ -31,7 +31,7 @@ def test_list_returns_assignments(opts):
     h2.configManager.vsanSystem.config.clusterInfo.nodeUuid = "node-uuid-2"
 
     with patch(
-        "saltext.vmware.clients.vsan_fault_domain.vsan.find_cluster",
+        "saltext.vcf.clients.vsan_fault_domain.vsan.find_cluster",
         return_value=cluster,
     ):
         result = vsan_fault_domain.list_(opts, "domain-c9")
@@ -69,21 +69,21 @@ def test_assign_builds_reconfig_spec(opts):
         return m
 
     with patch(
-        "saltext.vmware.clients.vsan_fault_domain.vsan.find_cluster",
+        "saltext.vcf.clients.vsan_fault_domain.vsan.find_cluster",
         return_value=cluster,
     ):
         with patch(
-            "saltext.vmware.clients.vsan_fault_domain.vsan.cluster_config_system",
+            "saltext.vcf.clients.vsan_fault_domain.vsan.cluster_config_system",
         ) as cs:
             cs.return_value.VsanClusterReconfig.return_value = task
             with patch(
-                "saltext.vmware.clients.vsan_fault_domain.vim.cluster.VsanFaultDomainSpec",
+                "saltext.vcf.clients.vsan_fault_domain.vim.cluster.VsanFaultDomainSpec",
                 side_effect=fd_spec_constructor,
             ):
                 with patch(
-                    "saltext.vmware.clients.vsan_fault_domain.vim.cluster.VsanFaultDomainsConfigSpec"
+                    "saltext.vcf.clients.vsan_fault_domain.vim.cluster.VsanFaultDomainsConfigSpec"
                 ):
-                    with patch("saltext.vmware.clients.vsan_fault_domain.vim.vsan.ReconfigSpec"):
+                    with patch("saltext.vcf.clients.vsan_fault_domain.vim.vsan.ReconfigSpec"):
                         result = vsan_fault_domain.assign(
                             opts,
                             "domain-c9",

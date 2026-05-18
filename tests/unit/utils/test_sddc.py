@@ -1,9 +1,9 @@
-"""Tests for saltext.vmware.utils.sddc."""
+"""Tests for saltext.vcf.utils.sddc."""
 
 import pytest
 import responses
 
-from saltext.vmware.utils import sddc
+from saltext.vcf.utils import sddc
 
 
 def test_get_config_default(opts):

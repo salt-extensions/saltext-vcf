@@ -2,7 +2,7 @@
 
 import responses
 
-from saltext.vmware.clients import vcenter_resource_pool
+from saltext.vcf.clients import vcenter_resource_pool
 
 
 def test_tree_single_root_with_children(opts, vcenter_authed):

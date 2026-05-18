@@ -5,14 +5,14 @@ import time
 import pytest
 import responses
 
-from saltext.vmware.clients import sddc_avn
-from saltext.vmware.clients import sddc_cluster_ops
-from saltext.vmware.clients import sddc_domain
-from saltext.vmware.clients import sddc_edge_clusters
-from saltext.vmware.clients import sddc_license_keys
-from saltext.vmware.clients import sddc_system
-from saltext.vmware.clients import sddc_tasks
-from saltext.vmware.clients import sddc_users
+from saltext.vcf.clients import sddc_avn
+from saltext.vcf.clients import sddc_cluster_ops
+from saltext.vcf.clients import sddc_domain
+from saltext.vcf.clients import sddc_edge_clusters
+from saltext.vcf.clients import sddc_license_keys
+from saltext.vcf.clients import sddc_system
+from saltext.vcf.clients import sddc_tasks
+from saltext.vcf.clients import sddc_users
 
 SM = "https://sm.test"
 

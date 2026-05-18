@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from saltext.vmware.clients import vsan_disk
+from saltext.vcf.clients import vsan_disk
 
 
 @pytest.fixture
@@ -25,7 +25,7 @@ def test_host_status(opts, fake_host):
     info.memberUuid = ["m1", "m2"]
     fake_host.configManager.vsanSystem.QueryHostStatus.return_value = info
 
-    with patch("saltext.vmware.clients.vsan_disk._find_host", return_value=fake_host):
+    with patch("saltext.vcf.clients.vsan_disk._find_host", return_value=fake_host):
         result = vsan_disk.host_status(opts, "esx-0-00.example.com")
     assert result["node_uuid"] == "node-uuid-1"
     assert result["health"] == "Healthy"
@@ -42,7 +42,7 @@ def test_host_config(opts, fake_host):
     cfg.faultDomainInfo.name = "rack-A"
     cfg.vsanEsaEnabled = True
 
-    with patch("saltext.vmware.clients.vsan_disk._find_host", return_value=fake_host):
+    with patch("saltext.vcf.clients.vsan_disk._find_host", return_value=fake_host):
         result = vsan_disk.host_config(opts, "esx-0-00.example.com")
     assert result["enabled"] is True
     assert result["cluster_uuid"] == "cluster-uuid-1"
@@ -59,7 +59,7 @@ def test_add_disks_resolves_canonical_names(opts, fake_host):
     task._moId = "task-123"  # noqa: SLF001
     fake_host.configManager.vsanSystem.AddDisks_Task.return_value = task
 
-    with patch("saltext.vmware.clients.vsan_disk._find_host", return_value=fake_host):
+    with patch("saltext.vcf.clients.vsan_disk._find_host", return_value=fake_host):
         result = vsan_disk.add_disks(opts, "esx-0-00.example.com", ["naa.aaa"])
 
     assert result == "task-123"
@@ -70,6 +70,6 @@ def test_add_disks_resolves_canonical_names(opts, fake_host):
 def test_add_disks_raises_on_missing(opts, fake_host):
     fake_host.configManager.storageSystem.storageDeviceInfo.scsiLun = []
 
-    with patch("saltext.vmware.clients.vsan_disk._find_host", return_value=fake_host):
+    with patch("saltext.vcf.clients.vsan_disk._find_host", return_value=fake_host):
         with pytest.raises(LookupError):
             vsan_disk.add_disks(opts, "esx-0-00.example.com", ["naa.aaa"])

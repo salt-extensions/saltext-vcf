@@ -2,12 +2,12 @@
 
 import responses
 
-from saltext.vmware.clients import nsx_cluster
-from saltext.vmware.clients import nsx_compute_collection
-from saltext.vmware.clients import nsx_node
-from saltext.vmware.clients import nsx_role_binding
-from saltext.vmware.clients import nsx_transport_node
-from saltext.vmware.clients import nsx_transport_zone
+from saltext.vcf.clients import nsx_cluster
+from saltext.vcf.clients import nsx_compute_collection
+from saltext.vcf.clients import nsx_node
+from saltext.vcf.clients import nsx_role_binding
+from saltext.vcf.clients import nsx_transport_node
+from saltext.vcf.clients import nsx_transport_zone
 
 
 def test_node_get(opts, mocked_responses):

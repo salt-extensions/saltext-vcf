@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_host_passthrough
+from saltext.vcf.clients import vim_host_passthrough
 
 
 def _pci(pid, enabled=False, active=False, capable=True, vendor_name="ACME"):

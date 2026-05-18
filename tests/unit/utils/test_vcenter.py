@@ -1,9 +1,9 @@
-"""Tests for saltext.vmware.utils.vcenter."""
+"""Tests for saltext.vcf.utils.vcenter."""
 
 import pytest
 import responses
 
-from saltext.vmware.utils import vcenter
+from saltext.vcf.utils import vcenter
 
 
 def test_get_config_default(opts):
@@ -23,7 +23,7 @@ def test_get_config_profile(opts):
 
 
 def test_get_config_aliases(opts):
-    opts["pillar"]["saltext.vmware"]["vcenter"] = {
+    opts["pillar"]["saltext.vcf"]["vcenter"] = {
         "hostname": "alias.test",
         "user": "alice",
         "password": "x",

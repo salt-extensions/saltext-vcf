@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from saltext.vmware.clients import vim_vm_power
-from saltext.vmware.clients import vim_vm_tools
+from saltext.vcf.clients import vim_vm_power
+from saltext.vcf.clients import vim_vm_tools
 
 
 def _fake_vm(power_state="poweredOn", name="test-vm", moid="vm-100"):
@@ -115,7 +115,7 @@ def test_mount_unmount_tools_installer(vm_factory, opts):
 
 
 def test_module_wrappers_delegate(vm_factory, opts, monkeypatch):
-    from saltext.vmware.modules import vmware_vim_vm_power as m
+    from saltext.vcf.modules import vcf_vim_vm_power as m
 
     monkeypatch.setattr(m, "__opts__", opts, raising=False)
     assert m.get_power_state("vm-100") == "poweredOn"

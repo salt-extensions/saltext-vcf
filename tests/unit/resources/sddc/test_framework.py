@@ -2,7 +2,7 @@
 
 import responses
 
-from saltext.vmware.resources import sddc as sm
+from saltext.vcf.resources import sddc as sm
 
 KEY = sm.CONTEXT_KEY
 

@@ -4,7 +4,7 @@ import json
 
 import responses
 
-from saltext.vmware.clients import vcenter_content_library as c
+from saltext.vcf.clients import vcenter_content_library as c
 
 BASE = "https://vc.test"
 
@@ -264,7 +264,7 @@ def test_vm_template_deploy(opts, vcenter_authed):
 
 def test_module_wrappers_delegate(opts, monkeypatch, vcenter_authed):
     """Smoke-test the execution module thin-wrapper layer."""
-    from saltext.vmware.modules import vmware_vcenter_content_library as m
+    from saltext.vcf.modules import vcf_vcenter_content_library as m
 
     monkeypatch.setattr(m, "__opts__", opts, raising=False)
 

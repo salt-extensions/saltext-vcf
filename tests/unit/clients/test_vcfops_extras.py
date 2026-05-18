@@ -2,18 +2,18 @@
 
 import responses
 
-from saltext.vmware.clients import vcfops_alert
-from saltext.vmware.clients import vcfops_auth
-from saltext.vmware.clients import vcfops_collector
-from saltext.vmware.clients import vcfops_credential
-from saltext.vmware.clients import vcfops_deployment
-from saltext.vmware.clients import vcfops_maintenance
-from saltext.vmware.clients import vcfops_recommendation
-from saltext.vmware.clients import vcfops_report
-from saltext.vmware.clients import vcfops_resource_group
-from saltext.vmware.clients import vcfops_solution
-from saltext.vmware.clients import vcfops_supermetric
-from saltext.vmware.clients import vcfops_task
+from saltext.vcf.clients import vcfops_alert
+from saltext.vcf.clients import vcfops_auth
+from saltext.vcf.clients import vcfops_collector
+from saltext.vcf.clients import vcfops_credential
+from saltext.vcf.clients import vcfops_deployment
+from saltext.vcf.clients import vcfops_maintenance
+from saltext.vcf.clients import vcfops_recommendation
+from saltext.vcf.clients import vcfops_report
+from saltext.vcf.clients import vcfops_resource_group
+from saltext.vcf.clients import vcfops_solution
+from saltext.vcf.clients import vcfops_supermetric
+from saltext.vcf.clients import vcfops_task
 
 OPS = "https://ops.test/suite-api/api"
 

@@ -2,11 +2,11 @@
 
 import responses
 
-from saltext.vmware.clients import vcenter_supervisor_compat
-from saltext.vmware.clients import vcenter_supervisor_kubeconfig
-from saltext.vmware.clients import vcenter_supervisor_service
-from saltext.vmware.clients import vcenter_supervisor_software
-from saltext.vmware.clients import vcenter_vm_class
+from saltext.vcf.clients import vcenter_supervisor_compat
+from saltext.vcf.clients import vcenter_supervisor_kubeconfig
+from saltext.vcf.clients import vcenter_supervisor_service
+from saltext.vcf.clients import vcenter_supervisor_software
+from saltext.vcf.clients import vcenter_vm_class
 
 
 def test_supervisor_service_list_get_versions(opts, vcenter_authed):

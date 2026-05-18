@@ -4,7 +4,7 @@ import json
 
 import responses
 
-from saltext.vmware.resources import esxi as ex
+from saltext.vcf.resources import esxi as ex
 
 KEY = ex.CONTEXT_KEY
 

@@ -1,4 +1,4 @@
-# saltext.vmware
+# saltext.vcf
 
 Salt extension for VMware Cloud Foundation 9.x. Targets the full VCF
 stack: vCenter, NSX, SDDC Manager, VCF Operations, VKS (Supervisor),
@@ -30,7 +30,7 @@ VMSP (mediated), vSAN, and standalone ESXi.
 - **vSAN** — cluster config, disk groups, fault domains, health (SOAP
   at `/vsanHealth`).
 - **Salt Resources framework** — `vcenter`, `sddc`, `nsx`, `vcfops`,
-  `esxi`, `vmware_vm` resource types for fleet-style management with
+  `esxi`, `vcf_vm` resource types for fleet-style management with
   grain-based targeting.
 
 ~80 execution modules, 27 state modules, 82 REST/SOAP clients across
@@ -39,13 +39,13 @@ six VCF components.
 ## Quickstart
 
 ```bash
-pip install saltext-vmware
+pip install saltext-vcf
 ```
 
 Configure pillar:
 
 ```yaml
-saltext.vmware:
+saltext.vcf:
   vcenter:
     host: mgmt-vc.example.com
     username: administrator@vsphere.local
@@ -71,11 +71,11 @@ saltext.vmware:
 Run from any minion with the extension installed:
 
 ```bash
-salt-call vmware_vcenter_cluster.list_
-salt-call vmware_sddc_domain.list_
-salt-call vmware_nsx_segment.list_
-salt-call vmware_vcfops_deployment.healthy
-salt-call vmware_vcf_services.status_map
+salt-call vcf_vcenter_cluster.list_
+salt-call vcf_sddc_domain.list_
+salt-call vcf_nsx_segment.list_
+salt-call vcf_vcfops_deployment.healthy
+salt-call vcf_vcf_services.status_map
 ```
 
 ## Extras
@@ -87,12 +87,12 @@ salt-call vmware_vcf_services.status_map
 | `[vks]` | `saltext-kubernetes` + `kubernetes` for the VKS kubeconfig bridge |
 
 ```bash
-pip install 'saltext-vmware[vks]'
+pip install 'saltext-vcf[vks]'
 ```
 
 ## Documentation
 
-Full docs at <https://salt-extensions.github.io/saltext-vmware/>.
+Full docs at <https://salt-extensions.github.io/saltext-vcf/>.
 
 Local build:
 

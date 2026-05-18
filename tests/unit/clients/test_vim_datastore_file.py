@@ -8,7 +8,7 @@ import pytest
 import responses
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_datastore_file
+from saltext.vcf.clients import vim_datastore_file
 
 
 @pytest.fixture
@@ -75,11 +75,11 @@ def test_move_cross_datastore(opts, env):
 
 def test_upload_streams_via_https_put(opts, env, monkeypatch):
     monkeypatch.setattr(
-        "saltext.vmware.clients.vim_datastore_file.vc_rest.get_config",
+        "saltext.vcf.clients.vim_datastore_file.vc_rest.get_config",
         lambda o, profile=None: {"host": "vc.test", "verify_ssl": False},
     )
     monkeypatch.setattr(
-        "saltext.vmware.clients.vim_datastore_file.soap.session_cookie",
+        "saltext.vcf.clients.vim_datastore_file.soap.session_cookie",
         lambda o, profile=None: "vmware_soap_session=abc",
     )
     with responses.RequestsMock(assert_all_requests_are_fired=False) as rsps:
@@ -101,11 +101,11 @@ def test_upload_streams_via_https_put(opts, env, monkeypatch):
 
 def test_download_streams_via_https_get(opts, env, monkeypatch, tmp_path):
     monkeypatch.setattr(
-        "saltext.vmware.clients.vim_datastore_file.vc_rest.get_config",
+        "saltext.vcf.clients.vim_datastore_file.vc_rest.get_config",
         lambda o, profile=None: {"host": "vc.test", "verify_ssl": False},
     )
     monkeypatch.setattr(
-        "saltext.vmware.clients.vim_datastore_file.soap.session_cookie",
+        "saltext.vcf.clients.vim_datastore_file.soap.session_cookie",
         lambda o, profile=None: "vmware_soap_session=abc",
     )
     out = tmp_path / "downloaded.iso"

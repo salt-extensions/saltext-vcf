@@ -4,10 +4,10 @@ import json
 
 import responses
 
-from saltext.vmware.clients import nsx_context_profile
-from saltext.vmware.clients import nsx_firewall_rule
-from saltext.vmware.clients import nsx_security_policy
-from saltext.vmware.clients import nsx_service
+from saltext.vcf.clients import nsx_context_profile
+from saltext.vcf.clients import nsx_firewall_rule
+from saltext.vcf.clients import nsx_security_policy
+from saltext.vcf.clients import nsx_service
 
 
 def test_security_policy_list(opts, mocked_responses):

@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from pyVmomi import vim
 
-from saltext.vmware.clients import vim_drs_rule
+from saltext.vcf.clients import vim_drs_rule
 
 
 def _make_rule(

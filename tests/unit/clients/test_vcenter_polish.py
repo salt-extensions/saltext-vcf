@@ -2,9 +2,9 @@
 
 import responses
 
-from saltext.vmware.clients import vcenter_content_library
-from saltext.vmware.clients import vcenter_folder
-from saltext.vmware.clients import vcenter_resource_pool
+from saltext.vcf.clients import vcenter_content_library
+from saltext.vcf.clients import vcenter_folder
+from saltext.vcf.clients import vcenter_resource_pool
 
 
 def test_folder_list(opts, vcenter_authed):
