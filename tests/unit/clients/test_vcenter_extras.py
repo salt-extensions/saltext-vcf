@@ -143,7 +143,7 @@ def test_appliance_dns_get_and_set(opts, vcenter_authed):
         status=200,
     )
     vcenter_authed.add(
-        responses.PATCH,
+        responses.PUT,
         "https://vc.test/api/appliance/networking/dns/servers",
         status=204,
     )
@@ -163,7 +163,7 @@ def test_appliance_logging_forwarding_get_set(opts, vcenter_authed):
         status=200,
     )
     vcenter_authed.add(
-        responses.PATCH,
+        responses.PUT,
         "https://vc.test/api/appliance/logging/forwarding",
         status=204,
     )
