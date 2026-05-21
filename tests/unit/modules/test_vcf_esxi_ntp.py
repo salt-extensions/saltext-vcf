@@ -1,9 +1,9 @@
 """Tests for modules.vcf_esxi_ntp."""
 
-import json
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
-import responses
 
 from saltext.vcf.modules import vcf_esxi_ntp as mod
 
@@ -13,25 +13,40 @@ def inject_opts(monkeypatch, opts):
     monkeypatch.setattr(mod, "__opts__", opts, raising=False)
 
 
-def test_get(esxi_authed):
-    esxi_authed.add(
-        responses.GET,
-        "https://esxi.test/api/esx/ntp",
-        json={"servers": ["a"], "enabled": True},
-        status=200,
-    )
-    assert mod.get() == {"servers": ["a"], "enabled": True}
+def _service(key, running):
+    svc = MagicMock()
+    svc.key = key
+    svc.running = running
+    svc.policy = "on"
+    svc.label = key
+    return svc
 
 
-def test_set_servers(esxi_authed):
-    esxi_authed.add(responses.PATCH, "https://esxi.test/api/esx/ntp", status=204)
-    mod.set_servers(["pool.ntp.org", "time.cloudflare.com"])
-    body = json.loads(esxi_authed.calls[-1].request.body)
-    assert body == {"servers": ["pool.ntp.org", "time.cloudflare.com"]}
+def _fake_host(*, servers=("pool.ntp.org",), ntpd_running=True):
+    host = MagicMock()
+    dt_info = MagicMock()
+    dt_info.ntpConfig.server = list(servers)
+    host.configManager.dateTimeSystem.QueryDateTimeInfo.return_value = dt_info
+    host.configManager.serviceSystem.serviceInfo.service = [_service("ntpd", ntpd_running)]
+    return host
 
 
-def test_set_enabled(esxi_authed):
-    esxi_authed.add(responses.PATCH, "https://esxi.test/api/esx/ntp", status=204)
-    mod.set_enabled(False)
-    body = json.loads(esxi_authed.calls[-1].request.body)
-    assert body == {"enabled": False}
+def test_get():
+    host = _fake_host(servers=("a",), ntpd_running=True)
+    with patch("saltext.vcf.utils.esxi.get_host_system", return_value=host):
+        assert mod.get() == {"servers": ["a"], "enabled": True}
+
+
+def test_set_servers():
+    host = _fake_host(servers=("pool.ntp.org", "time.cloudflare.com"))
+    with patch("saltext.vcf.utils.esxi.get_host_system", return_value=host):
+        mod.set_servers(["pool.ntp.org", "time.cloudflare.com"])
+    call = host.configManager.dateTimeSystem.UpdateDateTimeConfig.call_args
+    assert list(call.kwargs["config"].ntpConfig.server) == ["pool.ntp.org", "time.cloudflare.com"]
+
+
+def test_set_enabled():
+    host = _fake_host(ntpd_running=False)
+    with patch("saltext.vcf.utils.esxi.get_host_system", return_value=host):
+        mod.set_enabled(False)
+    host.configManager.serviceSystem.Stop.assert_called_once_with(id="ntpd")

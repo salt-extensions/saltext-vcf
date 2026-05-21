@@ -1,7 +1,7 @@
-"""Tests for saltext.vcf.utils.esxi (direct/standalone mode)."""
+"""Tests for saltext.vcf.utils.esxi (direct/standalone mode, pyVmomi SOAP)."""
 
-import pytest
-import responses
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 from saltext.vcf.utils import esxi
 
@@ -16,43 +16,45 @@ def test_get_config_default(opts):
     }
 
 
-def test_session_authenticates_once(opts, mocked_responses):
-    mocked_responses.add(responses.POST, "https://esxi.test/api/session", json="tok", status=200)
-    mocked_responses.add(responses.GET, "https://esxi.test/api/esx/host", json={}, status=200)
-    mocked_responses.add(responses.GET, "https://esxi.test/api/esx/services", json=[], status=200)
-    esxi.api_get(opts, "/api/esx/host")
-    esxi.api_get(opts, "/api/esx/services")
-    auth_calls = [c for c in mocked_responses.calls if "api/session" in c.request.url]
-    assert len(auth_calls) == 1
+def test_get_service_instance_connects_once(opts):
+    si = MagicMock()
+    with patch("saltext.vcf.utils.esxi.SmartConnect", return_value=si) as smart:
+        first = esxi.get_service_instance(opts)
+        second = esxi.get_service_instance(opts)
+    assert first is si
+    assert second is si
+    # Second call should be served from the cache; SmartConnect not re-invoked.
+    smart.assert_called_once()
 
 
-def test_api_patch(opts, esxi_authed):
-    esxi_authed.add(
-        responses.PATCH,
-        "https://esxi.test/api/esx/ntp",
-        json={"servers": ["pool.ntp.org"]},
-        status=200,
-    )
-    assert esxi.api_patch(opts, "/api/esx/ntp", body={"servers": ["pool.ntp.org"]}) == {
-        "servers": ["pool.ntp.org"]
-    }
+def test_invalidate_service_instance_disconnects_and_drops_cache(opts):
+    si = MagicMock()
+    with patch("saltext.vcf.utils.esxi.SmartConnect", return_value=si):
+        esxi.get_service_instance(opts)
+    with patch("saltext.vcf.utils.esxi.Disconnect") as dc:
+        esxi.invalidate_service_instance(opts)
+    dc.assert_called_once_with(si)
+    # Subsequent get_service_instance should reconnect rather than return the old si.
+    new_si = MagicMock()
+    with patch("saltext.vcf.utils.esxi.SmartConnect", return_value=new_si) as smart:
+        assert esxi.get_service_instance(opts) is new_si
+    smart.assert_called_once()
 
 
-def test_invalidate_session(opts, mocked_responses):
-    mocked_responses.add(responses.POST, "https://esxi.test/api/session", json="t1", status=200)
-    mocked_responses.add(responses.GET, "https://esxi.test/api/esx/host", json={}, status=200)
-    mocked_responses.add(responses.POST, "https://esxi.test/api/session", json="t2", status=200)
-    mocked_responses.add(responses.GET, "https://esxi.test/api/esx/host", json={}, status=200)
-    esxi.api_get(opts, "/api/esx/host")
-    esxi.invalidate_session(opts)
-    esxi.api_get(opts, "/api/esx/host")
-    auth_calls = [c for c in mocked_responses.calls if "api/session" in c.request.url]
-    assert len(auth_calls) == 2
+def test_get_service_instance_honors_host_port_suffix(opts):
+    opts["pillar"]["saltext.vcf"]["esxi"]["host"] = "esxi.test:25443"
+    si = MagicMock()
+    with patch("saltext.vcf.utils.esxi.SmartConnect", return_value=si) as smart:
+        esxi.get_service_instance(opts)
+    kwargs = smart.call_args.kwargs
+    assert kwargs["host"] == "esxi.test"
+    assert kwargs["port"] == 25443
 
 
-def test_http_error_propagates(opts, esxi_authed):
-    import requests
-
-    esxi_authed.add(responses.GET, "https://esxi.test/api/esx/host", status=500)
-    with pytest.raises(requests.HTTPError):
-        esxi.api_get(opts, "/api/esx/host")
+def test_get_host_system_returns_standalone_host(opts):
+    host = MagicMock(name="HostSystem")
+    si = MagicMock()
+    si.RetrieveContent.return_value.rootFolder.childEntity = [MagicMock(host=[host])]
+    with patch("saltext.vcf.utils.esxi.SmartConnect", return_value=si):
+        result = esxi.get_host_system(opts)
+    assert result is host
