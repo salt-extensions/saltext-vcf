@@ -1,5 +1,7 @@
 """Tests for the Batch 6 SDDC Manager lifecycle clients."""
 
+import json
+
 import responses
 
 from saltext.vcf.clients import sddc_bundles
@@ -74,4 +76,12 @@ def test_certificates_csr_uses_put(opts, sddc_authed):
         json={"elements": []},
         status=200,
     )
-    sddc_certificates.create_csrs(opts, "d1", [{"resourceType": "VCENTER"}])
+    sddc_certificates.create_csrs(
+        opts,
+        "d1",
+        csr_generation_spec={"keyAlgorithm": "RSA", "keySize": "2048"},
+        resources=[{"type": "VCENTER", "fqdn": "vc.test"}],
+    )
+    body = json.loads(sddc_authed.calls[-1].request.body)
+    assert body["csrGenerationSpec"]["keyAlgorithm"] == "RSA"
+    assert body["resources"][0]["type"] == "VCENTER"

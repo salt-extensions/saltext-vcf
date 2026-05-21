@@ -1,51 +1,77 @@
-"""ESXi services (TSM-SSH, ntpd, etc.) — list, get, control, startup policy."""
-
-import requests
+"""ESXi services (TSM-SSH, ntpd, etc.) via SOAP/pyVmomi."""
 
 from saltext.vcf.utils import esxi
 
-PATH = "/api/esx/services"
-
-# Valid startup policies per the ESXi REST API
+# Valid startup policies (uppercase for public API parity with the old REST surface)
 POLICIES = ("ON", "OFF", "AUTOMATIC")
+
+# REST → SOAP policy string mapping
+_POLICY_TO_SOAP = {"ON": "on", "OFF": "off", "AUTOMATIC": "automatic"}
+_POLICY_FROM_SOAP = {"on": "ON", "off": "OFF", "automatic": "AUTOMATIC"}
+
+
+def _svc_to_dict(svc):
+    return {
+        "key": svc.key,
+        "label": svc.label,
+        "running": svc.running,
+        "policy": _POLICY_FROM_SOAP.get(svc.policy, svc.policy.upper()),
+        "state": "RUNNING" if svc.running else "STOPPED",
+    }
+
+
+def _find_service(svc_system, service):
+    for svc in svc_system.serviceInfo.service:
+        if svc.key == service:
+            return svc
+    raise KeyError(f"Service {service!r} not found on this host")
 
 
 def list_(opts, profile=None):
-    return esxi.api_get(opts, PATH, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    return {
+        svc.key: _svc_to_dict(svc) for svc in host.configManager.serviceSystem.serviceInfo.service
+    }
 
 
 def get(opts, service, profile=None):
-    return esxi.api_get(opts, f"{PATH}/{service}", profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    svc = _find_service(host.configManager.serviceSystem, service)
+    return _svc_to_dict(svc)
 
 
 def get_or_none(opts, service, profile=None):
     try:
         return get(opts, service, profile=profile)
-    except requests.HTTPError as exc:
-        if exc.response is not None and exc.response.status_code == 404:
-            return None
-        raise
+    except KeyError:
+        return None
 
 
 def start(opts, service, profile=None):
-    return esxi.api_post(opts, f"{PATH}/{service}", params={"action": "start"}, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    host.configManager.serviceSystem.Start(id=service)
+    return get(opts, service, profile=profile)
 
 
 def stop(opts, service, profile=None):
-    return esxi.api_post(opts, f"{PATH}/{service}", params={"action": "stop"}, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    host.configManager.serviceSystem.Stop(id=service)
+    return get(opts, service, profile=profile)
 
 
 def restart(opts, service, profile=None):
-    return esxi.api_post(opts, f"{PATH}/{service}", params={"action": "restart"}, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    host.configManager.serviceSystem.Restart(id=service)
+    return get(opts, service, profile=profile)
 
 
 def set_policy(opts, service, policy, profile=None):
     """Set startup policy. *policy* in :data:`POLICIES`."""
     if policy not in POLICIES:
         raise ValueError(f"policy must be one of {POLICIES}, got {policy!r}")
-    return esxi.api_patch(
-        opts, f"{PATH}/{service}", body={"startup_policy": policy}, profile=profile
-    )
+    host = esxi.get_host_system(opts, profile=profile)
+    host.configManager.serviceSystem.UpdatePolicy(id=service, policy=_POLICY_TO_SOAP[policy])
+    return get(opts, service, profile=profile)
 
 
 def is_running(service_obj):

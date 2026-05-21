@@ -1,28 +1,35 @@
-"""ESXi advanced system settings (kernel knobs exposed via the REST API)."""
+"""ESXi advanced system settings via SOAP/pyVmomi."""
 
-import requests
+from pyVmomi import vim
+from pyVmomi import vmodl  # pylint: disable=no-name-in-module
 
 from saltext.vcf.utils import esxi
 
-PATH = "/api/esx/advanced"
-
 
 def list_(opts, profile=None):
-    return esxi.api_get(opts, PATH, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    options = host.configManager.advancedOption.QueryOptions()
+    return {opt.key: opt.value for opt in (options or [])}
 
 
 def get(opts, key, profile=None):
-    return esxi.api_get(opts, f"{PATH}/{key}", profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    options = host.configManager.advancedOption.QueryOptions(name=key)
+    if not options:
+        raise KeyError(f"Advanced setting {key!r} not found")
+    return options[0].value
 
 
 def get_or_none(opts, key, profile=None):
     try:
         return get(opts, key, profile=profile)
-    except requests.HTTPError as exc:
-        if exc.response is not None and exc.response.status_code == 404:
-            return None
-        raise
+    except (KeyError, vim.fault.VimFault, vmodl.MethodFault):
+        return None
 
 
 def set_value(opts, key, value, profile=None):
-    return esxi.api_patch(opts, f"{PATH}/{key}", body={"value": value}, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    host.configManager.advancedOption.UpdateValues(
+        changedValue=[vim.option.OptionValue(key=key, value=value)]
+    )
+    return {"key": key, "value": value}

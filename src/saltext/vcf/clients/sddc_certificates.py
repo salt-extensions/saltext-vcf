@@ -18,13 +18,19 @@ def list_csrs(opts, domain_id, profile=None):
     return sddc.api_get(opts, f"{_base(domain_id)}/csrs", profile=profile)
 
 
-def create_csrs(opts, domain_id, csr_specs, profile=None):
+def create_csrs(opts, domain_id, csr_generation_spec, resources, profile=None):
     """Generate CSRs for resources in the domain.
 
-    *csr_specs* is a list per the SDDC Manager API — e.g. ``[{"resourceType":
-    "VCENTER", "country": "US", ...}]``.
+    *csr_generation_spec* is the X.509 subject/key block — e.g. ``{"country":
+    "US", "state": "CA", "locality": "Palo Alto", "organization": "VMware",
+    "organizationUnit": "VCF", "email": "admin@example.local", "keySize":
+    "2048", "keyAlgorithm": "RSA"}``.
+
+    *resources* is the list of resources to generate CSRs for — e.g.
+    ``[{"type": "VCENTER", "fqdn": "mgmt-vc.example.local"}]``.
     """
-    return sddc.api_put(opts, f"{_base(domain_id)}/csrs", body=csr_specs, profile=profile)
+    body = {"csrGenerationSpec": csr_generation_spec, "resources": resources}
+    return sddc.api_put(opts, f"{_base(domain_id)}/csrs", body=body, profile=profile)
 
 
 def install_certificates(opts, domain_id, cert_specs, profile=None):
