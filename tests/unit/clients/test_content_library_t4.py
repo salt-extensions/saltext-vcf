@@ -138,7 +138,7 @@ def test_update_session_fail_body(opts, vcenter_authed):
 def test_update_session_add_file(opts, vcenter_authed):
     vcenter_authed.add(
         responses.POST,
-        f"{BASE}/api/content/library/item/updatesession/file",
+        f"{BASE}/api/content/library/item/update-session/file",
         json={"upload_endpoint": {"uri": "https://vc.test/upload/x"}},
         status=200,
     )
@@ -153,15 +153,16 @@ def test_update_session_add_file(opts, vcenter_authed):
 
 def test_update_session_list_files(opts, vcenter_authed):
     vcenter_authed.add(
-        responses.POST,
-        f"{BASE}/api/content/library/item/updatesession/file",
+        responses.GET,
+        f"{BASE}/api/content/library/item/update-session/session-1/file",
         json=[],
         status=200,
     )
     c.update_session_list_files(opts, "session-1")
-    body = json.loads(vcenter_authed.calls[-1].request.body)
-    assert body == {"update_session_id": "session-1"}
-    assert "action=list" in vcenter_authed.calls[-1].request.url
+    assert vcenter_authed.calls[-1].request.method == "GET"
+    assert vcenter_authed.calls[-1].request.url.endswith(
+        "/api/content/library/item/update-session/session-1/file"
+    )
 
 
 # -- OVF deploy -----------------------------------------------------------
