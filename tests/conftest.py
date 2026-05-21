@@ -84,7 +84,7 @@ def reset_caches():
     caches = [
         vcenter._SESSION_CACHE,
         sddc._TOKEN_CACHE,
-        esxi._SESSION_CACHE,
+        esxi._SI_CACHE,
         vcfops._TOKEN_CACHE,
         installer._SESSION_CACHE,
         soap._SI_CACHE,
