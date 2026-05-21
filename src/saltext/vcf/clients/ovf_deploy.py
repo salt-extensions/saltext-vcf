@@ -133,15 +133,15 @@ def deploy_ova(
 
 
 def _connect(host, user, password, port, verify_ssl):
-    sslContext = None  # pylint: disable=invalid-name
+    ssl_context = None
     if not verify_ssl:
-        sslContext = ssl._create_unverified_context()  # pylint: disable=invalid-name,protected-access
+        ssl_context = ssl._create_unverified_context()  # pylint: disable=protected-access
     return SmartConnect(
         host=host,
         user=user,
         pwd=password,
         port=int(port),
-        sslContext=sslContext,
+        sslContext=ssl_context,
     )
 
 
@@ -326,7 +326,9 @@ class _LeaseProgress(threading.Thread):
                 return
 
 
-def _upload_disks(*, target_host, device_urls, file_items, tar, members, progress, verify_ssl, timeout):
+def _upload_disks(
+    *, target_host, device_urls, file_items, tar, members, progress, verify_ssl, timeout
+):
     by_dev = {}
     for du in device_urls:
         key = getattr(du, "importKey", None) or du.key

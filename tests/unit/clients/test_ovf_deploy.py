@@ -9,7 +9,6 @@ from pyVmomi import vim
 
 from saltext.vcf.clients import ovf_deploy
 
-
 # ---------------------------------------------------------------------------
 # Tarball construction helper
 # ---------------------------------------------------------------------------
@@ -309,7 +308,7 @@ def _fake_content(*, datastores, networks):
 
 def test_resolve_targets_picks_first_when_no_datastore_specified():
     content, _dc, cr, host = _fake_content(datastores=["ds-a", "ds-b"], networks=["VM Network"])
-    rp, vm_folder, host_ref, ds_ref, nets = ovf_deploy._resolve_targets(
+    rp, _vm_folder, host_ref, ds_ref, nets = ovf_deploy._resolve_targets(
         content, datastore=None, network_map=None
     )
     assert rp is cr.resourcePool
@@ -319,9 +318,7 @@ def test_resolve_targets_picks_first_when_no_datastore_specified():
 
 
 def test_resolve_targets_matches_named_datastore():
-    content, _dc, _cr, _host = _fake_content(
-        datastores=["ds-a", "ds-b"], networks=["VM Network"]
-    )
+    content, _dc, _cr, _host = _fake_content(datastores=["ds-a", "ds-b"], networks=["VM Network"])
     _rp, _f, _h, ds_ref, _n = ovf_deploy._resolve_targets(
         content, datastore="ds-b", network_map=None
     )
@@ -335,9 +332,7 @@ def test_resolve_targets_raises_on_missing_datastore():
 
 
 def test_resolve_targets_maps_named_networks():
-    content, _dc, _cr, _host = _fake_content(
-        datastores=["ds-a"], networks=["mgmt-net", "vm-net"]
-    )
+    content, _dc, _cr, _host = _fake_content(datastores=["ds-a"], networks=["mgmt-net", "vm-net"])
     _rp, _f, _h, _ds, nets = ovf_deploy._resolve_targets(
         content, datastore=None, network_map={"OvfMgmt": "mgmt-net"}
     )
@@ -348,9 +343,7 @@ def test_resolve_targets_maps_named_networks():
 def test_resolve_targets_raises_on_missing_network():
     content, _dc, _cr, _host = _fake_content(datastores=["ds-a"], networks=["one-net"])
     with pytest.raises(LookupError, match="network 'no-net' not on host"):
-        ovf_deploy._resolve_targets(
-            content, datastore=None, network_map={"Ovf": "no-net"}
-        )
+        ovf_deploy._resolve_targets(content, datastore=None, network_map={"Ovf": "no-net"})
 
 
 # ---------------------------------------------------------------------------
@@ -362,9 +355,7 @@ def test_deploy_ova_happy_path(monkeypatch, tmp_path):
     ova = tmp_path / "installer.ova"
     _write_test_ova(ova, vmdk_bytes=b"X" * 128)
 
-    content, _dc, cr, _host = _fake_content(
-        datastores=["datastore1"], networks=["VM Network"]
-    )
+    content, _dc, cr, _host = _fake_content(datastores=["datastore1"], networks=["VM Network"])
     si = mock.MagicMock()
     si.RetrieveContent.return_value = content
 
@@ -384,9 +375,7 @@ def test_deploy_ova_happy_path(monkeypatch, tmp_path):
     lease = mock.MagicMock()
     lease.state = vim.HttpNfcLease.State.ready
     lease.info.entity = new_vm
-    device_url = mock.MagicMock(
-        importKey="dev-1", key="dev-1", url="https://*/nfc/abc/disk"
-    )
+    device_url = mock.MagicMock(importKey="dev-1", key="dev-1", url="https://*/nfc/abc/disk")
     lease.info.deviceUrl = [device_url]
     cr.resourcePool.ImportVApp.return_value = lease
 

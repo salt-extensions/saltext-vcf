@@ -13,12 +13,7 @@ import pytest
 import yaml
 
 SLS_DIR = (
-    Path(__file__).parent.parent.parent
-    / "src"
-    / "saltext"
-    / "vcf"
-    / "_orchestrate"
-    / "vcf_deploy"
+    Path(__file__).parent.parent.parent / "src" / "saltext" / "vcf" / "_orchestrate" / "vcf_deploy"
 )
 EXPECTED_SLS = ("full_stack.sls", "installer_appliance.sls", "bringup.sls")
 
@@ -79,7 +74,7 @@ def test_state_references_resolve(name):
         assert "include" in data
         return
     assert calls, f"{name} declares no state IDs"
-    for state_id, func_ref in calls:
+    for _state_id, func_ref in calls:
         _resolve_state_function(func_ref)  # raises if missing
 
 
@@ -95,5 +90,7 @@ def test_bringup_requires_installer_appliance():
     data = _render(SLS_DIR / "bringup.sls")
     bringup = data["ensure_management_domain_bringup_complete"]
     args = bringup["vcf_installer_bringup.complete"]
-    require_entries = next(item["require"] for item in args if isinstance(item, dict) and "require" in item)
+    require_entries = next(
+        item["require"] for item in args if isinstance(item, dict) and "require" in item
+    )
     assert {"vcf_installer_appliance": "ensure_vcf_installer_appliance"} in require_entries
