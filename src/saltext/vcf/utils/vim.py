@@ -54,15 +54,7 @@ def get_service_instance(opts, profile=None):
     to force a fresh connection (e.g. after a session timeout).
     """
     cfg = get_config(opts, profile=profile)
-    host = cfg["host"]
-    username = cfg["username"]
-    # Allow ``host: localhost:25443`` style or an explicit ``port:`` key in
-    # the pillar config — useful when reaching the target through an SSH
-    # tunnel or other port-forward.
-    port = cfg.get("port")
-    if ":" in host and port is None:
-        host, _, port_str = host.rpartition(":")
-        port = int(port_str)
+    host, port, username = _connection_target(cfg)
     cache_key = f"{host}:{port or 443}:{username}"
 
     if cache_key in _SI_CACHE:
@@ -89,10 +81,27 @@ def get_service_instance(opts, profile=None):
 def invalidate_service_instance(opts, profile=None):
     """Disconnect and drop the cached ServiceInstance for this target."""
     cfg = get_config(opts, profile=profile)
-    cache_key = f"{cfg['host']}:{cfg['username']}"
+    host, port, username = _connection_target(cfg)
+    cache_key = f"{host}:{port or 443}:{username}"
     si = _SI_CACHE.pop(cache_key, None)
     if si is not None:
         _safe_disconnect(si)
+
+
+def _connection_target(cfg):
+    """Return ``(host, port, username)`` parsed from a pillar ``cfg`` block.
+
+    Allows ``host: localhost:25443`` style or an explicit ``port:`` key in
+    the pillar config — useful when reaching the target through an SSH
+    tunnel or other port-forward.
+    """
+    host = cfg["host"]
+    username = cfg["username"]
+    port = cfg.get("port")
+    if ":" in host and port is None:
+        host, _, port_str = host.rpartition(":")
+        port = int(port_str)
+    return host, port, username
 
 
 def _safe_disconnect(si):
