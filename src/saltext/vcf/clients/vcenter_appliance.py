@@ -82,7 +82,7 @@ def dns_get(opts, profile=None):
 
 
 def dns_set(opts, servers, mode="is_static", profile=None):
-    return vcenter.api_patch(
+    return vcenter.api_put(
         opts, _DNS, body={"mode": mode, "servers": list(servers)}, profile=profile
     )
 
@@ -105,4 +105,4 @@ def logging_forwarding_set(opts, servers, profile=None):
 
         {"hostname": "collector.example.com", "port": 514, "protocol": "UDP"}
     """
-    return vcenter.api_patch(opts, _SYSLOG, body={"cfg_list": list(servers)}, profile=profile)
+    return vcenter.api_put(opts, _SYSLOG, body={"cfg_list": list(servers)}, profile=profile)

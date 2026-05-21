@@ -1,10 +1,13 @@
 """
-ESXi host REST API connection helpers — **standalone/unmanaged ESXi only**.
+ESXi host connection helpers — **standalone/unmanaged ESXi only**.
 
-ESXi exposes the vAPI session endpoint at ``POST /api/session`` on each host.
-On hosts that have been joined to a vCenter, that endpoint is blocked
-(``400`` on real VCF 9.2). For hosts managed by vCenter, configuration is
-done at the cluster level via the Configuration Profile API; see
+All communication uses the pyVmomi SOAP/VMODL stack (``/sdk``). This works on
+any ESXi host regardless of whether the vAPI endpoint (``/api/*``) is present,
+which is important because shuttle-deployed test hosts omit that service.
+
+On hosts that have been joined to a vCenter, the REST ``/api/session`` endpoint
+is blocked (``400`` on real VCF 9.2). For hosts managed by vCenter, cluster-
+level configuration is done via the Configuration Profile API; see
 :mod:`saltext.vcf.clients.cluster_config`.
 
 Config is read from Salt opts/pillar under ``saltext.vcf.esxi``::
@@ -17,14 +20,17 @@ Config is read from Salt opts/pillar under ``saltext.vcf.esxi``::
         verify_ssl: false
 """
 
+import atexit
 import logging
+import ssl
 
-import requests
-import urllib3
+from pyVim.connect import Disconnect
+from pyVim.connect import SmartConnect
 
 log = logging.getLogger(__name__)
 
-_SESSION_CACHE: dict[str, str] = {}
+# Cached ServiceInstance per cache key (avoids repeat handshakes).
+_SI_CACHE: dict[str, object] = {}
 
 
 def get_config(opts, profile=None):
@@ -42,69 +48,71 @@ def get_config(opts, profile=None):
     }
 
 
-def get_session(opts, profile=None):
-    """Return ``(session, host)`` authenticated against the ESXi host."""
+def get_service_instance(opts, profile=None):
+    """Return a connected pyVmomi ``ServiceInstance`` for the ESXi host.
+
+    Cached per ``(host, port, username)``. Use
+    :func:`invalidate_service_instance` to force a fresh connection.
+    """
     cfg = get_config(opts, profile=profile)
     host = cfg["host"]
-    verify = cfg["verify_ssl"]
-    if not verify:
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    port = None
 
-    cache_key = f"{host}:{cfg['username']}"
-    if cache_key not in _SESSION_CACHE:
-        resp = requests.post(
-            f"https://{host}/api/session",
-            auth=(cfg["username"], cfg["password"]),
-            verify=verify,
-            timeout=30,
-        )
-        resp.raise_for_status()
-        _SESSION_CACHE[cache_key] = resp.json()
+    # Support ``host: esxi.example.com:8443`` or a separate ``port:`` key.
+    if ":" in host:
+        host, _, port_str = host.rpartition(":")
+        port = int(port_str)
 
-    session = requests.Session()
-    session.verify = verify
-    session.headers.update({"vmware-api-session-id": _SESSION_CACHE[cache_key]})
-    return session, host
+    cache_key = f"soap:{host}:{port or 443}:{cfg['username']}"
+    if cache_key in _SI_CACHE:
+        return _SI_CACHE[cache_key]
+
+    ssl_context = None
+    if not cfg["verify_ssl"]:
+        ssl_context = ssl._create_unverified_context()  # noqa: SLF001
+
+    connect_kwargs = {
+        "host": host,
+        "user": cfg["username"],
+        "pwd": cfg["password"],
+        "sslContext": ssl_context,
+    }
+    if port is not None:
+        connect_kwargs["port"] = port
+
+    si = SmartConnect(**connect_kwargs)
+    _SI_CACHE[cache_key] = si
+    atexit.register(_safe_disconnect, si)
+    return si
 
 
-def invalidate_session(opts, profile=None):
+def invalidate_service_instance(opts, profile=None):
+    """Disconnect and drop the cached ServiceInstance for this host."""
     cfg = get_config(opts, profile=profile)
-    _SESSION_CACHE.pop(f"{cfg['host']}:{cfg['username']}", None)
+    host = cfg["host"]
+    port = None
+    if ":" in host:
+        host, _, port_str = host.rpartition(":")
+        port = int(port_str)
+    cache_key = f"soap:{host}:{port or 443}:{cfg['username']}"
+    si = _SI_CACHE.pop(cache_key, None)
+    if si is not None:
+        _safe_disconnect(si)
 
 
-def _session(opts, profile=None):
-    return get_session(opts, profile=profile)
+def get_host_system(opts, profile=None):
+    """Return the ``vim.HostSystem`` for a standalone ESXi host.
+
+    When connecting directly to an ESXi host (not vCenter), the SOAP tree
+    contains exactly one datacenter with one host.
+    """
+    si = get_service_instance(opts, profile=profile)
+    content = si.RetrieveContent()
+    return content.rootFolder.childEntity[0].host[0]
 
 
-def api_get(opts, path, params=None, profile=None):
-    session, host = _session(opts, profile=profile)
-    resp = session.get(f"https://{host}{path}", params=params, timeout=30)
-    resp.raise_for_status()
-    if resp.content:
-        return resp.json()
-    return {}
-
-
-def api_post(opts, path, body=None, params=None, profile=None):
-    session, host = _session(opts, profile=profile)
-    resp = session.post(f"https://{host}{path}", json=body, params=params, timeout=30)
-    resp.raise_for_status()
-    if resp.content:
-        return resp.json()
-    return {}
-
-
-def api_patch(opts, path, body=None, profile=None):
-    session, host = _session(opts, profile=profile)
-    resp = session.patch(f"https://{host}{path}", json=body, timeout=30)
-    resp.raise_for_status()
-    if resp.content:
-        return resp.json()
-    return {}
-
-
-def api_delete(opts, path, profile=None):
-    session, host = _session(opts, profile=profile)
-    resp = session.delete(f"https://{host}{path}", timeout=30)
-    resp.raise_for_status()
-    return {}
+def _safe_disconnect(si):
+    try:
+        Disconnect(si)
+    except Exception as exc:  # pylint: disable=broad-except
+        log.debug("pyVmomi ESXi disconnect raised %s; ignoring", exc)

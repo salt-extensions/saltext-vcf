@@ -9,7 +9,7 @@ LOCAL_LIBRARY = "/api/content/local-library"
 SUBSCRIBED_LIBRARY = "/api/content/subscribed-library"
 ITEM = "/api/content/library/item"
 UPDATE_SESSION = "/api/content/library/item/update-session"
-UPDATE_SESSION_FILE = "/api/content/library/item/updatesession/file"
+UPDATE_SESSION_FILE = "/api/content/library/item/update-session/file"
 OVF_ITEM = "/api/vcenter/ovf/library-item"
 VM_TEMPLATE = "/api/vcenter/vm-template/library-items"
 
@@ -249,11 +249,12 @@ def update_session_add_file(opts, session_id, name, source_type="PUSH", profile=
 
 
 def update_session_list_files(opts, session_id, profile=None):
-    return vcenter.api_post(
+    # The modern vSphere REST surface is path-style:
+    #   GET /api/content/library/item/update-session/{session_id}/file
+    # The legacy POST ``?action=list`` form was removed in 7.0+.
+    return vcenter.api_get(
         opts,
-        UPDATE_SESSION_FILE,
-        body={"update_session_id": session_id},
-        params={"action": "list"},
+        f"{UPDATE_SESSION}/{session_id}/file",
         profile=profile,
     )
 

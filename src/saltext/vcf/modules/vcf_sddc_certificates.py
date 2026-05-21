@@ -35,17 +35,17 @@ def list_csrs(domain_id, profile=None):
     return c.list_csrs(__opts__, domain_id, profile=profile)
 
 
-def create_csrs(domain_id, csr_specs, profile=None):
+def create_csrs(domain_id, csr_generation_spec, resources, profile=None):
     """Create csrs.
 
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' vcf_sddc_certificates.create_csrs <domain_id> <csr_specs>
+        salt '*' vcf_sddc_certificates.create_csrs <domain_id> <csr_generation_spec> <resources>
 
     """
-    return c.create_csrs(__opts__, domain_id, csr_specs, profile=profile)
+    return c.create_csrs(__opts__, domain_id, csr_generation_spec, resources, profile=profile)
 
 
 def install_certificates(domain_id, cert_specs, profile=None):

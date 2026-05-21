@@ -1,39 +1,72 @@
-"""ESXi firewall rules — enable/disable rules and manage allowed-IP lists."""
+"""ESXi firewall rules via SOAP/pyVmomi."""
 
-import requests
+from pyVmomi import vim
 
 from saltext.vcf.utils import esxi
 
-PATH = "/api/esx/firewall/rules"
+
+def _ruleset_to_dict(rs):
+    allowed = rs.allowedHosts
+    return {
+        "key": rs.key,
+        "label": rs.label,
+        "enabled": rs.enabled,
+        "allowed_hosts": {
+            "all_ip": getattr(allowed, "allIp", True) if allowed else True,
+            "ip_addresses": list(getattr(allowed, "ipAddress", []) or []),
+        },
+    }
+
+
+def _find_ruleset(fw_system, rule):
+    for rs in fw_system.firewallInfo.ruleset:
+        if rs.key == rule:
+            return rs
+    raise KeyError(f"Firewall rule {rule!r} not found on this host")
 
 
 def list_(opts, profile=None):
-    return esxi.api_get(opts, PATH, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    fw = host.configManager.firewallSystem
+    return {rs.key: _ruleset_to_dict(rs) for rs in fw.firewallInfo.ruleset}
 
 
 def get(opts, rule, profile=None):
-    return esxi.api_get(opts, f"{PATH}/{rule}", profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    rs = _find_ruleset(host.configManager.firewallSystem, rule)
+    return _ruleset_to_dict(rs)
 
 
 def get_or_none(opts, rule, profile=None):
     try:
         return get(opts, rule, profile=profile)
-    except requests.HTTPError as exc:
-        if exc.response is not None and exc.response.status_code == 404:
-            return None
-        raise
+    except KeyError:
+        return None
 
 
 def set_enabled(opts, rule, enabled, profile=None):
-    return esxi.api_patch(opts, f"{PATH}/{rule}", body={"enabled": bool(enabled)}, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    fw = host.configManager.firewallSystem
+    if enabled:
+        fw.EnableRuleset(id=rule)
+    else:
+        fw.DisableRuleset(id=rule)
+    return get(opts, rule, profile=profile)
 
 
 def set_allowed_ips(opts, rule, allowed_ips, all_ip=False, profile=None):
     """Replace the allowed-IP list for *rule*.
 
     *allowed_ips* is a list of strings (CIDR or single addresses).
-    *all_ip* True opens the rule to all sources; the list is then ignored
-    by ESXi.
+    *all_ip* True opens the rule to all sources.
     """
-    body = {"allowed_hosts": {"all_ip": bool(all_ip), "ip_addresses": list(allowed_ips)}}
-    return esxi.api_patch(opts, f"{PATH}/{rule}", body=body, profile=profile)
+    host = esxi.get_host_system(opts, profile=profile)
+    fw = host.configManager.firewallSystem
+    spec = vim.host.Ruleset.RulesetSpec(
+        allowedHosts=vim.host.Ruleset.IpList(
+            allIp=bool(all_ip),
+            ipAddress=list(allowed_ips),
+        )
+    )
+    fw.UpdateRuleset(id=rule, spec=spec)
+    return get(opts, rule, profile=profile)
