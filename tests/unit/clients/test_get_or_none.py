@@ -3,7 +3,13 @@
 These tests assert that every resource module's ``get_or_none`` swallows 404s
 (returning ``None``) and lets other errors propagate. Pinning this behavior
 here means state modules don't need to reimplement the pattern.
+
+The ESXi clients use pyVmomi SOAP rather than REST, so their ``get_or_none``
+behavior is exercised separately at the bottom of this file.
 """
+
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
 import pytest
 import requests
@@ -53,7 +59,6 @@ from saltext.vcf.clients import vcfops_task
 VC_AUTH = "vcenter_authed"
 SM_AUTH = "sddc_authed"
 NX_AUTH = "mocked_responses"
-EX_AUTH = "esxi_authed"
 OPS_AUTH = "vcfops_authed"
 
 CASES = [
@@ -95,9 +100,6 @@ CASES = [
         NX_AUTH,
     ),
     (nsx_role_binding, "https://nsx.test/api/v1/aaa/role-bindings/x", NX_AUTH),
-    (esxi_service, "https://esxi.test/api/esx/services/x", EX_AUTH),
-    (esxi_firewall, "https://esxi.test/api/esx/firewall/rules/x", EX_AUTH),
-    (esxi_advanced, "https://esxi.test/api/esx/advanced/x", EX_AUTH),
     (vcfops_resource, "https://ops.test/suite-api/api/resources/x", OPS_AUTH),
     (vcfops_adapter, "https://ops.test/suite-api/api/adapterkinds/x", OPS_AUTH),
     (vcfops_policy, "https://ops.test/suite-api/api/policies/x", OPS_AUTH),
@@ -158,3 +160,31 @@ def test_get_or_none_propagates_500(request, opts, mod, url, auth_fixture):
     rsps.add(responses.GET, url, status=500)
     with pytest.raises(requests.HTTPError):
         mod.get_or_none(opts, "x")
+
+
+# ---------------------------------------------------------------------------
+# ESXi clients (SOAP / pyVmomi, not REST). Each ``get_or_none`` returns
+# ``None`` when the underlying lookup fails the way "not found" surfaces in
+# pyVmomi for that sub-manager, and propagates anything else.
+# ---------------------------------------------------------------------------
+
+
+def test_esxi_firewall_get_or_none_returns_none_when_missing(opts):
+    host = MagicMock()
+    host.configManager.firewallSystem.firewallInfo.ruleset = []  # no matching ruleset
+    with patch("saltext.vcf.utils.esxi.get_host_system", return_value=host):
+        assert esxi_firewall.get_or_none(opts, "missing") is None
+
+
+def test_esxi_service_get_or_none_returns_none_when_missing(opts):
+    host = MagicMock()
+    host.configManager.serviceSystem.serviceInfo.service = []  # no matching service
+    with patch("saltext.vcf.utils.esxi.get_host_system", return_value=host):
+        assert esxi_service.get_or_none(opts, "missing") is None
+
+
+def test_esxi_advanced_get_or_none_returns_none_when_missing(opts):
+    host = MagicMock()
+    host.configManager.advancedOption.QueryOptions.return_value = []  # empty result
+    with patch("saltext.vcf.utils.esxi.get_host_system", return_value=host):
+        assert esxi_advanced.get_or_none(opts, "Missing.Key") is None

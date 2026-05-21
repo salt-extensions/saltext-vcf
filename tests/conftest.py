@@ -111,18 +111,6 @@ def vcenter_authed(mocked_responses):
 
 
 @pytest.fixture
-def esxi_authed(mocked_responses):
-    """Pre-register the ESXi /api/session POST."""
-    mocked_responses.add(
-        responses_lib.POST,
-        "https://esxi.test/api/session",
-        json="esxi-token-abc",
-        status=200,
-    )
-    return mocked_responses
-
-
-@pytest.fixture
 def sddc_authed(mocked_responses):
     """Pre-register the SDDC Manager /v1/tokens POST."""
     mocked_responses.add(
