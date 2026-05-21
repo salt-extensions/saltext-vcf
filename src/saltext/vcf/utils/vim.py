@@ -27,9 +27,11 @@ credential block::
 import atexit
 import logging
 import ssl
+import time
 
 from pyVim.connect import Disconnect
 from pyVim.connect import SmartConnect
+from pyVmomi import vim as _vim
 
 from saltext.vcf.utils import vcenter as vc_rest
 
@@ -54,7 +56,14 @@ def get_service_instance(opts, profile=None):
     cfg = get_config(opts, profile=profile)
     host = cfg["host"]
     username = cfg["username"]
-    cache_key = f"{host}:{username}"
+    # Allow ``host: localhost:25443`` style or an explicit ``port:`` key in
+    # the pillar config — useful when reaching the target through an SSH
+    # tunnel or other port-forward.
+    port = cfg.get("port")
+    if ":" in host and port is None:
+        host, _, port_str = host.rpartition(":")
+        port = int(port_str)
+    cache_key = f"{host}:{port or 443}:{username}"
 
     if cache_key in _SI_CACHE:
         return _SI_CACHE[cache_key]
@@ -63,12 +72,15 @@ def get_service_instance(opts, profile=None):
     if not cfg["verify_ssl"]:
         sslContext = ssl._create_unverified_context()  # pylint: disable=invalid-name
 
-    si = SmartConnect(
-        host=host,
-        user=username,
-        pwd=cfg["password"],
-        sslContext=sslContext,
-    )
+    smart_kwargs = {
+        "host": host,
+        "user": username,
+        "pwd": cfg["password"],
+        "sslContext": sslContext,
+    }
+    if port is not None:
+        smart_kwargs["port"] = int(port)
+    si = SmartConnect(**smart_kwargs)
     _SI_CACHE[cache_key] = si
     atexit.register(_safe_disconnect, si)
     return si
@@ -138,6 +150,31 @@ def root_folder(opts, profile=None):
 
 def authorization_manager(opts, profile=None):
     return content(opts, profile=profile).authorizationManager
+
+
+def wait_for_task(task, *, timeout=300, poll_interval=0.5):
+    """Block until a pyVmomi *_Task finishes, then return ``task.info.result``.
+
+    pyVmomi's ``*_Task`` methods are async: they return as soon as vCenter
+    accepts the request, before the operation has actually taken effect.
+    Callers that immediately query the resulting state race the task; wrap
+    every mutating SOAP call with this helper.
+
+    Polls ``task.info.state`` every *poll_interval* seconds (default 0.5)
+    up to *timeout* seconds (default 300). Raises ``RuntimeError`` on task
+    error and ``TimeoutError`` if the task hasn't finished in time.
+    """
+    deadline = time.monotonic() + timeout
+    while task.info.state in (_vim.TaskInfo.State.running, _vim.TaskInfo.State.queued):
+        if time.monotonic() > deadline:
+            raise TimeoutError(
+                f"task {task._moId!r} did not finish within {timeout}s"  # noqa: SLF001
+            )
+        time.sleep(poll_interval)
+    if task.info.state == _vim.TaskInfo.State.error:
+        msg = task.info.error.msg if task.info.error else "task failed"
+        raise RuntimeError(f"task {task._moId!r} failed: {msg}")  # noqa: SLF001
+    return task.info.result
 
 
 def session_cookie(opts, profile=None):

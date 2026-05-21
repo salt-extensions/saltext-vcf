@@ -16,6 +16,8 @@ Two creation paths:
 
 from pyVmomi import vim
 
+from saltext.vcf.utils import vim as soap
+
 
 def _dvs(opts, name_or_id, profile=None):
     from saltext.vcf.clients.vim_dvs import _dvs as resolve  # avoid duplication
@@ -146,6 +148,7 @@ def _vlan_spec(name, vlan_id, num_ports, binding, auto_expand, promiscuous):
 def _add(opts, dvs_name_or_id, spec, profile=None):
     dvs = _dvs(opts, dvs_name_or_id, profile=profile)
     task = dvs.AddDVPortgroup_Task(spec=[spec])
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -179,10 +182,12 @@ def reconfigure(
             )
         cfg.defaultPortConfig = port_cfg
     task = pg.ReconfigureDVPortgroup_Task(spec=cfg)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
 def delete(opts, dvs_name_or_id, name, profile=None):
     pg = _dpg(opts, dvs_name_or_id, name, profile=profile)
     task = pg.Destroy_Task()
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
