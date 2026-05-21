@@ -162,15 +162,15 @@ def authorization_manager(opts, profile=None):
 
 
 def wait_for_task(task, *, timeout=300, poll_interval=0.5):
-    """Block until a pyVmomi *_Task finishes, then return ``task.info.result``.
+    """Block until a pyVmomi ``*_Task`` finishes, then return ``task.info.result``.
 
     pyVmomi's ``*_Task`` methods are async: they return as soon as vCenter
     accepts the request, before the operation has actually taken effect.
     Callers that immediately query the resulting state race the task; wrap
     every mutating SOAP call with this helper.
 
-    Polls ``task.info.state`` every *poll_interval* seconds (default 0.5)
-    up to *timeout* seconds (default 300). Raises ``RuntimeError`` on task
+    Polls ``task.info.state`` every ``poll_interval`` seconds (default 0.5)
+    up to ``timeout`` seconds (default 300). Raises ``RuntimeError`` on task
     error and ``TimeoutError`` if the task hasn't finished in time.
     """
     deadline = time.monotonic() + timeout
