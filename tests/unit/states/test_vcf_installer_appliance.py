@@ -74,7 +74,6 @@ def test_running_reports_failure(monkeypatch):
 
 
 def test_running_passes_explicit_spec(monkeypatch):
-    seen = {}
     monkeypatch.setattr(m, "is_reachable", lambda *a, **kw: True)
     explicit = {
         "installer_host": "other.lab",

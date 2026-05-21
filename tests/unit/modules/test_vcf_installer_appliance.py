@@ -51,17 +51,20 @@ def test_deploy_reads_pillar_when_no_spec(monkeypatch):
 def test_deploy_uses_explicit_spec_over_pillar(monkeypatch):
     seen = {}
     monkeypatch.setattr(c, "deploy_installer", lambda s: seen.update(s) or {"vm_moid": "vm-9"})
-    explicit = {"installer_host": "other", "installer_ova_url": "x", "installer_vm_name": "n",
-                "installer_deploy_esxi": "e", "esxi_hosts": []}
+    explicit = {
+        "installer_host": "other",
+        "installer_ova_url": "x",
+        "installer_vm_name": "n",
+        "installer_deploy_esxi": "e",
+        "esxi_hosts": [],
+    }
     m.deploy(installer_spec=explicit)
     assert seen["installer_host"] == "other"
 
 
 def test_ensure_running_noop_when_already_reachable(monkeypatch):
     monkeypatch.setattr(c, "is_appliance_reachable", lambda *a, **kw: True)
-    monkeypatch.setattr(
-        c, "deploy_installer", lambda *_a, **_kw: pytest.fail("should not deploy")
-    )
+    monkeypatch.setattr(c, "deploy_installer", lambda *_a, **_kw: pytest.fail("should not deploy"))
     assert m.ensure_running() == {"reachable": True, "deployed": False}
 
 
@@ -72,7 +75,8 @@ def test_ensure_running_deploys_and_waits(monkeypatch):
     )
     waits = []
     monkeypatch.setattr(
-        c, "wait_until_reachable",
+        c,
+        "wait_until_reachable",
         lambda host, **kw: waits.append((host, kw)),
     )
     out = m.ensure_running()

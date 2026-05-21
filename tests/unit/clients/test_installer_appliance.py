@@ -42,7 +42,7 @@ def test_wait_until_reachable_returns_when_ready(monkeypatch):
     sleeps = []
     monkeypatch.setattr(installer_appliance, "is_appliance_reachable", fake_reachable)
     monkeypatch.setattr(installer_appliance.time, "monotonic", lambda: 0)
-    monkeypatch.setattr(installer_appliance.time, "sleep", lambda s: sleeps.append(s))
+    monkeypatch.setattr(installer_appliance.time, "sleep", sleeps.append)
 
     installer_appliance.wait_until_reachable("h", poll_interval=1, timeout=60)
     assert calls["n"] == 3
