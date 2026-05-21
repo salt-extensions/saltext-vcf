@@ -137,6 +137,7 @@ def create(
     if version:
         spec.productInfo = vim.dvs.ProductSpec(version=version)
     task = folder.CreateDVS_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -150,12 +151,14 @@ def reconfigure(opts, name_or_id, *, max_mtu=None, description=None, profile=Non
     if description is not None:
         cfg.description = description
     task = dvs.ReconfigureDvs_Task(spec=cfg)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
 def delete(opts, name_or_id, profile=None):
     dvs = _dvs(opts, name_or_id, profile=profile)
     task = dvs.Destroy_Task()
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -181,6 +184,7 @@ def add_host(opts, dvs_name_or_id, host_name_or_id, *, pnic_devices=None, profil
         host=[member_cfg],
     )
     task = dvs.ReconfigureDvs_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -193,4 +197,5 @@ def remove_host(opts, dvs_name_or_id, host_name_or_id, profile=None):
         host=[member_cfg],
     )
     task = dvs.ReconfigureDvs_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
