@@ -138,16 +138,15 @@ def test_update_session_fail_body(opts, vcenter_authed):
 def test_update_session_add_file(opts, vcenter_authed):
     vcenter_authed.add(
         responses.POST,
-        f"{BASE}/api/content/library/item/update-session/file",
+        f"{BASE}/api/content/library/item/update-session/session-1/file",
         json={"upload_endpoint": {"uri": "https://vc.test/upload/x"}},
         status=200,
     )
     out = c.update_session_add_file(opts, "session-1", "disk.vmdk")
     assert out["upload_endpoint"]["uri"].endswith("/upload/x")
     body = json.loads(vcenter_authed.calls[-1].request.body)
-    assert body["update_session_id"] == "session-1"
-    assert body["file_spec"]["name"] == "disk.vmdk"
-    assert body["file_spec"]["source_type"] == "PUSH"
+    assert body["name"] == "disk.vmdk"
+    assert body["source_type"] == "PUSH"
     assert "action=add" in vcenter_authed.calls[-1].request.url
 
 

@@ -9,7 +9,6 @@ LOCAL_LIBRARY = "/api/content/local-library"
 SUBSCRIBED_LIBRARY = "/api/content/subscribed-library"
 ITEM = "/api/content/library/item"
 UPDATE_SESSION = "/api/content/library/item/update-session"
-UPDATE_SESSION_FILE = "/api/content/library/item/update-session/file"
 OVF_ITEM = "/api/vcenter/ovf/library-item"
 VM_TEMPLATE = "/api/vcenter/vm-template/library-items"
 
@@ -237,12 +236,17 @@ def update_session_add_file(opts, session_id, name, source_type="PUSH", profile=
     Returns a structure with an ``upload_endpoint`` URI the caller PUTs bytes to
     (when *source_type* is ``PUSH``).
     """
+    # The modern vSphere REST surface is path-style:
+    #   POST /api/content/library/item/update-session/{session_id}/file?action=add
+    # with the file spec as the body. The legacy
+    # ``POST /updatesession/file`` + ``{update_session_id, file_spec}`` form
+    # 404s on vSphere 9.
     body = {"name": name, "source_type": source_type}
     body.update(spec)
     return vcenter.api_post(
         opts,
-        UPDATE_SESSION_FILE,
-        body={"update_session_id": session_id, "file_spec": body},
+        f"{UPDATE_SESSION}/{session_id}/file",
+        body=body,
         params={"action": "add"},
         profile=profile,
     )
