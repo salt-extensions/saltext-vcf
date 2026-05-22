@@ -266,11 +266,21 @@ def update_session_list_files(opts, session_id, profile=None):
 # -- OVF deploy / create_from_vm ------------------------------------------
 
 
-def ovf_deploy(opts, library_item_id, deployment_target, deployment_spec, profile=None):
+def ovf_deploy(
+    opts,
+    library_item_id,
+    deployment_target,
+    deployment_spec,
+    profile=None,
+    timeout=1800,
+):
     """Deploy an OVF library item to a target resource pool/folder/host.
 
     *deployment_target* — ``{"resource_pool_id": ..., "folder_id": ..., "host_id": ...}``
     *deployment_spec*   — ``{"name": ..., "accept_all_eula": true, ...}``
+    *timeout*           — request timeout in seconds. Defaults to 1800
+    (30 min) because vCenter holds the HTTP connection open for the full
+    deploy, which routinely exceeds the global 30s default.
     """
     body = {
         "target": deployment_target,
@@ -282,6 +292,7 @@ def ovf_deploy(opts, library_item_id, deployment_target, deployment_spec, profil
         body=body,
         params={"action": "deploy"},
         profile=profile,
+        timeout=timeout,
     )
 
 
