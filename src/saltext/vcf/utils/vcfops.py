@@ -134,8 +134,8 @@ def api_put(opts, path, body=None, profile=None):
     return {}
 
 
-def api_delete(opts, path, profile=None):
+def api_delete(opts, path, params=None, profile=None):
     session, host = _session(opts, profile=profile)
-    resp = session.delete(f"https://{host}{path}", timeout=30)
+    resp = session.delete(f"https://{host}{path}", params=params, timeout=30)
     resp.raise_for_status()
     return {}

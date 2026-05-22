@@ -91,9 +91,11 @@ ______________
     vcfops_adapter
     vcfops_alert
     vcfops_auth
+    vcfops_certificate
     vcfops_collector
     vcfops_credential
     vcfops_deployment
+    vcfops_fleet_passwords
     vcfops_maintenance
     vcfops_policy
     vcfops_recommendation
