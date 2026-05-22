@@ -13,6 +13,7 @@ def test_get_config_default(opts):
         "username": "u",
         "password": "p",
         "verify_ssl": False,
+        "timeout": vcenter.DEFAULT_TIMEOUT,
     }
 
 
@@ -101,3 +102,59 @@ def test_http_error_propagates(opts, vcenter_authed):
     vcenter_authed.add(responses.GET, "https://vc.test/api/vcenter/cluster/missing", status=404)
     with pytest.raises(requests.HTTPError):
         vcenter.api_get(opts, "/api/vcenter/cluster/missing")
+
+
+def test_api_call_uses_pillar_timeout(opts, vcenter_authed, monkeypatch):
+    """A ``timeout:`` value in pillar should be passed through to requests."""
+    opts["pillar"]["saltext.vcf"]["vcenter"]["timeout"] = 1234
+    seen = {}
+
+    def fake_get(self, url, **kwargs):
+        seen.update(kwargs)
+        resp = requests.Response()
+        resp.status_code = 200
+        resp._content = b"{}"
+        return resp
+
+    import requests
+
+    monkeypatch.setattr(requests.Session, "get", fake_get)
+    vcenter.api_get(opts, "/api/vcenter/cluster")
+    assert seen["timeout"] == 1234
+
+
+def test_api_call_per_call_timeout_overrides_pillar(opts, vcenter_authed, monkeypatch):
+    """A ``timeout=`` kwarg should override the pillar default."""
+    opts["pillar"]["saltext.vcf"]["vcenter"]["timeout"] = 1234
+    seen = {}
+
+    def fake_post(self, url, **kwargs):
+        seen.update(kwargs)
+        resp = requests.Response()
+        resp.status_code = 200
+        resp._content = b"{}"
+        return resp
+
+    import requests
+
+    monkeypatch.setattr(requests.Session, "post", fake_post)
+    vcenter.api_post(opts, "/api/vcenter/cluster", body={"x": 1}, timeout=99)
+    assert seen["timeout"] == 99
+
+
+def test_api_call_default_timeout(opts, vcenter_authed, monkeypatch):
+    """Without pillar or per-call override, ``DEFAULT_TIMEOUT`` is used."""
+    seen = {}
+
+    def fake_get(self, url, **kwargs):
+        seen.update(kwargs)
+        resp = requests.Response()
+        resp.status_code = 200
+        resp._content = b"{}"
+        return resp
+
+    import requests
+
+    monkeypatch.setattr(requests.Session, "get", fake_get)
+    vcenter.api_get(opts, "/api/vcenter/cluster")
+    assert seen["timeout"] == vcenter.DEFAULT_TIMEOUT

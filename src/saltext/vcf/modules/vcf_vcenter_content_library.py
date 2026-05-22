@@ -349,8 +349,11 @@ def update_session_list_files(session_id, profile=None):
 # -- OVF deploy / create_from_vm ------------------------------------------
 
 
-def ovf_deploy(library_item_id, deployment_target, deployment_spec, profile=None):
+def ovf_deploy(library_item_id, deployment_target, deployment_spec, profile=None, timeout=1800):
     """Deploy an OVF library item to a vCenter target.
+
+    *timeout* — request timeout in seconds (default 1800). Override when a
+    deploy is known to take longer (very large OVAs, slow storage).
 
     CLI Example:
 
@@ -359,7 +362,12 @@ def ovf_deploy(library_item_id, deployment_target, deployment_spec, profile=None
         salt '*' vcf_vcenter_content_library.ovf_deploy <item_id> '{"resource_pool_id": "..."}' '{"name": "vm-1"}'
     """
     return c.ovf_deploy(
-        __opts__, library_item_id, deployment_target, deployment_spec, profile=profile
+        __opts__,
+        library_item_id,
+        deployment_target,
+        deployment_spec,
+        profile=profile,
+        timeout=timeout,
     )
 
 
