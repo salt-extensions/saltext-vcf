@@ -80,9 +80,11 @@ _________________
     vcf_vcfops_adapter
     vcf_vcfops_alert
     vcf_vcfops_auth
+    vcf_vcfops_certificate
     vcf_vcfops_collector
     vcf_vcfops_credential
     vcf_vcfops_deployment
+    vcf_vcfops_fleet_passwords
     vcf_vcfops_maintenance
     vcf_vcfops_policy
     vcf_vcfops_recommendation
