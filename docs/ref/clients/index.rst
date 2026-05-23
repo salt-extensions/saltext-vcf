@@ -88,6 +88,24 @@ ______________
     vcenter_tag_category
     vcenter_vm
     vcenter_vm_class
+    vcfa_action
+    vcfa_action_secret
+    vcfa_action_subscription
+    vcfa_catalog
+    vcfa_cloud_account
+    vcfa_cloud_template
+    vcfa_cloud_zone
+    vcfa_custom_role
+    vcfa_iam
+    vcfa_network_profile
+    vcfa_policy
+    vcfa_project
+    vcfa_project_user
+    vcfa_resource_action
+    vcfa_storage_profile
+    vcfa_vro_config_element
+    vcfa_vro_package
+    vcfa_workflow_run
     vcfops_adapter
     vcfops_alert
     vcfops_auth

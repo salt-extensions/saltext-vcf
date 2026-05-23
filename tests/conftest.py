@@ -46,6 +46,13 @@ def opts():
                     "password": "p",
                     "verify_ssl": False,
                 },
+                "vcfa": {
+                    "host": "vcfa.test",
+                    "username": "configadmin",
+                    "password": "p",
+                    "domain": "System Domain",
+                    "verify_ssl": False,
+                },
                 "profiles": {
                     "alt": {
                         "vcenter": {
@@ -77,6 +84,7 @@ def reset_caches():
     from saltext.vcf.utils import installer
     from saltext.vcf.utils import sddc
     from saltext.vcf.utils import vcenter
+    from saltext.vcf.utils import vcfa
     from saltext.vcf.utils import vcfops
     from saltext.vcf.utils import vim as soap
     from saltext.vcf.utils import vsan
@@ -90,6 +98,7 @@ def reset_caches():
         soap._SI_CACHE,
         cim._CONN_CACHE,
         vsan._VSAN_STUB_CACHE,
+        vcfa._TOKEN_CACHE,
     ]
     for c in caches:
         c.clear()
@@ -141,6 +150,24 @@ def vcfops_authed(mocked_responses):
         responses_lib.POST,
         "https://ops.test/suite-api/api/auth/token/acquire",
         json={"token": "ops-tok-abc", "validity": 1736294400000},
+        status=200,
+    )
+    return mocked_responses
+
+
+@pytest.fixture
+def vcfa_authed(mocked_responses):
+    """Pre-register the VCF Automation two-step login flow."""
+    mocked_responses.add(
+        responses_lib.POST,
+        "https://vcfa.test/csp/gateway/am/api/login",
+        json={"refresh_token": "vcfa-refresh-abc"},
+        status=200,
+    )
+    mocked_responses.add(
+        responses_lib.POST,
+        "https://vcfa.test/iaas/api/login",
+        json={"token": "vcfa-bearer-abc"},
         status=200,
     )
     return mocked_responses
