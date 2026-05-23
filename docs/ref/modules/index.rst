@@ -77,6 +77,24 @@ _________________
     vcf_vcenter_vm
     vcf_vcenter_vm_class
     vcf_vcf_services
+    vcf_vcfa_action
+    vcf_vcfa_action_secret
+    vcf_vcfa_action_subscription
+    vcf_vcfa_catalog
+    vcf_vcfa_cloud_account
+    vcf_vcfa_cloud_template
+    vcf_vcfa_cloud_zone
+    vcf_vcfa_custom_role
+    vcf_vcfa_iam
+    vcf_vcfa_network_profile
+    vcf_vcfa_policy
+    vcf_vcfa_project
+    vcf_vcfa_project_user
+    vcf_vcfa_resource_action
+    vcf_vcfa_storage_profile
+    vcf_vcfa_vro_config_element
+    vcf_vcfa_vro_package
+    vcf_vcfa_workflow_run
     vcf_vcfops_adapter
     vcf_vcfops_alert
     vcf_vcfops_auth

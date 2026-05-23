@@ -63,6 +63,7 @@ See :doc:`topics/configuration` for the full pillar shape.
    topics/vks-bridge
    topics/vsan-soap
    topics/vmsp-mediated
+   topics/vcfa-integration
 
 .. toctree::
    :maxdepth: 2

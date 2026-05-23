@@ -101,6 +101,7 @@ def deploy_ova(
                         progress=progress,
                         verify_ssl=verify_ssl,
                         timeout=upload_timeout,
+                        session_cookie=_session_cookie(si),
                     )
                     progress.set_percent(100)
                     progress.stop()
@@ -326,8 +327,30 @@ class _LeaseProgress(threading.Thread):
                 return
 
 
+def _session_cookie(si):
+    """Extract ``vmware_soap_session=<token>`` cookie from a pyVmomi SI.
+
+    Required on every NFC PUT/GET — ESXi's NFC daemon authenticates
+    against the same SOAP session that obtained the lease and returns
+    ``403 Forbidden`` without it.
+    """
+    raw = si._stub.cookie  # noqa: SLF001
+    pair = raw.split(";", 1)[0]
+    name, _, value = pair.partition("=")
+    return f"{name}={value.strip().strip(chr(34))}"
+
+
 def _upload_disks(
-    *, target_host, device_urls, file_items, tar, members, progress, verify_ssl, timeout
+    *,
+    target_host,
+    device_urls,
+    file_items,
+    tar,
+    members,
+    progress,
+    verify_ssl,
+    timeout,
+    session_cookie,
 ):
     by_dev = {}
     for du in device_urls:
@@ -353,10 +376,19 @@ def _upload_disks(
                 else "application/octet-stream"
             ),
             "Content-Length": str(size),
+            "Cookie": session_cookie,
+            # ESXi's ha-nfc requires Overwrite even for the empty placeholder
+            # the lease just created; without it the daemon 403s before
+            # looking at the body.
+            "Overwrite": "t",
         }
         reader = _CountingReader(stream, prior_sent=bytes_sent, total=total_size, progress=progress)
         resp = requests.put(url, data=reader, headers=headers, verify=verify_ssl, timeout=timeout)
-        resp.raise_for_status()
+        if resp.status_code >= 400:
+            body = (resp.text or "")[:500]
+            raise RuntimeError(
+                f"NFC upload of {fi.path!r} failed: HTTP {resp.status_code} {body!r}"
+            )
         bytes_sent += size
 
 
