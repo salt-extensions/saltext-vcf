@@ -2,7 +2,7 @@
 
 Used by:
  - ``tests/unit/test_doc_examples.py`` — signature-check pass (no I/O)
- - ``saltext-vmware-integration/test_doc_examples.py`` — live invocation pass
+ - ``saltext-vcf-integration/test_doc_examples.py`` — live invocation pass
 
 Block shape we recognize::
 

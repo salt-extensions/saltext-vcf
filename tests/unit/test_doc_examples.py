@@ -6,7 +6,7 @@ For each parsed example, assert:
  3. The example's positional + keyword args can be bound to the function's signature.
 
 Doesn't hit any network — pure introspection. The live invocation pass lives
-in ``saltext-vmware-integration/test_doc_examples.py``.
+in ``saltext-vcf-integration/test_doc_examples.py``.
 """
 
 from __future__ import annotations
