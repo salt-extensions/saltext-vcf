@@ -101,6 +101,7 @@ def deploy_ova(
                         progress=progress,
                         verify_ssl=verify_ssl,
                         timeout=upload_timeout,
+                        session_cookie=_session_cookie(si),
                     )
                     progress.set_percent(100)
                     progress.stop()
@@ -326,8 +327,30 @@ class _LeaseProgress(threading.Thread):
                 return
 
 
+def _session_cookie(si):
+    """Extract the ``vmware_soap_session=<token>`` cookie from a pyVmomi SI.
+
+    Required on the ``HttpNfcLease`` PUT/GET — ESXi's NFC daemon
+    authenticates the same SOAP session that obtained the lease and
+    returns ``403 Forbidden`` without it.
+    """
+    raw = si._stub.cookie  # noqa: SLF001
+    pair = raw.split(";", 1)[0]
+    name, _, value = pair.partition("=")
+    return f"{name}={value.strip().strip(chr(34))}"
+
+
 def _upload_disks(
-    *, target_host, device_urls, file_items, tar, members, progress, verify_ssl, timeout
+    *,
+    target_host,
+    device_urls,
+    file_items,
+    tar,
+    members,
+    progress,
+    verify_ssl,
+    timeout,
+    session_cookie,
 ):
     by_dev = {}
     for du in device_urls:
@@ -353,6 +376,11 @@ def _upload_disks(
                 else "application/octet-stream"
             ),
             "Content-Length": str(size),
+            "Cookie": session_cookie,
+            # ESXi's ha-nfc daemon requires Overwrite for PUTs even when the
+            # destination file is the empty placeholder the lease just created;
+            # without it, ESXi 403s on auth before even checking content.
+            "Overwrite": "t",
         }
         reader = _CountingReader(stream, prior_sent=bytes_sent, total=total_size, progress=progress)
         resp = requests.put(url, data=reader, headers=headers, verify=verify_ssl, timeout=timeout)

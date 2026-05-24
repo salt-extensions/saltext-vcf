@@ -250,11 +250,13 @@ def test_upload_disks_puts_each_file_with_url_substitution(monkeypatch, tmp_path
             progress=progress,
             verify_ssl=False,
             timeout=60,
+            session_cookie="vmware_soap_session=abc123",
         )
     assert len(calls) == 1
     assert calls[0]["url"] == "https://esx-1.lab/nfc/abc/disk"
     assert calls[0]["headers"]["Content-Type"] == "application/x-vnd.vmware-streamVmdk"
     assert calls[0]["headers"]["Content-Length"] == "256"
+    assert calls[0]["headers"]["Cookie"] == "vmware_soap_session=abc123"
 
 
 def test_upload_disks_raises_when_no_device_url_match(tmp_path):
@@ -273,6 +275,7 @@ def test_upload_disks_raises_when_no_device_url_match(tmp_path):
                 progress=mock.MagicMock(),
                 verify_ssl=False,
                 timeout=10,
+                session_cookie="vmware_soap_session=z",
             )
 
 
@@ -358,6 +361,7 @@ def test_deploy_ova_happy_path(monkeypatch, tmp_path):
     content, _dc, cr, _host = _fake_content(datastores=["datastore1"], networks=["VM Network"])
     si = mock.MagicMock()
     si.RetrieveContent.return_value = content
+    si._stub.cookie = 'vmware_soap_session="abc123"; Path=/; HttpOnly'
 
     monkeypatch.setattr(ovf_deploy, "SmartConnect", lambda **_k: si)
     monkeypatch.setattr(ovf_deploy, "Disconnect", lambda _si: None)
