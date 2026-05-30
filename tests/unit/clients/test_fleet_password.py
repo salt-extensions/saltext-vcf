@@ -44,7 +44,7 @@ def test_get_password(opts, sddc_authed):
         status=200,
     )
     out = fleet_password.get_password(opts, "vc-root")
-    assert out["password"].startswith("VMware")
+    assert out["password"].startswith("secret")
 
 
 def test_set_password(opts, sddc_authed):
