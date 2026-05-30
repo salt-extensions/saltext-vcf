@@ -12,9 +12,9 @@ Pillar shape::
       vcenter:
         instances:
           mgmt-vc:
-            host: mgmt-vc.vcf.nimbus.internal
+            host: mgmt-vc.example.test
             username: administrator@vsphere.local
-            password: VMware123!VMware123!
+            password: secret
             verify_ssl: false
       vcf_vm:
         instances:

@@ -24,7 +24,7 @@ Config is read from Salt opts/pillar under ``saltext.vcf.vcfa``::
       vcfa:
         host: automation.vcf.example.com
         username: configadmin
-        password: VMware123!
+        password: secret
         domain: System Domain       # optional; default "System Domain"
         verify_ssl: false
         timeout: 60                 # optional; default DEFAULT_TIMEOUT

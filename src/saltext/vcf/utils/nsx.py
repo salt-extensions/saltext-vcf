@@ -10,9 +10,9 @@ Config is read from Salt opts/pillar under ``saltext.vcf.nsx``:
 
     saltext.vcf:
       nsx:
-        host: mgmt-nsx.vcf.nimbus.internal
+        host: mgmt-nsx.example.test
         username: admin
-        password: VMware123!VMware123!
+        password: secret
         verify_ssl: false
 """
 

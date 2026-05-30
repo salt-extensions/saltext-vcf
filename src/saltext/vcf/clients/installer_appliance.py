@@ -4,10 +4,8 @@ The VCF Installer is the OVA you push onto a fresh ESXi host before any
 vCenter/SDDC Manager exists. Once it boots, the standard bringup REST
 flow (validate + submit) lives in :mod:`saltext.vcf.clients.installer_bringup`.
 
-This module wraps :func:`saltext.vcf.clients.ovf_deploy.deploy_ova` with
-the spec shape used by the saltext-vcf-automation reference (so the same
-pillar can drive either extension) and adds TCP reachability helpers
-used to confirm the appliance has booted.
+This module wraps the OVA deployment backends with a pillar-friendly spec shape
+and adds TCP reachability helpers used to confirm the appliance has booted.
 """
 
 import logging
@@ -15,6 +13,7 @@ import socket
 import time
 
 from saltext.vcf.clients import ovf_deploy
+from saltext.vcf.clients import ovftool_deploy
 
 log = logging.getLogger(__name__)
 
@@ -59,15 +58,19 @@ def deploy_installer(installer_spec):
       entry whose ``fqdn`` matches ``installer_deploy_esxi`` provides the
       ESXi root credentials.
 
-    Optional: ``datastore``, ``network_map``, ``ovf_properties``,
+    Optional: ``deployment_backend`` (``pyvmomi`` by default, or
+    ``ovftool``), ``datastore``, ``network_map``, ``ovf_properties``,
     ``disk_provisioning``, ``deployment_option``, ``installer_port``
-    (default 443), ``power_on`` (default ``True``).
+    (default 443), ``power_on`` (default ``True``), ``ovftool_path``,
+    and ``ovftool_extra_args``.
 
-    Returns the dict produced by :func:`ovf_deploy.deploy_ova`.
+    Returns the dict produced by the selected deployment backend.
     """
     target_host = installer_spec["installer_deploy_esxi"]
     creds = _esxi_credentials(installer_spec, target_host)
-    return ovf_deploy.deploy_ova(
+    backend = installer_spec.get("deployment_backend", "pyvmomi").lower()
+    deploy = _deployment_backend(backend)
+    kwargs = dict(
         ova_source=installer_spec["installer_ova_url"],
         target_host=target_host,
         target_user=creds["username"],
@@ -83,6 +86,18 @@ def deploy_installer(installer_spec):
         verify_ssl=installer_spec.get("verify_ssl", False),
         upload_timeout=installer_spec.get("upload_timeout", 3600),
     )
+    if backend == "ovftool":
+        kwargs["ovftool_path"] = installer_spec.get("ovftool_path") or "ovftool"
+        kwargs["extra_args"] = installer_spec.get("ovftool_extra_args")
+    return deploy(**kwargs)
+
+
+def _deployment_backend(name):
+    if name == "pyvmomi":
+        return ovf_deploy.deploy_ova
+    if name == "ovftool":
+        return ovftool_deploy.deploy_ova
+    raise ValueError(f"unsupported installer appliance deployment_backend={name!r}")
 
 
 def _esxi_credentials(spec, host):

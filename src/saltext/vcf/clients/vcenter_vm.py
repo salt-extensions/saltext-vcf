@@ -1,7 +1,12 @@
 """Resource layer for vCenter VMs (/api/vcenter/vm)."""
 
+import socket
+import time
+
 import requests
 
+from saltext.vcf.clients import vim_vm
+from saltext.vcf.clients import vim_vm_customization
 from saltext.vcf.clients import vcenter_cluster
 from saltext.vcf.clients import vcenter_datacenter
 from saltext.vcf.clients import vcenter_host
@@ -27,6 +32,14 @@ def get_or_none(opts, vm, profile=None):
         raise
 
 
+def get_by_name(opts, name, profile=None):
+    matches = search(opts, names=[name], profile=profile)
+    for vm in matches:
+        if vm.get("name") == name:
+            return vm
+    return None
+
+
 def _power(opts, vm, action, profile=None):
     return vcenter.api_post(opts, f"{PATH}/{vm}/power", params={"action": action}, profile=profile)
 
@@ -41,6 +54,80 @@ def power_off(opts, vm, profile=None):
 
 def reset(opts, vm, profile=None):
     return _power(opts, vm, "reset", profile=profile)
+
+
+def deploy(opts, name, spec, profile=None):
+    """Deploy a VM for PoC validation.
+
+    Supports cloning from an existing template/source VM when ``template`` or
+    ``source`` is provided. Without a source, creates a bare VM.
+    """
+    source = spec.get("source") or spec.get("template")
+    if source:
+        customization = _customization_spec(spec)
+        return {
+            "task": vim_vm.clone(
+                opts,
+                source,
+                name,
+                folder=spec.get("folder"),
+                datastore=spec.get("datastore"),
+                host=spec.get("host"),
+                resource_pool=spec.get("resource_pool"),
+                cluster=spec.get("cluster"),
+                power_on=spec.get("power_on", True),
+                cpu_count=spec.get("cpu_count"),
+                memory_mb=spec.get("memory_mb"),
+                annotation=spec.get("annotation"),
+                customization=customization,
+                profile=profile,
+            )
+        }
+    return {
+        "task": vim_vm.create(
+            opts,
+            name,
+            spec["folder"],
+            spec["datastore"],
+            cpu_count=spec.get("cpu_count", 1),
+            memory_mb=spec.get("memory_mb", 1024),
+            guest_id=spec.get("guest_id", "otherGuest64"),
+            cluster=spec.get("cluster"),
+            host=spec.get("host"),
+            resource_pool=spec.get("resource_pool"),
+            annotation=spec.get("annotation", ""),
+            profile=profile,
+        )
+    }
+
+
+def wait_reachable(target_ip, port=22, timeout=120, interval=10):
+    deadline = time.monotonic() + float(timeout)
+    while True:
+        try:
+            with socket.create_connection((target_ip, int(port)), timeout=min(float(interval), 10)):
+                return True
+        except OSError:
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(float(interval))
+
+
+def _customization_spec(spec):
+    customization = spec.get("customization")
+    if not customization:
+        return None
+    ctype = customization.get("type", "linux")
+    if ctype != "linux":
+        raise ValueError(f"unsupported VM customization type {ctype!r}")
+    return vim_vm_customization.linux_spec(
+        customization.get("hostname") or spec.get("vm_name") or spec.get("name"),
+        customization["domain"],
+        time_zone=customization.get("time_zone", "UTC"),
+        nics=customization.get("nics"),
+        dns_servers=customization.get("dns_servers"),
+        dns_search_path=customization.get("dns_search_path"),
+    )
 
 
 _FILTER_KEYS = (

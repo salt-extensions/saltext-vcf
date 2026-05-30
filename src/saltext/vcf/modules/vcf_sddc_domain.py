@@ -33,3 +33,28 @@ def get(domain, profile=None):
 
     """
     return r.get(__opts__, domain, profile=profile)
+
+
+def validate(spec, profile=None):
+    """Validate a workload domain spec."""
+    return r.validate(__opts__, spec, profile=profile)
+
+
+def create(spec, profile=None):
+    """Create a workload domain."""
+    return r.create(__opts__, spec, profile=profile)
+
+
+def update(domain, spec, profile=None):
+    """Update a workload domain."""
+    return r.update(__opts__, domain, spec, profile=profile)
+
+
+def delete(domain, profile=None):
+    """Delete a workload domain."""
+    return r.delete(__opts__, domain, profile=profile)
+
+
+def mark_for_deletion(domain, profile=None):
+    """Mark a workload domain for deletion."""
+    return r.mark_for_deletion(__opts__, domain, profile=profile)

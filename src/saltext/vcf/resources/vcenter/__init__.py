@@ -10,9 +10,9 @@ subtree::
       vcenter:
         instances:
           mgmt-vc:
-            host: mgmt-vc.vcf.nimbus.internal
+            host: mgmt-vc.example.test
             username: administrator@vsphere.local
-            password: VMware123!VMware123!
+            password: secret
             verify_ssl: false
 
 The current resource is conveyed by the loader via ``__resource__["id"]``;

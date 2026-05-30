@@ -88,6 +88,54 @@ def test_deploy_installer_picks_credentials_for_target(monkeypatch):
     assert seen["network_map"] == {"VM Network": "VM Network"}
 
 
+def test_deploy_installer_can_use_ovftool_backend(monkeypatch):
+    spec = {
+        "deployment_backend": "ovftool",
+        "installer_ova_url": "/tmp/installer.ova",
+        "installer_vm_name": "vcf-installer",
+        "installer_deploy_esxi": "esx-1.lab.local",
+        "esxi_hosts": [{"fqdn": "esx-1.lab.local", "username": "root", "password": "right"}],
+        "datastore": "datastore1",
+        "ovftool_path": "/opt/ovftool/ovftool",
+        "ovftool_extra_args": ["--X:logLevel=verbose"],
+    }
+    seen = {}
+
+    def fake_deploy(**kwargs):
+        seen.update(kwargs)
+        return {"vm_name": "vcf-installer", "backend": "ovftool"}
+
+    monkeypatch.setattr(installer_appliance.ovftool_deploy, "deploy_ova", fake_deploy)
+    result = installer_appliance.deploy_installer(spec)
+
+    assert result["backend"] == "ovftool"
+    assert seen["target_host"] == "esx-1.lab.local"
+    assert seen["datastore"] == "datastore1"
+    assert seen["ovftool_path"] == "/opt/ovftool/ovftool"
+    assert seen["extra_args"] == ["--X:logLevel=verbose"]
+
+
+def test_deploy_installer_ovftool_defaults_path_when_value_is_none(monkeypatch):
+    spec = {
+        "deployment_backend": "ovftool",
+        "installer_ova_url": "/tmp/installer.ova",
+        "installer_vm_name": "vcf-installer",
+        "installer_deploy_esxi": "esx-1.lab.local",
+        "esxi_hosts": [{"fqdn": "esx-1.lab.local", "username": "root", "password": "right"}],
+        "ovftool_path": None,
+    }
+    seen = {}
+
+    def fake_deploy(**kwargs):
+        seen.update(kwargs)
+        return {"vm_name": "vcf-installer"}
+
+    monkeypatch.setattr(installer_appliance.ovftool_deploy, "deploy_ova", fake_deploy)
+    installer_appliance.deploy_installer(spec)
+
+    assert seen["ovftool_path"] == "ovftool"
+
+
 def test_deploy_installer_raises_when_no_matching_host(monkeypatch):
     spec = {
         "installer_ova_url": "/tmp/installer.ova",
@@ -97,4 +145,16 @@ def test_deploy_installer_raises_when_no_matching_host(monkeypatch):
     }
     monkeypatch.setattr(installer_appliance.ovf_deploy, "deploy_ova", lambda **kw: {})
     with pytest.raises(LookupError):
+        installer_appliance.deploy_installer(spec)
+
+
+def test_deploy_installer_raises_on_unknown_backend():
+    spec = {
+        "deployment_backend": "bogus",
+        "installer_ova_url": "/tmp/installer.ova",
+        "installer_vm_name": "vcf-installer",
+        "installer_deploy_esxi": "esx-1.lab.local",
+        "esxi_hosts": [{"fqdn": "esx-1.lab.local", "username": "root", "password": "right"}],
+    }
+    with pytest.raises(ValueError, match="deployment_backend"):
         installer_appliance.deploy_installer(spec)

@@ -8,28 +8,28 @@ saltext.vcf:
   vcenter:
     host: mgmt-vc.example.com
     username: administrator@vsphere.local
-    password: VMware123!VMware123!
+    password: secret
     verify_ssl: false
   sddc_manager:
     host: sddc-manager.example.com
     username: administrator@vsphere.local
-    password: VMware123!VMware123!
+    password: secret
     verify_ssl: false
   nsx:
     host: mgmt-nsx.example.com
     username: admin
-    password: VMware123!VMware123!
+    password: secret
     verify_ssl: false
   vcf_ops:
     host: ops.example.com
     username: admin
-    password: VMware123!VMware123!
+    password: secret
     auth_source: LOCAL          # optional, default LOCAL
     verify_ssl: false
   esxi:
     host: esxi01.example.com    # standalone hosts only
     username: root
-    password: VMware123!
+    password: secret
     verify_ssl: false
 ```
 

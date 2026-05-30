@@ -7,9 +7,9 @@ Configuration shape::
       sddc:
         instances:
           sddc-01:
-            host: sddc-manager.vcf.nimbus.internal
+            host: sddc-manager.example.test
             username: administrator@vsphere.local
-            password: VMware123!VMware123!
+            password: secret
             verify_ssl: false
 """
 

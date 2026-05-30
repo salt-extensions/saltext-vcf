@@ -15,9 +15,9 @@ configured resource key (``resources`` by default)::
       vcenter:
         instances:
           mgmt-vc:
-            host: mgmt-vc.vcf.nimbus.internal
+            host: mgmt-vc.example.test
             username: administrator@vsphere.local
-            password: VMware123!
+            password: secret
             verify_ssl: false
           prod-vc:
             host: prod-vc.example.com
@@ -25,10 +25,10 @@ configured resource key (``resources`` by default)::
             password: secret
       sddc:
         instances:
-          sddc-01: { host: sddc-manager.vcf.nimbus.internal, ... }
+          sddc-01: { host: sddc-manager.example.test, ... }
       nsx:
         instances:
-          mgmt-nsx: { host: mgmt-nsx.vcf.nimbus.internal, ... }
+          mgmt-nsx: { host: mgmt-nsx.example.test, ... }
 
 After :func:`discover` runs (via ``saltutil.refresh_resources``) the master's
 Resource Registry knows which IDs each minion manages, so users can target

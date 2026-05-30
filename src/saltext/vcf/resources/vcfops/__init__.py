@@ -7,9 +7,9 @@ Configuration::
       vcf_ops:
         instances:
           ops-prod:
-            host: ops.vcf.nimbus.internal
+            host: ops.example.test
             username: admin
-            password: VMware123!
+            password: secret
             auth_source: LOCAL          # optional
             verify_ssl: false
 """

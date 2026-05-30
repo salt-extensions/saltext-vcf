@@ -16,7 +16,7 @@ Config is read from Salt opts/pillar under ``saltext.vcf.esxi``::
       esxi:
         host: esxi-test.example.com
         username: root
-        password: VMware123!
+        password: secret
         verify_ssl: false
 """
 

@@ -40,7 +40,7 @@ def test_get_password(opts, sddc_authed):
     sddc_authed.add(
         responses.GET,
         f"{BASE}/vc-root",
-        json={"id": "vc-root", "username": "root", "password": "VMware123!VMware123!"},
+        json={"id": "vc-root", "username": "root", "password": "secret"},
         status=200,
     )
     out = fleet_password.get_password(opts, "vc-root")

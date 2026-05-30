@@ -15,9 +15,9 @@ Config is read from Salt opts/pillar under ``saltext.vcf.vcf_installer``::
 
     saltext.vcf:
       vcf_installer:
-        host: installer.vcf.nimbus.internal
+        host: installer.example.test
         username: admin@local
-        password: VMware123!VMware123!
+        password: secret
         verify_ssl: false
 """
 

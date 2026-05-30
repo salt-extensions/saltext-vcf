@@ -1,8 +1,9 @@
 """Execution module: deploy and probe the VCF Installer appliance.
 
-The deploy step is a one-shot pyVmomi OVA push onto a bare ESXi host;
-once it returns, the appliance's standard bringup REST flow lives in
-:mod:`saltext.vcf.modules.vcf_installer_bringup`.
+The deploy step is a one-shot OVA push onto a bare ESXi host using the
+configured backend (pyVmomi by default, or ovftool for standalone ESXi).
+Once it returns, the appliance's standard bringup REST flow lives
+in :mod:`saltext.vcf.modules.vcf_installer_bringup`.
 """
 
 from saltext.vcf.clients import installer_appliance as c

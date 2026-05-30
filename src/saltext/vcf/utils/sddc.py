@@ -10,9 +10,9 @@ Config is read from Salt opts/pillar under ``saltext.vcf.sddc_manager``:
 
     saltext.vcf:
       sddc_manager:
-        host: sddc-manager.vcf.nimbus.internal
+        host: sddc-manager.example.test
         username: administrator@vsphere.local
-        password: VMware123!VMware123!
+        password: secret
         verify_ssl: false
 """
 

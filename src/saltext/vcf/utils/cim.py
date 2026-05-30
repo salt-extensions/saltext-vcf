@@ -13,7 +13,7 @@ pillar block as the standalone ESXi REST modules::
       esxi:
         host: esxi01.example.com
         username: root
-        password: VMware123!
+        password: secret
         verify_ssl: false
         cim_port: 5989       # optional; default 5989
 """

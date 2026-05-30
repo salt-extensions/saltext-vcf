@@ -33,3 +33,18 @@ def get(zone_id, profile=None):
 
     """
     return c.get(__opts__, zone_id, profile=profile)
+
+
+def create(name, zone_type, profile=None, **spec):
+    """Create a transport zone."""
+    return c.create(__opts__, name, zone_type, profile=profile, **spec)
+
+
+def update(zone_id, profile=None, **spec):
+    """Update a transport zone by id."""
+    return c.update(__opts__, zone_id, profile=profile, **spec)
+
+
+def delete(zone_id, profile=None):
+    """Delete a transport zone by id."""
+    return c.delete(__opts__, zone_id, profile=profile)

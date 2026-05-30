@@ -34,7 +34,7 @@ saltext.vcf:
   vcfa:
     host: automation.vcf.example.com
     username: configadmin
-    password: VMware123!
+    password: secret
     domain: System Domain         # optional; default "System Domain"
     verify_ssl: false
     timeout: 60                   # optional; default 30

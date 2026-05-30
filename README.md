@@ -110,7 +110,7 @@ Topic guides under `docs/topics/`:
 - [vSAN over SOAP](docs/topics/vsan-soap.md)
 - [VMSP mediated access](docs/topics/vmsp-mediated.md)
 
-Examples per component under `docs/examples/`.
+Examples per component live under `docs/examples/`.
 
 ## Development
 
@@ -120,9 +120,8 @@ pre-commit install
 pytest tests/ -q
 ```
 
-Live integration tests run against a real VCF lab and live in a
-separate internal repository; they're not part of the unit test suite
-here.
+Live integration tests run against a real VCF lab and live in a separate
+integration repository; they're not part of the unit test suite here.
 
 ## License
 

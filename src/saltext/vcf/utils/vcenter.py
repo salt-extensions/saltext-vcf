@@ -12,9 +12,9 @@ Config is read from Salt opts/pillar under ``saltext.vcf.vcenter``:
 
     saltext.vcf:
       vcenter:
-        host: mgmt-vc.vcf.nimbus.internal
+        host: mgmt-vc.example.test
         username: administrator@vsphere.local
-        password: VMware123!VMware123!
+        password: secret
         verify_ssl: false
         # Optional. Default 30s; bump for long-running calls like OVF deploy.
         timeout: 1800

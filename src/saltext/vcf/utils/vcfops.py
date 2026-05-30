@@ -14,9 +14,9 @@ Config is read from Salt opts/pillar under ``saltext.vcf.vcf_ops``::
 
     saltext.vcf:
       vcf_ops:
-        host: ops.vcf.nimbus.internal
+        host: ops.example.test
         username: admin
-        password: VMware123!
+        password: secret
         auth_source: LOCAL          # optional; default LOCAL
         verify_ssl: false
 """

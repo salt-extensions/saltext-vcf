@@ -48,6 +48,16 @@ def power_on(vm, profile=None):
     return r.power_on(__opts__, vm, profile=profile)
 
 
+def deploy(name, spec, profile=None):
+    """Deploy a VM from a template/source spec or create a bare VM."""
+    return r.deploy(__opts__, name, spec, profile=profile)
+
+
+def wait_reachable(target_ip, port=22, timeout=120, interval=10):
+    """Wait for TCP reachability to a VM IP."""
+    return r.wait_reachable(target_ip, port=port, timeout=timeout, interval=interval)
+
+
 def power_off(vm, profile=None):
     """Power off a VM (hard stop).
 

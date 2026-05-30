@@ -14,7 +14,7 @@ Configuration::
           esxi-standalone:
             host: esxi01.example.com
             username: root
-            password: VMware123!
+            password: secret
             verify_ssl: false
 """
 
