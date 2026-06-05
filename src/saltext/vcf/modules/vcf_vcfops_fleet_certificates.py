@@ -258,61 +258,6 @@ def generate_csr(
     )
 
 
-def renew_expiring(
-    ca_type,
-    threshold_days=c.DEFAULT_EXPIRY_THRESHOLD_DAYS,
-    appliance=None,
-    appliance_fqdn=None,
-    category=None,
-    poll_interval=15,
-    poll_timeout=600,
-    profile=None,
-):
-    """Find expiring / expired certificates and replace them.
-
-    Discovers certificates expiring within *threshold_days* (default 90) and
-    calls the VCF Operations certificate replace API for each one. VCF handles
-    key generation and signing internally — no CSR preparation needed.
-
-    ca_type
-        ``OPENSSL`` — VCF Operations built-in self-signed CA (no external
-        dependency; configure once under Fleet Management → Certificates →
-        Configure CA for Fleet → OpenSSL).
-
-        ``MSCA`` — integrated Microsoft CA.
-
-    Returns a report dict::
-
-        {
-            "renewed":      [...],
-            "failed":       [...],
-            "renewedCount": int,
-            "failedCount":  int,
-            "checkedCount": int,
-        }
-
-    CLI Example:
-
-    .. code-block:: bash
-
-        salt '*' vcf_vcfops_fleet_certificates.renew_expiring OPENSSL
-        salt '*' vcf_vcfops_fleet_certificates.renew_expiring OPENSSL threshold_days=30
-        salt '*' vcf_vcfops_fleet_certificates.renew_expiring OPENSSL appliance=VCENTER
-        salt '*' vcf_vcfops_fleet_certificates.renew_expiring MSCA appliance=NSXT_MANAGER threshold_days=60
-    """
-    return c.renew_expiring(
-        __opts__,
-        ca_type=ca_type,
-        threshold_days=threshold_days,
-        appliance=appliance,
-        appliance_fqdn=appliance_fqdn,
-        category=category,
-        poll_interval=poll_interval,
-        poll_timeout=poll_timeout,
-        profile=profile,
-    )
-
-
 def get_certificate_authorities(profile=None):
     """Return the current fleet Certificate Authority configuration.
 

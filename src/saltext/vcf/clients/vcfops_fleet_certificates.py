@@ -38,7 +38,6 @@ are asynchronous; poll ``GET /suite-api/api/workflows/requests/{requestId}``
 until ``state`` is ``COMPLETED``.
 """
 
-import time
 from datetime import datetime
 from datetime import timezone
 
