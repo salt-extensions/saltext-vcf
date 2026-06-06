@@ -70,22 +70,22 @@ def deploy_installer(installer_spec):
     creds = _esxi_credentials(installer_spec, target_host)
     backend = installer_spec.get("deployment_backend", "pyvmomi").lower()
     deploy = _deployment_backend(backend)
-    kwargs = dict(
-        ova_source=installer_spec["installer_ova_url"],
-        target_host=target_host,
-        target_user=creds["username"],
-        target_password=creds["password"],
-        target_port=int(installer_spec.get("installer_port", 443)),
-        vm_name=installer_spec["installer_vm_name"],
-        datastore=installer_spec.get("datastore"),
-        network_map=installer_spec.get("network_map"),
-        ovf_properties=installer_spec.get("ovf_properties"),
-        disk_provisioning=installer_spec.get("disk_provisioning", "thin"),
-        deployment_option=installer_spec.get("deployment_option"),
-        power_on=installer_spec.get("power_on", True),
-        verify_ssl=installer_spec.get("verify_ssl", False),
-        upload_timeout=installer_spec.get("upload_timeout", 3600),
-    )
+    kwargs = {
+        "ova_source": installer_spec["installer_ova_url"],
+        "target_host": target_host,
+        "target_user": creds["username"],
+        "target_password": creds["password"],
+        "target_port": int(installer_spec.get("installer_port", 443)),
+        "vm_name": installer_spec["installer_vm_name"],
+        "datastore": installer_spec.get("datastore"),
+        "network_map": installer_spec.get("network_map"),
+        "ovf_properties": installer_spec.get("ovf_properties"),
+        "disk_provisioning": installer_spec.get("disk_provisioning", "thin"),
+        "deployment_option": installer_spec.get("deployment_option"),
+        "power_on": installer_spec.get("power_on", True),
+        "verify_ssl": installer_spec.get("verify_ssl", False),
+        "upload_timeout": installer_spec.get("upload_timeout", 3600),
+    }
     if backend == "ovftool":
         kwargs["ovftool_path"] = installer_spec.get("ovftool_path") or "ovftool"
         kwargs["extra_args"] = installer_spec.get("ovftool_extra_args")

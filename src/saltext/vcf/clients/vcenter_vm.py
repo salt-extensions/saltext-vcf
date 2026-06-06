@@ -5,11 +5,11 @@ import time
 
 import requests
 
-from saltext.vcf.clients import vim_vm
-from saltext.vcf.clients import vim_vm_customization
 from saltext.vcf.clients import vcenter_cluster
 from saltext.vcf.clients import vcenter_datacenter
 from saltext.vcf.clients import vcenter_host
+from saltext.vcf.clients import vim_vm
+from saltext.vcf.clients import vim_vm_customization
 from saltext.vcf.utils import vcenter
 
 PATH = "/api/vcenter/vm"
