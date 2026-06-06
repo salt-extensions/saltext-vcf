@@ -238,9 +238,7 @@ def test_check_expiry_adds_days_until_expiry(opts, vcfops_authed):
     vcfops_authed.add(
         responses.POST,
         f"{_BASE}/certificates/query",
-        json=_certs_query_response(
-            [{"certificateResourceKey": "ok", "expiryDate": 1804291200000}]
-        ),
+        json=_certs_query_response([{"certificateResourceKey": "ok", "expiryDate": 1804291200000}]),
         status=200,
     )
     with patch("saltext.vcf.clients.vcfops_fleet_certificates.datetime") as dt:
