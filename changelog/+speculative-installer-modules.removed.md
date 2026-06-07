@@ -1,0 +1,1 @@
+Removed the ``installer_credentials``, ``installer_logs``, and ``installer_system`` clients and execution modules. Their ``/v1/system/security/passwords`` / ``/v1/system/log-bundles`` / ``/v1/system/*`` endpoints did not exist on the actual VCF Installer build; ``installer_bringup`` and ``fleet_password`` remain as the verified installer-side surfaces.

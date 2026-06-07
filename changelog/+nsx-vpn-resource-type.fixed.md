@@ -1,0 +1,1 @@
+``nsx_ipsec_vpn.create_ike_profile`` / ``create_tunnel_profile`` / ``create_dpd_profile`` now auto-inject the appropriate ``resource_type`` (``IPSecVpnIkeProfile`` / ``IPSecVpnTunnelProfile`` / ``IPSecVpnDpdProfile``) so NSX 9 stops rejecting the PUT with HTTP 400. Callers can still override via ``resource_type=`` in the spec.
