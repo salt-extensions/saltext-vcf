@@ -1,0 +1,1 @@
+The vCenter per-request HTTP timeout is now configurable. ``utils/vcenter.api_*`` helpers accept an optional ``timeout=`` kwarg; the default is also tunable via the ``saltext.vcf.vcenter.timeout`` pillar key. ``vcenter_content_library.ovf_deploy`` defaults to ``timeout=1800`` (30 min) so OVF deploys no longer race the previous hard-coded 30 s read timeout.
