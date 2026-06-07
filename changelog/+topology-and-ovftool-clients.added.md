@@ -1,1 +1,0 @@
-New topology + tooling clients: ``automation_topology`` (cross-component view of a VCF Automation deployment), ``installer_topology`` (introspects the bringup spec / running installer), and ``ovftool_deploy`` (subprocess wrapper around ``ovftool`` for callers that prefer it over the pure-pyVmomi path).
