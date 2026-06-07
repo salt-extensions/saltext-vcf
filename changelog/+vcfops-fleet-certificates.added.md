@@ -1,1 +1,0 @@
-VCF Operations fleet certificate management: new ``vcfops_fleet_certificates`` client + module covering the fleet-wide certificate inventory, renewal scheduling, and rotation operations exposed by VCF Operations (separate from the truststore surface in ``vcfops_certificate``). Contributed by `Denys Aleksandrov <https://github.com/denysaleksandrov>`_.
