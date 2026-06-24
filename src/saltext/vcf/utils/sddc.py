@@ -45,6 +45,31 @@ def get_config(opts, profile=None):
     }
 
 
+def get_ssh_config(opts, profile=None):
+    """
+    Extract SDDC Manager SSH connection config from Salt opts/pillar.
+
+    Reads the ``ssh`` sub-block of ``saltext.vcf.sddc_manager``; used by the
+    appliance-local controls (``/etc/passwd`` inventory and the localhost
+    appliancemanager password-policy API) that have no remote REST equivalent.
+    The SSH ``host`` defaults to the REST ``host`` when not set separately.
+
+    Returns a dict with keys: host, username, password, port.
+    """
+    pillar = opts.get("pillar", {})
+    root = pillar.get("saltext.vcf", {}) or opts.get("saltext.vcf", {})
+    cfg = root.get("sddc_manager", {})
+    if profile:
+        cfg = root.get("profiles", {}).get(profile, {}).get("sddc_manager", cfg)
+    ssh = cfg.get("ssh", {}) or {}
+    return {
+        "host": ssh.get("host") or cfg.get("host") or cfg.get("hostname"),
+        "username": ssh.get("username") or ssh.get("user"),
+        "password": ssh.get("password"),
+        "port": ssh.get("port", 22),
+    }
+
+
 def get_token(opts, profile=None):
     """
     Acquire and cache a Bearer JWT from SDDC Manager.

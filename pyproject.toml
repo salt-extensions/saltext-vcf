@@ -42,6 +42,9 @@ dependencies = [
     "requests>=2.3.0",
     "pyvmomi>=8.0.0",
     "pywbem>=1.7.0",
+    # SSH transport for appliance-local SDDC Manager controls (/etc/passwd,
+    # localhost appliancemanager API). Bundled with Salt, pinned here for clarity.
+    "paramiko>=2.7.0",
 ]
 
 [project.readme]
