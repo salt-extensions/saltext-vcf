@@ -53,6 +53,12 @@ def opts():
                     "domain": "System Domain",
                     "verify_ssl": False,
                 },
+                "vmsp": {
+                    "host": "vmsp.test",
+                    "username": "admin@vsp.local",
+                    "password": "p",
+                    "verify_ssl": False,
+                },
                 "profiles": {
                     "alt": {
                         "vcenter": {
@@ -87,6 +93,7 @@ def reset_caches():
     from saltext.vcf.utils import vcfa
     from saltext.vcf.utils import vcfops
     from saltext.vcf.utils import vim as soap
+    from saltext.vcf.utils import vmsp
     from saltext.vcf.utils import vsan
 
     caches = [
@@ -99,6 +106,7 @@ def reset_caches():
         cim._CONN_CACHE,
         vsan._VSAN_STUB_CACHE,
         vcfa._TOKEN_CACHE,
+        vmsp._TOKEN_CACHE,
     ]
     for c in caches:
         c.clear()
@@ -114,6 +122,18 @@ def vcenter_authed(mocked_responses):
         responses_lib.POST,
         "https://vc.test/api/session",
         json="session-token-abc",
+        status=200,
+    )
+    return mocked_responses
+
+
+@pytest.fixture
+def vmsp_authed(mocked_responses):
+    """Pre-register the VMSP identity token POST so clients can authenticate."""
+    mocked_responses.add(
+        responses_lib.POST,
+        "https://vmsp.test/api/v1/identity/token",
+        json={"access_token": "vmsp-token-abc"},
         status=200,
     )
     return mocked_responses
