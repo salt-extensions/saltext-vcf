@@ -22,6 +22,7 @@ ______________
     nsx_compute_collection
     nsx_context_profile
     nsx_dhcp
+    nsx_edge
     nsx_edge_cluster
     nsx_firewall_rule
     nsx_group

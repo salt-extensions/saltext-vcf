@@ -22,6 +22,7 @@ _________________
     vcf_nsx_compute_collection
     vcf_nsx_context_profile
     vcf_nsx_dhcp
+    vcf_nsx_edge
     vcf_nsx_edge_cluster
     vcf_nsx_firewall_rule
     vcf_nsx_group
