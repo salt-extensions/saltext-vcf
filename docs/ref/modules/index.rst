@@ -67,6 +67,7 @@ _________________
     vcf_vcenter_lcm_depot
     vcf_vcenter_network
     vcf_vcenter_resource_pool
+    vcf_vcenter_sso
     vcf_vcenter_storage_policy
     vcf_vcenter_supervisor
     vcf_vcenter_supervisor_compat
