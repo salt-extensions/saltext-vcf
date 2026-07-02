@@ -113,6 +113,7 @@ _________________
     vcf_vcfops_supermetric
     vcf_vcfops_task
     vcf_vcfops_version
+    vcf_vcfops_webhook
     vcf_vim_alarm
     vcf_vim_cluster_config
     vcf_vim_cluster_evc
