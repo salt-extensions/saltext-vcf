@@ -101,6 +101,7 @@ _________________
     vcf_vcfops_certificate
     vcf_vcfops_collector
     vcf_vcfops_credential
+    vcf_vcfops_dashboard
     vcf_vcfops_deployment
     vcf_vcfops_fleet_passwords
     vcf_vcfops_maintenance
