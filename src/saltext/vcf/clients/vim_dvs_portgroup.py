@@ -20,7 +20,7 @@ from saltext.vcf.utils import vim as soap
 
 
 def _dvs(opts, name_or_id, profile=None):
-    from saltext.vcf.clients.vim_dvs import _dvs as resolve  # avoid duplication
+    from saltext.vcf.clients.vim_dvs import _dvs as resolve
 
     return resolve(opts, name_or_id, profile=profile)
 

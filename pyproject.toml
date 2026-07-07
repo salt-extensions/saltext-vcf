@@ -31,6 +31,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
@@ -66,10 +70,10 @@ dev = [
 # Used by editor integration / dev automation. Pass ``--extras`` to the
 # init helper to install these automatically.
 dev_extra = [
-    "black==26.3.1",
+    "black==26.5.1",
     # pylint 4.0.4 caps isort<8; relax the pin until pylint catches up.
     "isort>=5,<8,!=5.13",
-    "coverage==7.13.4",
+    "coverage==7.14.3",
 ]
 docs = [
   "sphinx",
