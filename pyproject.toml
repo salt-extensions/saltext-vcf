@@ -70,16 +70,10 @@ dev = [
 # Used by editor integration / dev automation. Pass ``--extras`` to the
 # init helper to install these automatically.
 dev_extra = [
-<<<<<<< before updating
-    "black==26.3.1",
+    "black==26.5.1",
     # pylint 4.0.4 caps isort<8; relax the pin until pylint catches up.
     "isort>=5,<8,!=5.13",
-    "coverage==7.13.4",
-=======
-    "black==26.5.1",
-    "isort==8.0.1",
     "coverage==7.14.3",
->>>>>>> after updating
 ]
 docs = [
   "sphinx",
