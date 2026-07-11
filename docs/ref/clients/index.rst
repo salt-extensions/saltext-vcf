@@ -125,6 +125,7 @@ ______________
     vcfops_supermetric
     vcfops_task
     vcfops_version
+    vcfops_webhook
     vim_alarm
     vim_cluster_config
     vim_cluster_evc
