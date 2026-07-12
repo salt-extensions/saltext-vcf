@@ -87,6 +87,7 @@ _________________
     vcf_vcfa_custom_role
     vcf_vcfa_iam
     vcf_vcfa_network_profile
+    vcf_vcfa_organization
     vcf_vcfa_policy
     vcf_vcfa_project
     vcf_vcfa_project_user
