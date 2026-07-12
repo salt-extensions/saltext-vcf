@@ -14,16 +14,55 @@ Surfaces:
 
 from pyVmomi import vim
 
+from saltext.vcf.utils import esxi as esxi_conn
+from saltext.vcf.utils import vcenter as vcenter_conn
 from saltext.vcf.utils import vim as soap
 
 
+def _is_standalone(opts, profile):
+    """True when only ``saltext.vcf.esxi`` (no vCenter) is configured."""
+    vc = vcenter_conn.get_config(opts, profile=profile)
+    esxi = esxi_conn.get_config(opts, profile=profile)
+    return bool(esxi.get("host")) and not vc.get("host")
+
+
 def _resolve_host(opts, name_or_id, profile=None):
-    content = soap.content(opts, profile=profile)
+    """Locate a ``vim.HostSystem`` for datastore operations.
+
+    Standalone hosts (``saltext.vcf.esxi`` configured, no vCenter): use
+    :func:`saltext.vcf.utils.esxi.get_host_system` — the SOAP tree contains
+    exactly one host so *name_or_id* is treated as a caller-side label and
+    not looked up.
+
+    vCenter-managed hosts: enumerate ``HostSystem`` via
+    :func:`saltext.vcf.utils.vim.content` and match *name_or_id* against
+    the MOID, ``host.name``, or any VMkernel VNIC's ``ipAddress``.
+    """
+    standalone = _is_standalone(opts, profile)
+    if standalone:
+        si = esxi_conn.get_service_instance(opts, profile=profile)
+        content = si.RetrieveContent()
+    else:
+        content = soap.content(opts, profile=profile)
     container = content.viewManager.CreateContainerView(content.rootFolder, [vim.HostSystem], True)
     try:
-        for h in container.view:
+        hosts = list(container.view)
+        for h in hosts:
             if name_or_id in (h._moId, h.name):  # noqa: SLF001
                 return h
+        for h in hosts:
+            try:
+                vnics = (h.config.network.vnic if h.config and h.config.network else []) or []
+            except AttributeError:
+                continue
+            for vnic in vnics:
+                ip = getattr(getattr(vnic.spec, "ip", None), "ipAddress", None)
+                if ip and ip == name_or_id:
+                    return h
+        # Standalone ESXi has exactly one host in the entire tree — return it
+        # unconditionally.  Caller-supplied name_or_id is treated as a label.
+        if standalone and len(hosts) == 1:
+            return hosts[0]
     finally:
         container.Destroy()
     raise LookupError(f"host {name_or_id!r} not found")
