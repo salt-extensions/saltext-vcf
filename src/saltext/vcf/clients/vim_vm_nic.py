@@ -36,9 +36,7 @@ def _find_network(opts, name_or_id, profile=None):
     port-group name get resolved to the underlying MOID here.
     """
     content = soap.content(opts, profile=profile)
-    container = content.viewManager.CreateContainerView(
-        content.rootFolder, [vim.Network], True
-    )
+    container = content.viewManager.CreateContainerView(content.rootFolder, [vim.Network], True)
     try:
         for net in container.view:
             if name_or_id in (net._moId, net.name):  # noqa: SLF001
@@ -103,9 +101,7 @@ def add(
     if network and not network_moid:
         network_moid = _find_network(opts, network, profile=profile)._moId  # noqa: SLF001
     if not network_moid and not (portgroup_key and dvs_uuid):
-        raise ValueError(
-            "provide network OR network_moid OR (portgroup_key AND dvs_uuid)"
-        )
+        raise ValueError("provide network OR network_moid OR (portgroup_key AND dvs_uuid)")
     nic_cls = _NIC_TYPES.get(nic_type.lower())
     if nic_cls is None:
         raise ValueError(f"unknown nic_type {nic_type!r}; valid: {sorted(_NIC_TYPES)}")

@@ -133,12 +133,11 @@ def is_standalone_esxi(opts, profile=None):
     semantics; ``vim_*`` clients use this to route through
     :mod:`saltext.vcf.utils.esxi` for standalone hosts.
     """
-    # Local import to avoid a circular module dep when utils.esxi does the
-    # (rare) reverse consultation.
+    # utils.esxi is imported locally to sidestep a circular dep when
+    # utils.esxi does the (rare) reverse consultation.
     from saltext.vcf.utils import esxi as esxi_conn  # noqa: PLC0415
-    from saltext.vcf.utils import vcenter as vcenter_conn  # noqa: PLC0415
 
-    vc = vcenter_conn.get_config(opts, profile=profile)
+    vc = vc_rest.get_config(opts, profile=profile)
     esxi = esxi_conn.get_config(opts, profile=profile)
     return bool(esxi.get("host")) and not vc.get("host")
 
@@ -161,9 +160,6 @@ def resolve_host_system(opts, name_or_id, profile=None):
        ``h._moId`` is a fixed ``ha-host`` — both are impractical to
        target by.
     """
-    # Local import: pyvmomi is a hard dep; ``vim`` shadows the module name.
-    from pyVmomi import vim as _vim  # noqa: PLC0415
-
     if is_standalone_esxi(opts, profile=profile):
         from saltext.vcf.utils import esxi as esxi_conn  # noqa: PLC0415
 
