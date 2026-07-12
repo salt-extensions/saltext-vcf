@@ -25,26 +25,66 @@ def _split(ds_path):
     return parts[0], parts[1]
 
 
-def file_present(name, datacenter, datastore, ds_path, source, profile=None):
+def _file_size_on_ds(file_list, basename):
+    for entry in file_list:
+        if entry["path"] == basename:
+            return entry.get("fileSize") or entry.get("size")
+    return None
+
+
+def file_present(
+    name,
+    datacenter,
+    datastore,
+    ds_path,
+    source,
+    profile=None,
+    force=False,
+    match_size=False,
+):
     """Ensure ``[datastore] ds_path`` exists, uploading from *source* if missing.
 
-    Existence check is a simple listing of the parent dir; the file is
-    considered "present" if the basename appears. Content drift is NOT
-    checked — this state is for one-shot ISO/template upload.
+    * *force* — always re-upload, even if the file already exists.
+    * *match_size* — treat a size-mismatch (local vs. datastore) as
+      drift and re-upload.  Cheaper than a content diff; catches most
+      "regenerated on disk, needs re-upload" cases (ISO rebuilds,
+      kickstart re-renders).
+
+    Content drift beyond size is NOT checked — for tight config
+    reconciliation, run this alongside a rendered-file state that
+    detects local changes and set ``force=True`` on watch.
     """
     ret = _ret(name)
+    import os
     parent, basename = _split(ds_path)
     listing = c.list_(__opts__, datacenter, datastore, path=parent, profile=profile)
-    if _file_present(listing, basename):
+    exists = _file_present(listing, basename)
+    if exists and not force and not match_size:
         ret["comment"] = f"{ds_path} already present on [{datastore}]"
         return ret
+    reason = "missing"
+    if exists:
+        if force:
+            reason = "force"
+        elif match_size:
+            local_size = os.path.getsize(source)
+            ds_size = _file_size_on_ds(listing, basename)
+            if ds_size == local_size:
+                ret["comment"] = (
+                    f"{ds_path} present on [{datastore}] "
+                    f"({local_size} bytes match)"
+                )
+                return ret
+            reason = f"size drift local={local_size} ds={ds_size}"
     if __opts__["test"]:
         ret["result"] = None
-        ret["comment"] = f"would upload {source} → [{datastore}] {ds_path}"
+        ret["comment"] = f"would upload {source} → [{datastore}] {ds_path} ({reason})"
         return ret
+    if exists:
+        c.delete(__opts__, datacenter, datastore, ds_path, profile=profile)
     c.upload(__opts__, datacenter, datastore, source, ds_path, profile=profile)
-    ret["changes"] = {"uploaded": ds_path}
-    ret["comment"] = f"uploaded {source} → [{datastore}] {ds_path}"
+    ret["changes"] = {"uploaded": ds_path, "reason": reason}
+    ret["comment"] = f"uploaded {source} → [{datastore}] {ds_path} ({reason})"
     return ret
 
 
