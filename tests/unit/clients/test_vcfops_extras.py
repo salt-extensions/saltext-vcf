@@ -158,12 +158,29 @@ def test_resource_group(opts, vcfops_authed):
     vcfops_authed.add(responses.POST, f"{OPS}/resources/groups", json={}, status=200)
     vcfops_authed.add(responses.PUT, f"{OPS}/resources/groups/g", json={}, status=200)
     vcfops_authed.add(responses.DELETE, f"{OPS}/resources/groups/g", status=200)
+    vcfops_authed.add(
+        responses.GET,
+        f"{OPS}/resources/groups/g/members",
+        json={"resourceList": [{"identifier": "r-1"}]},
+        status=200,
+    )
+    vcfops_authed.add(
+        responses.GET,
+        f"{OPS}/resources/groups/types",
+        json={"resourceKindKey": [{"resourceKind": "VirtualMachine"}]},
+        status=200,
+    )
     assert vcfops_resource_group.list_(opts) == {"groups": []}
     assert vcfops_resource_group.get(opts, "g")["id"] == "g"
     assert vcfops_resource_group.get_or_none(opts, "missing") is None
     vcfops_resource_group.create(opts, {})
     vcfops_resource_group.update(opts, "g", {})
     vcfops_resource_group.delete(opts, "g")
+    assert vcfops_resource_group.members(opts, "g")["resourceList"][0]["identifier"] == "r-1"
+    assert (
+        vcfops_resource_group.list_types(opts)["resourceKindKey"][0]["resourceKind"]
+        == "VirtualMachine"
+    )
 
 
 def test_supermetric(opts, vcfops_authed):
