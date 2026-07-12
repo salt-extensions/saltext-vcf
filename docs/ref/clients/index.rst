@@ -78,6 +78,7 @@ ______________
     vcenter_lcm_depot
     vcenter_network
     vcenter_resource_pool
+    vcenter_sso
     vcenter_storage_policy
     vcenter_supervisor
     vcenter_supervisor_compat
