@@ -34,10 +34,10 @@ def running(name, policy=None, profile=None):  # pylint: disable=redefined-outer
     if not c.is_running(svc):
         actions.append("start")
         changes["state"] = {"old": svc.get("state"), "new": "RUNNING"}
-    if policy is not None and svc.get("startup_policy") != policy:
+    if policy is not None and svc.get("policy") != policy:
         actions.append(f"policy={policy}")
-        changes["startup_policy"] = {
-            "old": svc.get("startup_policy"),
+        changes["policy"] = {
+            "old": svc.get("policy"),
             "new": policy,
         }
 
@@ -52,7 +52,7 @@ def running(name, policy=None, profile=None):  # pylint: disable=redefined-outer
         return ret
     if "start" in actions:
         c.start(__opts__, name, profile=profile)
-    if policy is not None and svc.get("startup_policy") != policy:
+    if policy is not None and svc.get("policy") != policy:
         c.set_policy(__opts__, name, policy, profile=profile)
     ret["changes"] = changes
     ret["comment"] = f"Service {name}: {', '.join(actions)}"
@@ -73,10 +73,10 @@ def stopped(name, policy=None, profile=None):  # pylint: disable=redefined-outer
     if c.is_running(svc):
         actions.append("stop")
         changes["state"] = {"old": svc.get("state"), "new": "STOPPED"}
-    if policy is not None and svc.get("startup_policy") != policy:
+    if policy is not None and svc.get("policy") != policy:
         actions.append(f"policy={policy}")
-        changes["startup_policy"] = {
-            "old": svc.get("startup_policy"),
+        changes["policy"] = {
+            "old": svc.get("policy"),
             "new": policy,
         }
 
@@ -89,7 +89,7 @@ def stopped(name, policy=None, profile=None):  # pylint: disable=redefined-outer
         return ret
     if "stop" in actions:
         c.stop(__opts__, name, profile=profile)
-    if policy is not None and svc.get("startup_policy") != policy:
+    if policy is not None and svc.get("policy") != policy:
         c.set_policy(__opts__, name, policy, profile=profile)
     ret["changes"] = changes
     ret["comment"] = f"Service {name}: {', '.join(actions)}"
@@ -104,7 +104,7 @@ def policy(name, policy, profile=None):  # pylint: disable=redefined-outer-name
         ret["result"] = False
         ret["comment"] = err
         return ret
-    current = svc.get("startup_policy")
+    current = svc.get("policy")
     if current == policy:
         ret["comment"] = f"Service {name} policy already {policy}"
         return ret
@@ -113,6 +113,6 @@ def policy(name, policy, profile=None):  # pylint: disable=redefined-outer-name
         ret["comment"] = f"Service {name} policy would change to {policy}"
         return ret
     c.set_policy(__opts__, name, policy, profile=profile)
-    ret["changes"] = {"startup_policy": {"old": current, "new": policy}}
+    ret["changes"] = {"policy": {"old": current, "new": policy}}
     ret["comment"] = f"Service {name} policy set to {policy}"
     return ret

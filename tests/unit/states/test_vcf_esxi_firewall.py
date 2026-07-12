@@ -82,3 +82,50 @@ def test_test_mode(monkeypatch, stub):
     ret = st.rule_enabled("sshServer", enabled=True)
     assert ret["result"] is None
     assert stub["calls"] == []
+
+
+# ---------------------------------------------------------------------------
+# global_enabled
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def global_stub(monkeypatch):
+    state = {"current": True, "calls": []}
+    monkeypatch.setattr(c, "enabled", lambda opts, profile=None: state["current"])
+    monkeypatch.setattr(
+        c,
+        "set_global_enabled",
+        lambda opts, enabled, profile=None: state["calls"].append(("set", enabled))
+        or enabled,
+    )
+    return state
+
+
+def test_global_enabled_already_matches(global_stub):
+    global_stub["current"] = True
+    ret = st.global_enabled("host-firewall", enabled=True)
+    assert ret["changes"] == {}
+    assert global_stub["calls"] == []
+
+
+def test_global_enabled_disables(global_stub):
+    global_stub["current"] = True
+    ret = st.global_enabled("host-firewall", enabled=False)
+    assert ret["changes"] == {"enabled": {"old": True, "new": False}}
+    assert global_stub["calls"] == [("set", False)]
+
+
+def test_global_enabled_enables(global_stub):
+    global_stub["current"] = False
+    ret = st.global_enabled("host-firewall", enabled=True)
+    assert ret["changes"] == {"enabled": {"old": False, "new": True}}
+    assert global_stub["calls"] == [("set", True)]
+
+
+def test_global_enabled_test_mode(monkeypatch, global_stub):
+    monkeypatch.setattr(st, "__opts__", {"test": True}, raising=False)
+    global_stub["current"] = True
+    ret = st.global_enabled("host-firewall", enabled=False)
+    assert ret["result"] is None
+    assert global_stub["calls"] == []

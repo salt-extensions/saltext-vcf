@@ -48,6 +48,32 @@ def set_enabled(rule, enabled, profile=None):
     return c.set_enabled(__opts__, rule, enabled, profile=profile)
 
 
+def enabled(profile=None):
+    """Return the host's global firewall enabled state (bool).
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_esxi_firewall.enabled
+
+    """
+    return c.enabled(__opts__, profile=profile)
+
+
+def set_global_enabled(enabled, profile=None):
+    """Enable or disable the host firewall globally.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_esxi_firewall.set_global_enabled false
+
+    """
+    return c.set_global_enabled(__opts__, enabled, profile=profile)
+
+
 def set_allowed_ips(rule, allowed_ips, all_ip=False, profile=None):
     """Set allowed ips.
 
