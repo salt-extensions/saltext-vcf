@@ -72,9 +72,7 @@ def datastore_factory(monkeypatch):
 
 
 def test_list_returns_records(vm_factory, opts):
-    vm_factory["vm"] = _fake_vm(
-        [_ide_controller(), _cdrom(3000, iso_path="[ds] isos/foo.iso")]
-    )
+    vm_factory["vm"] = _fake_vm([_ide_controller(), _cdrom(3000, iso_path="[ds] isos/foo.iso")])
     result = vim_vm_cdrom.list_(opts, "vm-100")
     assert len(result) == 1
     assert result[0]["key"] == 3000
@@ -109,9 +107,7 @@ def test_add_relative_iso_path_needs_datastore(vm_factory, opts):
 
 def test_add_relative_iso_path_resolves(vm_factory, datastore_factory, opts):
     vm_factory["vm"] = _fake_vm([_ide_controller()])
-    vim_vm_cdrom.add(
-        opts, "vm-100", iso_path="isos/foo.iso", datastore="datastore-ssd-4tb"
-    )
+    vim_vm_cdrom.add(opts, "vm-100", iso_path="isos/foo.iso", datastore="datastore-ssd-4tb")
     change = vm_factory["vm"].ReconfigVM_Task.call_args.kwargs["spec"].deviceChange[0]
     assert change.device.backing.fileName == "[datastore-ssd-4tb] isos/foo.iso"
 
@@ -136,9 +132,7 @@ def test_add_all_ide_slots_full_raises(vm_factory, opts):
 
 def test_attach_iso_edits_existing_cdrom(vm_factory, datastore_factory, opts):
     vm_factory["vm"] = _fake_vm([_ide_controller(), _cdrom(3000)])
-    vim_vm_cdrom.attach_iso(
-        opts, "vm-100", "isos/bar.iso", datastore="datastore-ssd-4tb"
-    )
+    vim_vm_cdrom.attach_iso(opts, "vm-100", "isos/bar.iso", datastore="datastore-ssd-4tb")
     change = vm_factory["vm"].ReconfigVM_Task.call_args.kwargs["spec"].deviceChange[0]
     assert change.operation == "edit"
     assert isinstance(change.device.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo)

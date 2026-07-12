@@ -106,6 +106,7 @@ def present(
     # into utils.esxi.get_service_instance below refills the cache.
     from saltext.vcf.utils import esxi as _esxi
     from saltext.vcf.utils import vim as _soap
+
     _esxi._SI_CACHE.clear()
     _soap._SI_CACHE.clear()
     # Existence probe (list_ + name match).  vcf_vim_vm has no

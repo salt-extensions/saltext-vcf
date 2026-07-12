@@ -26,9 +26,7 @@ def _vm(opts, vm_id_or_name, profile=None):
 
 def _find_datastore(opts, name_or_id, profile=None):
     content = soap.content(opts, profile=profile)
-    container = content.viewManager.CreateContainerView(
-        content.rootFolder, [vim.Datastore], True
-    )
+    container = content.viewManager.CreateContainerView(content.rootFolder, [vim.Datastore], True)
     try:
         for ds in container.view:
             if name_or_id in (ds._moId, ds.name):  # noqa: SLF001
@@ -45,7 +43,8 @@ def _ide_controller_key(vm):
     devices.  Returns the first controller with room, or raises.
     """
     ide_controllers = [
-        d for d in vm.config.hardware.device or []
+        d
+        for d in vm.config.hardware.device or []
         if isinstance(d, vim.vm.device.VirtualIDEController)
     ]
     if not ide_controllers:
@@ -75,9 +74,7 @@ def list_(opts, vm_id_or_name, profile=None):
                 "backing_kind": type(backing).__name__ if backing else None,
                 "iso_path": getattr(backing, "fileName", None),
                 "connected": dev.connectable.connected if dev.connectable else None,
-                "start_connected": (
-                    dev.connectable.startConnected if dev.connectable else None
-                ),
+                "start_connected": (dev.connectable.startConnected if dev.connectable else None),
             }
         )
     return out
@@ -196,8 +193,7 @@ def remove(opts, vm_id_or_name, cdrom_key, profile=None):
 
 def _find_cdrom(vm, key):
     cdroms = [
-        d for d in vm.config.hardware.device or []
-        if isinstance(d, vim.vm.device.VirtualCdrom)
+        d for d in vm.config.hardware.device or [] if isinstance(d, vim.vm.device.VirtualCdrom)
     ]
     if key is None:
         if not cdroms:

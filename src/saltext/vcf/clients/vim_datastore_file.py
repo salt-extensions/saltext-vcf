@@ -176,9 +176,7 @@ def download(opts, datacenter, datastore, ds_path, local_path, profile=None):
     url = _folder_url(host, ds_path, datacenter, datastore)
     headers = {"Cookie": cookie}
     written = 0
-    with requests.get(
-        url, headers=headers, verify=verify_ssl, timeout=600, stream=True
-    ) as resp:
+    with requests.get(url, headers=headers, verify=verify_ssl, timeout=600, stream=True) as resp:
         resp.raise_for_status()
         Path(local_path).parent.mkdir(parents=True, exist_ok=True)
         with open(local_path, "wb") as fp:

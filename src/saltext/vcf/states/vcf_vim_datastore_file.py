@@ -56,6 +56,7 @@ def file_present(
     """
     ret = _ret(name)
     import os
+
     parent, basename = _split(ds_path)
     listing = c.list_(__opts__, datacenter, datastore, path=parent, profile=profile)
     exists = _file_present(listing, basename)
@@ -71,8 +72,7 @@ def file_present(
             ds_size = _file_size_on_ds(listing, basename)
             if ds_size == local_size:
                 ret["comment"] = (
-                    f"{ds_path} present on [{datastore}] "
-                    f"({local_size} bytes match)"
+                    f"{ds_path} present on [{datastore}] " f"({local_size} bytes match)"
                 )
                 return ret
             reason = f"size drift local={local_size} ds={ds_size}"
