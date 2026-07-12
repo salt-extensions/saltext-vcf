@@ -13,11 +13,17 @@ def list_(opts, profile=None):
 
 
 def get(opts, key, profile=None):
+    """Return ``{"key": <name>, "value": <current>}``.
+
+    Consistent shape with :func:`set_value` — callers who only need the
+    value should ``get(...)["value"]``.  ``vcf_esxi_advanced.setting``
+    (the state module) already expects this dict shape.
+    """
     host = esxi.get_host_system(opts, profile=profile)
     options = host.configManager.advancedOption.QueryOptions(name=key)
     if not options:
         raise KeyError(f"Advanced setting {key!r} not found")
-    return options[0].value
+    return {"key": key, "value": options[0].value}
 
 
 def get_or_none(opts, key, profile=None):

@@ -8,7 +8,10 @@ from saltext.vcf.utils import esxi
 def get(opts, profile=None):
     """Return ``{"servers": [...], "enabled": bool}``."""
     host = esxi.get_host_system(opts, profile=profile)
-    info = host.configManager.dateTimeSystem.QueryDateTimeInfo()
+    # HostDateTimeSystem exposes `dateTimeInfo` as a property.  There is no
+    # method called ``QueryDateTimeInfo`` on real pyVmomi (previous code
+    # here was a leftover shape — pyvmomi surfaces the property directly).
+    info = host.configManager.dateTimeSystem.dateTimeInfo
 
     ntpd_running = False
     for svc in host.configManager.serviceSystem.serviceInfo.service:
