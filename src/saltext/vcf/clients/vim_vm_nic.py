@@ -98,8 +98,10 @@ def add(
     * *network_moid* — legacy port group by MOID (bypasses the lookup).
     * *portgroup_key* + *dvs_uuid* — distributed port group.
     """
+    network_obj = None
     if network and not network_moid:
-        network_moid = _find_network(opts, network, profile=profile)._moId  # noqa: SLF001
+        network_obj = _find_network(opts, network, profile=profile)
+        network_moid = network_obj._moId  # noqa: SLF001
     if not network_moid and not (portgroup_key and dvs_uuid):
         raise ValueError("provide network OR network_moid OR (portgroup_key AND dvs_uuid)")
     nic_cls = _NIC_TYPES.get(nic_type.lower())
@@ -110,15 +112,31 @@ def add(
         backing = vim.vm.device.VirtualEthernetCard.DistributedVirtualPortBackingInfo()
         backing.port = vim.dvs.PortConnection(portgroupKey=portgroup_key, switchUuid=dvs_uuid)
     else:
+        # NetworkBackingInfo needs the actual vim.Network managed
+        # object reference, not a synthesised one — ESXi rejects a
+        # bare-MoID Network with "Invalid configuration for device".
+        # Fetch by MoID if we don't already have the object cached.
+        if network_obj is None:
+            network_obj = _find_network(opts, network_moid, profile=profile)
         backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
-        backing.network = vim.Network(network_moid, None)
-        backing.deviceName = ""
+        backing.network = network_obj
+        # Real server-side Network MOs expose .name; synthesised
+        # references may not.  Empty string is a valid deviceName —
+        # ESXi resolves it from backing.network.
+        try:
+            backing.deviceName = network_obj.name
+        except AttributeError:
+            backing.deviceName = ""
     nic.backing = backing
     if mac_address:
         nic.macAddress = mac_address
         nic.addressType = "manual"
     else:
-        nic.addressType = "assigned"
+        # 'generated' works on both ESXi and vCenter; 'assigned' is
+        # vCenter-only (VC pre-computes the MAC and hands it back).
+        # Standalone ESXi rejects 'assigned' with "Invalid
+        # configuration for device 0".
+        nic.addressType = "generated"
     nic.connectable = vim.vm.device.VirtualDevice.ConnectInfo(
         startConnected=start_connected, allowGuestControl=True
     )
@@ -127,6 +145,7 @@ def add(
     )
     vm = _vm(opts, vm_id_or_name, profile=profile)
     task = vm.ReconfigVM_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -157,6 +176,7 @@ def update_backing(
         deviceChange=[vim.vm.device.VirtualDeviceSpec(operation="edit", device=nic)]
     )
     task = vm.ReconfigVM_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -172,6 +192,7 @@ def set_connected(opts, vm_id_or_name, nic_key, connected, profile=None):
         deviceChange=[vim.vm.device.VirtualDeviceSpec(operation="edit", device=nic)]
     )
     task = vm.ReconfigVM_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -182,6 +203,7 @@ def remove(opts, vm_id_or_name, nic_key, profile=None):
         deviceChange=[vim.vm.device.VirtualDeviceSpec(operation="remove", device=nic)]
     )
     task = vm.ReconfigVM_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
