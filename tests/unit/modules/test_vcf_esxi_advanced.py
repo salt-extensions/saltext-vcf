@@ -33,6 +33,8 @@ def test_list():
 
 
 def test_get():
+    # get() returns {"key": ..., "value": ...} for consistency with
+    # set_value's return shape — vcf_esxi_advanced.setting (state) expects it.
     host = _fake_host(query_result=[_opt("Net.TcpipHeapMax", 512)])
     with patch("saltext.vcf.utils.esxi.get_host_system", return_value=host):
         assert mod.get("Net.TcpipHeapMax") == {"key": "Net.TcpipHeapMax", "value": 512}

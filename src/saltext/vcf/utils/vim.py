@@ -52,8 +52,18 @@ def get_service_instance(opts, profile=None):
 
     Cached per ``(host, username)``. Use ``invalidate_service_instance``
     to force a fresh connection (e.g. after a session timeout).
+
+    When ``saltext.vcf.vcenter`` is unset but ``saltext.vcf.esxi`` is,
+    delegate to :func:`saltext.vcf.utils.esxi.get_service_instance` so
+    every ``vim_*`` client works transparently against a standalone
+    ESXi host.  ``saltext.vcf.vcenter`` wins when both are set.
     """
     cfg = get_config(opts, profile=profile)
+    if not cfg.get("host"):
+        # Fall back to the ESXi standalone helper's ServiceInstance.
+        from saltext.vcf.utils import esxi as esxi_conn  # noqa: PLC0415
+
+        return esxi_conn.get_service_instance(opts, profile=profile)
     host, port, username = _connection_target(cfg)
     cache_key = f"{host}:{port or 443}:{username}"
 
