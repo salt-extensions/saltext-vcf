@@ -35,17 +35,17 @@ def get(rule, profile=None):
     return c.get(__opts__, rule, profile=profile)
 
 
-def set_enabled(rule, enabled, profile=None):
-    """Set enabled.
+def set_enabled(rule, value, profile=None):
+    """Enable or disable a firewall ruleset.
 
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' vcf_esxi_firewall.set_enabled <rule> <enabled>
+        salt '*' vcf_esxi_firewall.set_enabled <rule> <value>
 
     """
-    return c.set_enabled(__opts__, rule, enabled, profile=profile)
+    return c.set_enabled(__opts__, rule, value, profile=profile)
 
 
 def enabled(profile=None):
@@ -61,7 +61,7 @@ def enabled(profile=None):
     return c.enabled(__opts__, profile=profile)
 
 
-def set_global_enabled(enabled, profile=None):
+def set_global_enabled(value, profile=None):
     """Enable or disable the host firewall globally.
 
     CLI Example:
@@ -71,7 +71,7 @@ def set_global_enabled(enabled, profile=None):
         salt '*' vcf_esxi_firewall.set_global_enabled false
 
     """
-    return c.set_global_enabled(__opts__, enabled, profile=profile)
+    return c.set_global_enabled(__opts__, value, profile=profile)
 
 
 def set_allowed_ips(rule, allowed_ips, all_ip=False, profile=None):

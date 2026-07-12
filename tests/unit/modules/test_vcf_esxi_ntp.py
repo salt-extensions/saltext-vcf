@@ -26,7 +26,7 @@ def _fake_host(*, servers=("pool.ntp.org",), ntpd_running=True):
     host = MagicMock()
     dt_info = MagicMock()
     dt_info.ntpConfig.server = list(servers)
-    host.configManager.dateTimeSystem.QueryDateTimeInfo.return_value = dt_info
+    host.configManager.dateTimeSystem.dateTimeInfo = dt_info
     host.configManager.serviceSystem.serviceInfo.service = [_service("ntpd", ntpd_running)]
     return host
 

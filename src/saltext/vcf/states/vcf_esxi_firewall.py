@@ -88,15 +88,11 @@ def global_enabled(name, enabled=True, profile=None):
     ret = _ret(name)
     current = c.enabled(__opts__, profile=profile)
     if bool(current) == bool(enabled):
-        ret["comment"] = (
-            f"host firewall already {'enabled' if enabled else 'disabled'}"
-        )
+        ret["comment"] = f"host firewall already {'enabled' if enabled else 'disabled'}"
         return ret
     if __opts__["test"]:
         ret["result"] = None
-        ret["comment"] = (
-            f"host firewall would be {'enabled' if enabled else 'disabled'}"
-        )
+        ret["comment"] = f"host firewall would be {'enabled' if enabled else 'disabled'}"
         return ret
     c.set_global_enabled(__opts__, bool(enabled), profile=profile)
     ret["changes"] = {"enabled": {"old": bool(current), "new": bool(enabled)}}

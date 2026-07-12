@@ -96,8 +96,7 @@ def global_stub(monkeypatch):
     monkeypatch.setattr(
         c,
         "set_global_enabled",
-        lambda opts, enabled, profile=None: state["calls"].append(("set", enabled))
-        or enabled,
+        lambda opts, enabled, profile=None: state["calls"].append(("set", enabled)) or enabled,
     )
     return state
 

@@ -35,7 +35,7 @@ def test_list():
 def test_get():
     host = _fake_host(query_result=[_opt("Net.TcpipHeapMax", 512)])
     with patch("saltext.vcf.utils.esxi.get_host_system", return_value=host):
-        assert mod.get("Net.TcpipHeapMax") == 512
+        assert mod.get("Net.TcpipHeapMax") == {"key": "Net.TcpipHeapMax", "value": 512}
     host.configManager.advancedOption.QueryOptions.assert_called_once_with(name="Net.TcpipHeapMax")
 
 

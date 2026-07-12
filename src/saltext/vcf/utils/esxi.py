@@ -115,9 +115,7 @@ def get_host_system(opts, profile=None):
 
     si = get_service_instance(opts, profile=profile)
     content = si.RetrieveContent()
-    container = content.viewManager.CreateContainerView(
-        content.rootFolder, [vim.HostSystem], True
-    )
+    container = content.viewManager.CreateContainerView(content.rootFolder, [vim.HostSystem], True)
     try:
         hosts = list(container.view)
         if not hosts:
