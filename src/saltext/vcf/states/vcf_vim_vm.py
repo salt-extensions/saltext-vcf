@@ -98,6 +98,16 @@ def present(
     is out of scope for this state — use per-device exec modules.
     """
     ret = _ret(name)
+    # When Salt runs this state with ``parallel: True`` each replica
+    # forks off the parent process and inherits the parent's SOAP
+    # session cache — but the underlying socket is a fork-unsafe
+    # single owner.  Clear the ServiceInstance cache in this worker
+    # so each parallel state opens its own session.  The first call
+    # into utils.esxi.get_service_instance below refills the cache.
+    from saltext.vcf.utils import esxi as _esxi
+    from saltext.vcf.utils import vim as _soap
+    _esxi._SI_CACHE.clear()
+    _soap._SI_CACHE.clear()
     # Existence probe (list_ + name match).  vcf_vim_vm has no
     # get_or_none primitive, so use the exec module's advanced-settings
     # fetch as a cheap existence check and catch LookupError.
