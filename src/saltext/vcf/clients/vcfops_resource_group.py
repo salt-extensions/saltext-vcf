@@ -47,3 +47,13 @@ def update(opts, group_id, group_spec, profile=None):
 
 def delete(opts, group_id, profile=None):
     return vcfops.api_delete(opts, f"{_PATH}/{group_id}", profile=profile)
+
+
+def members(opts, group_id, profile=None):
+    """List the resources currently matched by a resource group."""
+    return vcfops.api_get(opts, f"{_PATH}/{group_id}/members", profile=profile)
+
+
+def list_types(opts, profile=None):
+    """List the group-kind types available for resource groups."""
+    return vcfops.api_get(opts, f"{_PATH}/types", profile=profile)

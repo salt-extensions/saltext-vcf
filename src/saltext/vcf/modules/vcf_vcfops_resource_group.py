@@ -72,3 +72,29 @@ def delete(group_id, profile=None):
 
     """
     return c.delete(__opts__, group_id, profile=profile)
+
+
+def members(group_id, profile=None):
+    """List the resources currently matched by a resource group.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcfops_resource_group.members <group_id>
+
+    """
+    return c.members(__opts__, group_id, profile=profile)
+
+
+def list_types(profile=None):
+    """List the group-kind types available for resource groups.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcfops_resource_group.list_types
+
+    """
+    return c.list_types(__opts__, profile=profile)
