@@ -91,16 +91,43 @@ def vswitch_absent(name, host, profile=None):
     return ret
 
 
-def portgroup_present(name, host, vswitch, vlan_id=0, profile=None):
-    """Ensure a standard port group *name* exists with the given config."""
+def portgroup_present(
+    name,
+    host,
+    vswitch,
+    vlan_id=0,
+    promiscuous=None,
+    mac_changes=None,
+    forged_transmits=None,
+    profile=None,
+):
+    """Ensure a standard port group *name* exists with the given config.
+
+    Security-policy args (``promiscuous`` / ``mac_changes`` /
+    ``forged_transmits``): ``True`` accepts, ``False`` rejects, ``None``
+    (default) inherits the vSwitch policy.
+
+    Nested-VM labs typically want all three ``True`` on the port group
+    carrying nested workloads so nested MAC addresses can traverse the
+    physical vSwitch.
+    """
     ret = _ret(name)
     existing = c.portgroup_get_or_none(__opts__, host, name, profile=profile)
+    desired_sec = {
+        "promiscuous": promiscuous,
+        "mac_changes": mac_changes,
+        "forged_transmits": forged_transmits,
+    }
     if existing is not None:
         drift = {}
         if existing["vlan_id"] != int(vlan_id):
             drift["vlan_id"] = (existing["vlan_id"], int(vlan_id))
         if existing["vswitch"] != vswitch:
             drift["vswitch"] = (existing["vswitch"], vswitch)
+        for k, want in desired_sec.items():
+            have = existing.get("security", {}).get(k)
+            if want is not None and have != want:
+                drift[f"security.{k}"] = (have, want)
         if not drift:
             ret["comment"] = f"port group {name} on {host} already matches"
             return ret
@@ -109,7 +136,13 @@ def portgroup_present(name, host, vswitch, vlan_id=0, profile=None):
             ret["comment"] = f"port group {name} on {host} would be updated: {sorted(drift)}"
             return ret
         c.portgroup_update(
-            __opts__, host, name, vlan_id=int(vlan_id), vswitch=vswitch, profile=profile
+            __opts__,
+            host,
+            name,
+            vlan_id=int(vlan_id),
+            vswitch=vswitch,
+            **desired_sec,
+            profile=profile,
         )
         ret["changes"] = drift
         ret["comment"] = f"port group {name} on {host} updated"
@@ -118,7 +151,15 @@ def portgroup_present(name, host, vswitch, vlan_id=0, profile=None):
         ret["result"] = None
         ret["comment"] = f"port group {name} would be created on {host}"
         return ret
-    c.portgroup_add(__opts__, host, name, vswitch, vlan_id=int(vlan_id), profile=profile)
+    c.portgroup_add(
+        __opts__,
+        host,
+        name,
+        vswitch,
+        vlan_id=int(vlan_id),
+        **desired_sec,
+        profile=profile,
+    )
     ret["changes"] = {"new": name}
     ret["comment"] = f"port group {name} created on {host}"
     return ret

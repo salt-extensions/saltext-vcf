@@ -52,8 +52,18 @@ def get_service_instance(opts, profile=None):
 
     Cached per ``(host, username)``. Use ``invalidate_service_instance``
     to force a fresh connection (e.g. after a session timeout).
+
+    When ``saltext.vcf.vcenter`` is unset but ``saltext.vcf.esxi`` is,
+    delegate to :func:`saltext.vcf.utils.esxi.get_service_instance` so
+    every ``vim_*`` client works transparently against a standalone
+    ESXi host.  ``saltext.vcf.vcenter`` wins when both are set.
     """
     cfg = get_config(opts, profile=profile)
+    if not cfg.get("host"):
+        # Fall back to the ESXi standalone helper's ServiceInstance.
+        from saltext.vcf.utils import esxi as esxi_conn  # noqa: PLC0415
+
+        return esxi_conn.get_service_instance(opts, profile=profile)
     host, port, username = _connection_target(cfg)
     cache_key = f"{host}:{port or 443}:{username}"
 
@@ -114,6 +124,71 @@ def _safe_disconnect(si):
 def content(opts, profile=None):
     """Shortcut: ``get_service_instance(opts).RetrieveContent()``."""
     return get_service_instance(opts, profile=profile).RetrieveContent()
+
+
+def is_standalone_esxi(opts, profile=None):
+    """Return True when only ``saltext.vcf.esxi`` (no vCenter) is configured.
+
+    The two SOAP entry points diverge in credential source and host-lookup
+    semantics; ``vim_*`` clients use this to route through
+    :mod:`saltext.vcf.utils.esxi` for standalone hosts.
+    """
+    # utils.esxi is imported locally to sidestep a circular dep when
+    # utils.esxi does the (rare) reverse consultation.
+    from saltext.vcf.utils import esxi as esxi_conn  # noqa: PLC0415
+
+    vc = vc_rest.get_config(opts, profile=profile)
+    esxi = esxi_conn.get_config(opts, profile=profile)
+    return bool(esxi.get("host")) and not vc.get("host")
+
+
+def resolve_host_system(opts, name_or_id, profile=None):
+    """Locate a ``vim.HostSystem`` for both standalone and vCenter modes.
+
+    Shared helper used by every ``vim_host_*`` client — one place to update
+    resolution rules.
+
+    Match order:
+
+    1. ``host._moId`` or ``host.name``
+    2. Any VMkernel VNIC's ``ipAddress`` — useful when the caller only
+       knows the mgmt IP the SmartConnect was made against but the host's
+       ``name`` is a stale DHCP-inherited hostname.
+    3. Standalone-mode fallback: if only one HostSystem exists in the
+       entire tree, return it.  ``h.name`` on a fresh-install ESXi is
+       often an inherited DHCP hostname (``sysrescue``, etc.) and
+       ``h._moId`` is a fixed ``ha-host`` — both are impractical to
+       target by.
+    """
+    if is_standalone_esxi(opts, profile=profile):
+        from saltext.vcf.utils import esxi as esxi_conn  # noqa: PLC0415
+
+        si = esxi_conn.get_service_instance(opts, profile=profile)
+        service_content = si.RetrieveContent()
+    else:
+        service_content = content(opts, profile=profile)
+    container = service_content.viewManager.CreateContainerView(
+        service_content.rootFolder, [_vim.HostSystem], True
+    )
+    try:
+        hosts = list(container.view)
+        for h in hosts:
+            if name_or_id in (h._moId, h.name):  # noqa: SLF001
+                return h
+        for h in hosts:
+            try:
+                vnics = (h.config.network.vnic if h.config and h.config.network else []) or []
+            except AttributeError:
+                continue
+            for vnic in vnics:
+                ip = getattr(getattr(vnic.spec, "ip", None), "ipAddress", None)
+                if ip and ip == name_or_id:
+                    return h
+        if is_standalone_esxi(opts, profile=profile) and len(hosts) == 1:
+            return hosts[0]
+    finally:
+        container.Destroy()
+    raise LookupError(f"host {name_or_id!r} not found")
 
 
 # ---------------------------------------------------------------------------

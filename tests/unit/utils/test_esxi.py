@@ -54,10 +54,28 @@ def test_get_service_instance_honors_host_port_suffix(opts):
 def test_get_host_system_returns_standalone_host(opts):
     host = MagicMock(name="HostSystem")
     si = MagicMock()
-    content = si.RetrieveContent.return_value
-    container = content.viewManager.CreateContainerView.return_value
+    # get_host_system uses a ContainerView (not fragile childEntity[0].host[0])
+    # so mock that traversal.
+    container = MagicMock()
     container.view = [host]
+    content = si.RetrieveContent.return_value
+    content.viewManager.CreateContainerView.return_value = container
     with patch("saltext.vcf.utils.esxi.SmartConnect", return_value=si):
         result = esxi.get_host_system(opts)
     assert result is host
     container.Destroy.assert_called_once()
+
+
+def test_get_host_system_raises_when_no_hosts(opts):
+    si = MagicMock()
+    container = MagicMock()
+    container.view = []
+    content = si.RetrieveContent.return_value
+    content.viewManager.CreateContainerView.return_value = container
+    with patch("saltext.vcf.utils.esxi.SmartConnect", return_value=si):
+        try:
+            esxi.get_host_system(opts)
+        except LookupError as exc:
+            assert "no HostSystem" in str(exc)
+        else:
+            raise AssertionError("expected LookupError")

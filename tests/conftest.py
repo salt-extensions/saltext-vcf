@@ -70,6 +70,29 @@ def opts():
 
 
 @pytest.fixture
+def opts_standalone():
+    """Salt-style opts dict with only ``saltext.vcf.esxi`` configured.
+
+    Simulates a standalone-ESXi deployment (no vCenter/NSX/SDDC in front).
+    Every ``vim_*`` module should route through ``utils.esxi`` when this
+    is the pillar shape.
+    """
+    return {
+        "pillar": {
+            "saltext.vcf": {
+                "esxi": {
+                    "host": "esxi.test",
+                    "username": "root",
+                    "password": "p",
+                    "verify_ssl": False,
+                },
+            },
+        },
+        "test": False,
+    }
+
+
+@pytest.fixture
 def mocked_responses():
     """Wraps the global `responses` library context for HTTP mocking."""
     with responses_lib.RequestsMock(assert_all_requests_are_fired=False) as rsps:

@@ -28,6 +28,24 @@ def _vm(opts, vm_id_or_name, profile=None):
     raise LookupError(f"VM {vm_id_or_name!r} not found")
 
 
+def _find_network(opts, name_or_id, profile=None):
+    """Locate a ``vim.Network`` by MOID or name.
+
+    Standard port groups surface as ``vim.Network`` in the datacenter's
+    ``networkFolder`` on both ESXi and vCenter.  Callers that pass a
+    port-group name get resolved to the underlying MOID here.
+    """
+    content = soap.content(opts, profile=profile)
+    container = content.viewManager.CreateContainerView(content.rootFolder, [vim.Network], True)
+    try:
+        for net in container.view:
+            if name_or_id in (net._moId, net.name):  # noqa: SLF001
+                return net
+    finally:
+        container.Destroy()
+    raise LookupError(f"network {name_or_id!r} not found")
+
+
 def list_(opts, vm_id_or_name, profile=None):
     """Return every Ethernet device on the VM as a list of dicts."""
     vm = _vm(opts, vm_id_or_name, profile=profile)
@@ -62,6 +80,7 @@ def add(
     vm_id_or_name,
     *,
     nic_type="vmxnet3",
+    network=None,
     network_moid=None,
     portgroup_key=None,
     dvs_uuid=None,
@@ -71,11 +90,18 @@ def add(
 ):
     """Add a new NIC.
 
-    Either *network_moid* (legacy port group) or
-    *portgroup_key* + *dvs_uuid* (distributed port group) must be set.
+    Backing options:
+
+    * *network* — legacy port-group name (looked up via ``vim.Network``).
+      Convenience for callers who only know the port-group label —
+      typical for standalone-ESXi and single-vSwitch setups.
+    * *network_moid* — legacy port group by MOID (bypasses the lookup).
+    * *portgroup_key* + *dvs_uuid* — distributed port group.
     """
+    if network and not network_moid:
+        network_moid = _find_network(opts, network, profile=profile)._moId  # noqa: SLF001
     if not network_moid and not (portgroup_key and dvs_uuid):
-        raise ValueError("provide network_moid OR (portgroup_key AND dvs_uuid)")
+        raise ValueError("provide network OR network_moid OR (portgroup_key AND dvs_uuid)")
     nic_cls = _NIC_TYPES.get(nic_type.lower())
     if nic_cls is None:
         raise ValueError(f"unknown nic_type {nic_type!r}; valid: {sorted(_NIC_TYPES)}")

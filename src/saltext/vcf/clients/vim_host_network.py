@@ -18,15 +18,12 @@ from saltext.vcf.utils import vim as soap
 
 
 def _host(opts, host_id_or_name, profile=None):
-    content = soap.content(opts, profile=profile)
-    container = content.viewManager.CreateContainerView(content.rootFolder, [vim.HostSystem], True)
-    try:
-        for h in container.view:
-            if host_id_or_name in (h._moId, h.name):  # noqa: SLF001
-                return h
-    finally:
-        container.Destroy()
-    raise LookupError(f"host {host_id_or_name!r} not found")
+    """Thin wrapper around :func:`saltext.vcf.utils.vim.resolve_host_system`.
+
+    Supports both standalone-ESXi (``saltext.vcf.esxi`` pillar) and
+    vCenter-managed inventories transparently via the shared helper.
+    """
+    return soap.resolve_host_system(opts, host_id_or_name, profile=profile)
 
 
 def _net(opts, host, profile=None):
@@ -148,23 +145,63 @@ def portgroup_get_or_none(opts, host, name, profile=None):
         return None
 
 
-def portgroup_add(opts, host, name, vswitch, *, vlan_id=0, profile=None):
+def _security_policy(promiscuous=None, mac_changes=None, forged_transmits=None):
+    """Build a ``NetworkPolicy`` with only the security fields the caller set.
+
+    ``None`` for any field means "inherit from vSwitch"; anything else
+    (True/False) sets an explicit override.  Nested-VM labs typically want
+    all three True on the port group carrying nested traffic.
+    """
+    if promiscuous is None and mac_changes is None and forged_transmits is None:
+        return vim.host.NetworkPolicy()
+    return vim.host.NetworkPolicy(
+        security=vim.host.NetworkPolicy.SecurityPolicy(
+            allowPromiscuous=promiscuous,
+            macChanges=mac_changes,
+            forgedTransmits=forged_transmits,
+        ),
+    )
+
+
+def portgroup_add(
+    opts,
+    host,
+    name,
+    vswitch,
+    *,
+    vlan_id=0,
+    promiscuous=None,
+    mac_changes=None,
+    forged_transmits=None,
+    profile=None,
+):
     spec = vim.host.PortGroup.Specification(
         name=name,
         vlanId=int(vlan_id),
         vswitchName=vswitch,
-        policy=vim.host.NetworkPolicy(),
+        policy=_security_policy(promiscuous, mac_changes, forged_transmits),
     )
     _net(opts, host, profile=profile).AddPortGroup(portgrp=spec)
 
 
-def portgroup_update(opts, host, name, *, vlan_id=None, vswitch=None, profile=None):
+def portgroup_update(
+    opts,
+    host,
+    name,
+    *,
+    vlan_id=None,
+    vswitch=None,
+    promiscuous=None,
+    mac_changes=None,
+    forged_transmits=None,
+    profile=None,
+):
     existing = portgroup_get(opts, host, name, profile=profile)
     spec = vim.host.PortGroup.Specification(
         name=name,
         vlanId=int(vlan_id) if vlan_id is not None else existing["vlan_id"],
         vswitchName=vswitch or existing["vswitch"],
-        policy=vim.host.NetworkPolicy(),
+        policy=_security_policy(promiscuous, mac_changes, forged_transmits),
     )
     _net(opts, host, profile=profile).UpdatePortGroup(pgName=name, portgrp=spec)
 
@@ -174,11 +211,18 @@ def portgroup_remove(opts, host, name, profile=None):
 
 
 def _pg_to_dict(pg):
+    sec = getattr(pg.spec.policy, "security", None)
     return {
         "name": pg.spec.name,
         "vlan_id": pg.spec.vlanId,
         "vswitch": pg.spec.vswitchName,
         "ports": len(pg.port or []),
+        "security": {
+            # ``None`` means the port group inherits the vSwitch policy.
+            "promiscuous": getattr(sec, "allowPromiscuous", None),
+            "mac_changes": getattr(sec, "macChanges", None),
+            "forged_transmits": getattr(sec, "forgedTransmits", None),
+        },
     }
 
 

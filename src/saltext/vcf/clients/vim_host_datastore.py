@@ -18,15 +18,8 @@ from saltext.vcf.utils import vim as soap
 
 
 def _resolve_host(opts, name_or_id, profile=None):
-    content = soap.content(opts, profile=profile)
-    container = content.viewManager.CreateContainerView(content.rootFolder, [vim.HostSystem], True)
-    try:
-        for h in container.view:
-            if name_or_id in (h._moId, h.name):  # noqa: SLF001
-                return h
-    finally:
-        container.Destroy()
-    raise LookupError(f"host {name_or_id!r} not found")
+    """Thin wrapper around :func:`saltext.vcf.utils.vim.resolve_host_system`."""
+    return soap.resolve_host_system(opts, name_or_id, profile=profile)
 
 
 def list_(opts, host, profile=None):
