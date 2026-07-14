@@ -35,24 +35,24 @@ def stub(monkeypatch):
 
 
 def test_running_already(stub):
-    stub["svc"] = {"state": "RUNNING", "startup_policy": "ON"}
+    stub["svc"] = {"state": "RUNNING", "policy": "ON"}
     ret = st.running("TSM-SSH")
     assert ret["changes"] == {}
     assert stub["calls"] == []
 
 
 def test_running_starts(stub):
-    stub["svc"] = {"state": "STOPPED", "startup_policy": "ON"}
+    stub["svc"] = {"state": "STOPPED", "policy": "ON"}
     ret = st.running("TSM-SSH")
     assert ret["changes"]["state"]["new"] == "RUNNING"
     assert stub["calls"] == [("start", "TSM-SSH")]
 
 
 def test_running_starts_and_sets_policy(stub):
-    stub["svc"] = {"state": "STOPPED", "startup_policy": "OFF"}
+    stub["svc"] = {"state": "STOPPED", "policy": "OFF"}
     ret = st.running("TSM-SSH", policy="ON")
     assert ret["changes"]["state"]["new"] == "RUNNING"
-    assert ret["changes"]["startup_policy"]["new"] == "ON"
+    assert ret["changes"]["policy"]["new"] == "ON"
     assert ("start", "TSM-SSH") in stub["calls"]
     assert ("policy", "TSM-SSH", "ON") in stub["calls"]
 
@@ -65,33 +65,33 @@ def test_running_missing_service(stub):
 
 def test_running_test_mode(monkeypatch, stub):
     monkeypatch.setattr(st, "__opts__", {"test": True}, raising=False)
-    stub["svc"] = {"state": "STOPPED", "startup_policy": "ON"}
+    stub["svc"] = {"state": "STOPPED", "policy": "ON"}
     ret = st.running("TSM-SSH")
     assert ret["result"] is None
     assert stub["calls"] == []
 
 
 def test_stopped_already(stub):
-    stub["svc"] = {"state": "STOPPED", "startup_policy": "OFF"}
+    stub["svc"] = {"state": "STOPPED", "policy": "OFF"}
     ret = st.stopped("TSM-SSH")
     assert ret["changes"] == {}
 
 
 def test_stopped_stops(stub):
-    stub["svc"] = {"state": "RUNNING", "startup_policy": "ON"}
+    stub["svc"] = {"state": "RUNNING", "policy": "ON"}
     ret = st.stopped("TSM-SSH")
     assert ret["changes"]["state"]["new"] == "STOPPED"
     assert ("stop", "TSM-SSH") in stub["calls"]
 
 
 def test_policy_change(stub):
-    stub["svc"] = {"state": "RUNNING", "startup_policy": "ON"}
+    stub["svc"] = {"state": "RUNNING", "policy": "ON"}
     ret = st.policy("TSM-SSH", "OFF")
-    assert ret["changes"]["startup_policy"] == {"old": "ON", "new": "OFF"}
+    assert ret["changes"]["policy"] == {"old": "ON", "new": "OFF"}
     assert ("policy", "TSM-SSH", "OFF") in stub["calls"]
 
 
 def test_policy_noop(stub):
-    stub["svc"] = {"state": "RUNNING", "startup_policy": "ON"}
+    stub["svc"] = {"state": "RUNNING", "policy": "ON"}
     ret = st.policy("TSM-SSH", "ON")
     assert ret["changes"] == {}

@@ -16,12 +16,18 @@ def _ret(name):
 def vswitch_present(
     name,
     host,
-    num_ports=128,
+    num_ports=None,
     mtu=1500,
     pnic_devices=None,
     profile=None,
 ):
-    """Ensure a standard vSwitch *name* exists on *host* with the given config."""
+    """Ensure a standard vSwitch *name* exists on *host* with the given config.
+
+    *num_ports* is a create-time hint only — ESXi 5+ auto-scales the
+    port count internally, so passing a fixed value produces spurious
+    drift on every apply.  Omit it to skip the drift check; the
+    *creation* of a new vSwitch still falls back to 128.
+    """
     ret = _ret(name)
     existing = c.vswitch_get_or_none(__opts__, host, name, profile=profile)
     desired_pnics = sorted(pnic_devices or [])
@@ -29,7 +35,7 @@ def vswitch_present(
         drift = {}
         if existing["mtu"] != int(mtu):
             drift["mtu"] = (existing["mtu"], int(mtu))
-        if existing["num_ports"] != int(num_ports):
+        if num_ports is not None and existing["num_ports"] != int(num_ports):
             drift["num_ports"] = (existing["num_ports"], int(num_ports))
         if sorted(existing.get("pnic_devices") or []) != desired_pnics:
             drift["pnic_devices"] = (existing.get("pnic_devices"), desired_pnics)
@@ -44,7 +50,7 @@ def vswitch_present(
             __opts__,
             host,
             name,
-            num_ports=int(num_ports),
+            num_ports=int(num_ports) if num_ports is not None else existing["num_ports"],
             mtu=int(mtu),
             pnic_devices=desired_pnics or None,
             profile=profile,
@@ -60,7 +66,7 @@ def vswitch_present(
         __opts__,
         host,
         name,
-        num_ports=int(num_ports),
+        num_ports=int(num_ports) if num_ports is not None else 128,
         mtu=int(mtu),
         pnic_devices=desired_pnics or None,
         profile=profile,

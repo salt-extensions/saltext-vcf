@@ -54,7 +54,10 @@ def test_get_service_instance_honors_host_port_suffix(opts):
 def test_get_host_system_returns_standalone_host(opts):
     host = MagicMock(name="HostSystem")
     si = MagicMock()
-    si.RetrieveContent.return_value.rootFolder.childEntity = [MagicMock(host=[host])]
+    content = si.RetrieveContent.return_value
+    container = content.viewManager.CreateContainerView.return_value
+    container.view = [host]
     with patch("saltext.vcf.utils.esxi.SmartConnect", return_value=si):
         result = esxi.get_host_system(opts)
     assert result is host
+    container.Destroy.assert_called_once()

@@ -74,3 +74,27 @@ def rule_enabled(name, enabled=True, allowed_ips=None, all_ip=None, profile=None
 def rule_disabled(name, profile=None):
     """Shortcut for ``rule_enabled(name, enabled=False)``."""
     return rule_enabled(name, enabled=False, profile=profile)
+
+
+def global_enabled(name, enabled=True, profile=None):
+    """Ensure the ESXi host firewall's global enable state matches *enabled*.
+
+    Equivalent to ``esxcli network firewall set --enabled=<true|false>``.
+    Wraps ``HostFirewallSystem.EnableFirewall`` /
+    ``.DisableFirewall``.  Use with care — disabling the firewall
+    opens every port on every ruleset regardless of individual
+    ``rule_enabled`` state.
+    """
+    ret = _ret(name)
+    current = c.enabled(__opts__, profile=profile)
+    if bool(current) == bool(enabled):
+        ret["comment"] = f"host firewall already {'enabled' if enabled else 'disabled'}"
+        return ret
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"host firewall would be {'enabled' if enabled else 'disabled'}"
+        return ret
+    c.set_global_enabled(__opts__, bool(enabled), profile=profile)
+    ret["changes"] = {"enabled": {"old": bool(current), "new": bool(enabled)}}
+    ret["comment"] = f"host firewall {'enabled' if enabled else 'disabled'}"
+    return ret

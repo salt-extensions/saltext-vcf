@@ -103,12 +103,26 @@ def invalidate_service_instance(opts, profile=None):
 def get_host_system(opts, profile=None):
     """Return the ``vim.HostSystem`` for a standalone ESXi host.
 
-    When connecting directly to an ESXi host (not vCenter), the SOAP tree
-    contains exactly one datacenter with one host.
+    Locate the single HostSystem via a ContainerView rather than by
+    hard-coded child-entity indexing.  On real ESXi 9.1 GA
+    ``Datacenter.host`` is not a stable attribute traversal — the
+    working path is ``Datacenter.hostFolder.childEntity[0].host[0]``,
+    which is fragile.  A ContainerView is protocol-idiomatic, tolerates
+    any intermediate folder layout, and behaves identically on multi-
+    host trees (returning the first match).
     """
+    from pyVmomi import vim  # noqa: PLC0415 — pyvmomi is a hard dep
+
     si = get_service_instance(opts, profile=profile)
     content = si.RetrieveContent()
-    return content.rootFolder.childEntity[0].host[0]
+    container = content.viewManager.CreateContainerView(content.rootFolder, [vim.HostSystem], True)
+    try:
+        hosts = list(container.view)
+        if not hosts:
+            raise LookupError("no HostSystem found on this ESXi endpoint")
+        return hosts[0]
+    finally:
+        container.Destroy()
 
 
 def _safe_disconnect(si):

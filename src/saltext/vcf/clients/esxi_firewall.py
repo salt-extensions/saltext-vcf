@@ -44,14 +44,39 @@ def get_or_none(opts, rule, profile=None):
         return None
 
 
-def set_enabled(opts, rule, enabled, profile=None):
+def set_enabled(opts, rule, value, profile=None):
     host = esxi.get_host_system(opts, profile=profile)
     fw = host.configManager.firewallSystem
-    if enabled:
+    if value:
         fw.EnableRuleset(id=rule)
     else:
         fw.DisableRuleset(id=rule)
     return get(opts, rule, profile=profile)
+
+
+def enabled(opts, profile=None):
+    """Return the host's global firewall enabled state (bool)."""
+    host = esxi.get_host_system(opts, profile=profile)
+    return bool(host.configManager.firewallSystem.firewallInfo.defaultPolicy.incomingBlocked)
+
+
+def set_global_enabled(opts, value, profile=None):
+    """Enable or disable the host firewall globally.
+
+    Wraps ``HostFirewallSystem.UpdateDefaultPolicy``.  When
+    ``value=False``, both ``incomingBlocked`` and
+    ``outgoingBlocked`` flip to False, allowing all traffic
+    regardless of ruleset state.  This is the ESXi-equivalent
+    of ``esxcli network firewall set --enabled=false``.
+    """
+    host = esxi.get_host_system(opts, profile=profile)
+    fw = host.configManager.firewallSystem
+    policy = vim.host.FirewallInfo.DefaultPolicy(
+        incomingBlocked=bool(value),
+        outgoingBlocked=bool(value),
+    )
+    fw.UpdateDefaultPolicy(defaultPolicy=policy)
+    return bool(host.configManager.firewallSystem.firewallInfo.defaultPolicy.incomingBlocked)
 
 
 def set_allowed_ips(opts, rule, allowed_ips, all_ip=False, profile=None):
