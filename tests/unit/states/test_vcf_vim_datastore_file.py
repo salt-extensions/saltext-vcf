@@ -25,8 +25,54 @@ def test_file_present_uploads_when_missing(monkeypatch):
     monkeypatch.setattr(c, "list_", lambda o, dc, ds, path="", profile=None: [])
     monkeypatch.setattr(c, "upload", lambda *a, **kw: calls.append(a) or 200)
     ret = st.file_present("iso", "DC", "datastore-1", "iso/vsphere.iso", "/tmp/v.iso")
-    assert ret["changes"] == {"uploaded": "iso/vsphere.iso"}
+    assert ret["changes"] == {"uploaded": "iso/vsphere.iso", "reason": "missing"}
     assert calls[0][-2:] == ("/tmp/v.iso", "iso/vsphere.iso")
+
+
+def test_file_present_force_reuploads_existing(monkeypatch):
+    calls = []
+    monkeypatch.setattr(c, "list_", lambda o, dc, ds, path="", profile=None: [{"path": "v.iso"}])
+    monkeypatch.setattr(c, "delete", lambda *a, **kw: calls.append(("delete",) + a))
+    monkeypatch.setattr(c, "upload", lambda *a, **kw: calls.append(("upload",) + a) or 200)
+    ret = st.file_present("iso", "DC", "datastore-1", "iso/v.iso", "/tmp/v.iso", force=True)
+    assert ret["changes"]["reason"] == "force"
+    # delete should precede upload
+    assert calls[0][0] == "delete"
+    assert calls[1][0] == "upload"
+
+
+def test_file_present_match_size_reuploads_on_drift(monkeypatch, tmp_path):
+    local = tmp_path / "v.iso"
+    local.write_bytes(b"x" * 500)
+    calls = []
+    monkeypatch.setattr(
+        c,
+        "list_",
+        lambda o, dc, ds, path="", profile=None: [{"path": "v.iso", "fileSize": 100}],
+    )
+    monkeypatch.setattr(c, "delete", lambda *a, **kw: calls.append(("delete",) + a))
+    monkeypatch.setattr(c, "upload", lambda *a, **kw: calls.append(("upload",) + a))
+    ret = st.file_present("iso", "DC", "datastore-1", "iso/v.iso", str(local), match_size=True)
+    assert "size drift" in ret["changes"]["reason"]
+    assert "local=500" in ret["changes"]["reason"]
+    assert "ds=100" in ret["changes"]["reason"]
+    assert calls[0][0] == "delete"
+    assert calls[1][0] == "upload"
+
+
+def test_file_present_match_size_skips_when_matched(monkeypatch, tmp_path):
+    local = tmp_path / "v.iso"
+    local.write_bytes(b"x" * 500)
+    monkeypatch.setattr(
+        c,
+        "list_",
+        lambda o, dc, ds, path="", profile=None: [{"path": "v.iso", "fileSize": 500}],
+    )
+    monkeypatch.setattr(c, "upload", lambda *a, **kw: pytest.fail("should not upload"))
+    monkeypatch.setattr(c, "delete", lambda *a, **kw: pytest.fail("should not delete"))
+    ret = st.file_present("iso", "DC", "datastore-1", "iso/v.iso", str(local), match_size=True)
+    assert ret["changes"] == {}
+    assert "match" in ret["comment"]
 
 
 def test_file_present_test_mode(monkeypatch, opts):
