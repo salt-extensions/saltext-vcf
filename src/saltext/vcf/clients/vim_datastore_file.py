@@ -14,8 +14,22 @@ from pathlib import Path
 import requests
 from pyVmomi import vim
 
+from saltext.vcf.utils import esxi as esxi_conn
 from saltext.vcf.utils import vcenter as vc_rest
 from saltext.vcf.utils import vim as soap
+
+
+def _http_endpoint(opts, profile=None):
+    """Return the (host, verify_ssl) tuple for the datastore HTTP endpoint.
+
+    Standalone-ESXi has no vCenter config; fall back to the ESXi block.
+    Mirrors the delegation ``soap.get_service_instance`` does for SOAP.
+    """
+    if soap.is_standalone_esxi(opts, profile=profile):
+        cfg = esxi_conn.get_config(opts, profile=profile)
+    else:
+        cfg = vc_rest.get_config(opts, profile=profile)
+    return cfg["host"], cfg.get("verify_ssl", False)
 
 
 def _find_datacenter(opts, name_or_id, profile=None):
@@ -139,16 +153,16 @@ def upload(opts, datacenter, datastore, local_path, ds_path, profile=None):
     The HTTP request is authenticated with the SOAP session cookie. Returns the
     HTTP status code on success.
     """
-    cfg = vc_rest.get_config(opts, profile=profile)
+    host, verify_ssl = _http_endpoint(opts, profile=profile)
     cookie = soap.session_cookie(opts, profile=profile)
-    url = _folder_url(cfg["host"], ds_path, datacenter, datastore)
+    url = _folder_url(host, ds_path, datacenter, datastore)
     headers = {"Content-Type": "application/octet-stream", "Cookie": cookie}
     with open(local_path, "rb") as fp:
         resp = requests.put(
             url,
             data=fp,
             headers=headers,
-            verify=cfg["verify_ssl"],
+            verify=verify_ssl,
             timeout=600,
         )
     resp.raise_for_status()
@@ -157,14 +171,12 @@ def upload(opts, datacenter, datastore, local_path, ds_path, profile=None):
 
 def download(opts, datacenter, datastore, ds_path, local_path, profile=None):
     """Stream ``[datastore] ds_path`` to disk via HTTPS GET. Returns the byte count written."""
-    cfg = vc_rest.get_config(opts, profile=profile)
+    host, verify_ssl = _http_endpoint(opts, profile=profile)
     cookie = soap.session_cookie(opts, profile=profile)
-    url = _folder_url(cfg["host"], ds_path, datacenter, datastore)
+    url = _folder_url(host, ds_path, datacenter, datastore)
     headers = {"Cookie": cookie}
     written = 0
-    with requests.get(
-        url, headers=headers, verify=cfg["verify_ssl"], timeout=600, stream=True
-    ) as resp:
+    with requests.get(url, headers=headers, verify=verify_ssl, timeout=600, stream=True) as resp:
         resp.raise_for_status()
         Path(local_path).parent.mkdir(parents=True, exist_ok=True)
         with open(local_path, "wb") as fp:

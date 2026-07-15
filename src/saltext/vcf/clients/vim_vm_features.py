@@ -12,6 +12,7 @@ Knobs covered:
 from pyVmomi import vim
 
 from saltext.vcf.clients.vim_vm import _vm
+from saltext.vcf.utils import vim as soap
 
 _LATENCY_LEVELS = {"low", "normal", "medium", "high", "custom"}
 _FIRMWARES = {"bios", "efi"}
@@ -89,6 +90,7 @@ def set_features(
         config.bootOptions = vim.vm.BootOptions(**boot_changes)
 
     task = vm.ReconfigVM_Task(spec=config)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 

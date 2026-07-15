@@ -101,6 +101,7 @@ def add(
         ]
     )
     task = vm.ReconfigVM_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -113,6 +114,7 @@ def resize(opts, vm_id_or_name, disk_key, size_gb, profile=None):
         deviceChange=[vim.vm.device.VirtualDeviceSpec(operation="edit", device=disk)]
     )
     task = vm.ReconfigVM_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
@@ -129,6 +131,7 @@ def remove(opts, vm_id_or_name, disk_key, *, destroy_files=False, profile=None):
         device_spec.fileOperation = "destroy"
     spec = vim.vm.ConfigSpec(deviceChange=[device_spec])
     task = vm.ReconfigVM_Task(spec=spec)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 

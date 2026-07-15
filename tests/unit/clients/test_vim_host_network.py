@@ -178,6 +178,65 @@ def test_portgroup_update_preserves_vswitch(host_factory, opts):
     assert spec.vswitchName == "vSwitch0"
 
 
+def test_portgroup_add_with_security_policy(host_factory, opts):
+    """Nested-VM labs need promiscuous + macChanges + forgedTransmits Accept."""
+    vim_host_network.portgroup_add(
+        opts,
+        "esxi-01",
+        "nested",
+        "vSwitch1",
+        vlan_id=0,
+        promiscuous=True,
+        mac_changes=True,
+        forged_transmits=True,
+    )
+    spec = host_factory["host"].configManager.networkSystem.AddPortGroup.call_args.kwargs["portgrp"]
+    assert spec.policy.security.allowPromiscuous is True
+    assert spec.policy.security.macChanges is True
+    assert spec.policy.security.forgedTransmits is True
+
+
+def test_portgroup_add_default_inherits_vswitch_policy(host_factory, opts):
+    """No security kwargs → empty NetworkPolicy so the port group inherits."""
+    vim_host_network.portgroup_add(opts, "esxi-01", "Mgmt", "vSwitch0")
+    spec = host_factory["host"].configManager.networkSystem.AddPortGroup.call_args.kwargs["portgrp"]
+    assert spec.policy.security is None
+
+
+def test_portgroup_update_with_security_policy(host_factory, opts):
+    host_factory["host"] = _fake_host(portgroups=[_portgroup("Mgmt", vlan=10, vswitch="vSwitch0")])
+    vim_host_network.portgroup_update(
+        opts,
+        "esxi-01",
+        "Mgmt",
+        promiscuous=False,
+        mac_changes=True,
+        forged_transmits=False,
+    )
+    spec = host_factory["host"].configManager.networkSystem.UpdatePortGroup.call_args.kwargs[
+        "portgrp"
+    ]
+    assert spec.policy.security.allowPromiscuous is False
+    assert spec.policy.security.macChanges is True
+    assert spec.policy.security.forgedTransmits is False
+
+
+def test_portgroup_list_exposes_security_in_dict(host_factory, opts):
+    pg = _portgroup("Mgmt", vlan=10)
+    sec = MagicMock()
+    sec.allowPromiscuous = True
+    sec.macChanges = False
+    sec.forgedTransmits = True
+    pg.spec.policy.security = sec
+    host_factory["host"] = _fake_host(portgroups=[pg])
+    result = vim_host_network.portgroup_list(opts, "esxi-01")
+    assert result[0]["security"] == {
+        "promiscuous": True,
+        "mac_changes": False,
+        "forged_transmits": True,
+    }
+
+
 def test_portgroup_remove(host_factory, opts):
     vim_host_network.portgroup_remove(opts, "esxi-01", "Mgmt")
     host_factory["host"].configManager.networkSystem.RemovePortGroup.assert_called_once_with(

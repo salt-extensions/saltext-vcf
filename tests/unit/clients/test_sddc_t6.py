@@ -261,16 +261,28 @@ def test_task_wait_raises_on_failure(opts, sddc_authed, monkeypatch):
 
 
 def test_task_wait_timeout(opts, sddc_authed, monkeypatch):
-    monkeypatch.setattr(time, "sleep", lambda _: None)
     sddc_authed.add(
         responses.GET,
         f"{SM}/v1/tasks/task-3",
         json={"id": "task-3", "status": "IN_PROGRESS"},
         status=200,
     )
-    # Use a monotonic counter that quickly exceeds the deadline
-    fake_time = iter([0.0, 0.0, 1000.0])
-    monkeypatch.setattr(time, "monotonic", lambda: next(fake_time))
+
+    # Patch only the ``time`` reference inside sddc_tasks so background threads
+    # (e.g. the saltfactories event listener) don't consume our fake monotonic
+    # values and blow up with StopIteration.
+    class _FakeTime:
+        _values = iter([0.0, 0.0, 1000.0])
+
+        @classmethod
+        def monotonic(cls):
+            return next(cls._values)
+
+        @staticmethod
+        def sleep(_):
+            pass
+
+    monkeypatch.setattr(sddc_tasks, "time", _FakeTime)
     with pytest.raises(TimeoutError):
         sddc_tasks.wait(opts, "task-3", timeout=1, poll_interval=0)
 

@@ -89,6 +89,15 @@ def vm_factory(monkeypatch):
 
     monkeypatch.setattr(vim_vm_disk, "_vm", patcher)
     monkeypatch.setattr(vim_vm_nic, "_vm", patcher)
+
+    # NIC add now resolves ``vim.Network`` from a MoID at ReconfigVM
+    # time (needed because ESXi rejects a bare-MoID Network in
+    # NetworkBackingInfo).  Provide a real ``vim.Network`` object so
+    # pyVmomi's strict backing.network type check accepts it.
+    def fake_network(opts, moid_or_name, profile=None):
+        return vim.Network(moid_or_name, None)
+
+    monkeypatch.setattr(vim_vm_nic, "_find_network", fake_network)
     return holder
 
 

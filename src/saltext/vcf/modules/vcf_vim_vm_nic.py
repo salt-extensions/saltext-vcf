@@ -24,6 +24,7 @@ def list_(vm, profile=None):
 def add(
     vm,
     nic_type="vmxnet3",
+    network=None,
     network_moid=None,
     portgroup_key=None,
     dvs_uuid=None,
@@ -33,16 +34,21 @@ def add(
 ):
     """Add a new NIC.
 
+    Backing options: ``network`` (port-group name — looked up),
+    ``network_moid`` (bypasses the lookup), or ``portgroup_key`` +
+    ``dvs_uuid`` (distributed port group).
+
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' vcf_vim_vm_nic.add vm-100 nic_type=vmxnet3 network_moid=network-12
+        salt '*' vcf_vim_vm_nic.add vm-100 nic_type=vmxnet3 network=nested-lab
     """
     return c.add(
         __opts__,
         vm,
         nic_type=nic_type,
+        network=network,
         network_moid=network_moid,
         portgroup_key=portgroup_key,
         dvs_uuid=dvs_uuid,

@@ -37,6 +37,11 @@ def _vm(opts, vm_id_or_name, profile=None):
 
 
 def _find_by_type(opts, vim_type, name_or_id, profile=None):
+    # HostSystem lookups get IP-fallback + standalone-single-host
+    # semantics via the shared resolve_host_system helper — same
+    # rules used by vim_host_datastore / vim_host_network.
+    if vim_type is vim.HostSystem:
+        return soap.resolve_host_system(opts, name_or_id, profile=profile)
     content = soap.content(opts, profile=profile)
     container = content.viewManager.CreateContainerView(content.rootFolder, [vim_type], True)
     try:
@@ -150,6 +155,17 @@ def create(
 
     host_obj = _find_by_type(opts, vim.HostSystem, host, profile=profile) if host else None
 
+    # ESXi doesn't auto-provision a storage controller on an empty
+    # VM — subsequent VirtualDisk adds would fail with "no SCSI
+    # controller on VM".  Include a paravirtual SCSI controller by
+    # default so disk.add works out of the box.
+    scsi_ctrl = vim.vm.device.ParaVirtualSCSIController(
+        key=-1,
+        busNumber=0,
+        sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing,
+    )
+    scsi_spec = vim.vm.device.VirtualDeviceSpec(operation="add", device=scsi_ctrl)
+
     config = vim.vm.ConfigSpec(
         name=name,
         memoryMB=int(memory_mb),
@@ -157,8 +173,10 @@ def create(
         guestId=guest_id,
         annotation=annotation,
         files=vim.vm.FileInfo(vmPathName=f"[{target_datastore.name}]"),
+        deviceChange=[scsi_spec],
     )
     task = target_folder.CreateVM_Task(config=config, pool=pool, host=host_obj)
+    soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
 
 
