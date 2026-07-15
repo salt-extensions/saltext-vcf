@@ -10,6 +10,7 @@ ______________
     :toctree:
 
     cluster_config
+    cluster_config_software
     esxi_advanced
     esxi_firewall
     esxi_host
@@ -48,6 +49,7 @@ ______________
     nsx_tier1
     nsx_transport_node
     nsx_transport_zone
+    nsx_upgrade
     sddc_avn
     sddc_bundles
     sddc_certificates
@@ -99,6 +101,7 @@ ______________
     vcfa_cloud_zone
     vcfa_custom_role
     vcfa_iam
+    vcfa_lifecycle
     vcfa_network_profile
     vcfa_organization
     vcfa_policy

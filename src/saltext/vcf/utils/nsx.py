@@ -65,32 +65,32 @@ def api_get(opts, path, params=None, profile=None):
     return {}
 
 
-def api_post(opts, path, body=None, profile=None):
+def api_post(opts, path, body=None, params=None, profile=None):
     """POST JSON *body* to NSX and return parsed JSON."""
     session, host = _session(opts, profile=profile)
     url = f"https://{host}{path}"
-    resp = session.post(url, json=body, timeout=30)
+    resp = session.post(url, json=body, params=params, timeout=30)
     resp.raise_for_status()
     if resp.content:
         return resp.json()
     return {}
 
 
-def api_put(opts, path, body=None, profile=None):
+def api_put(opts, path, body=None, params=None, profile=None):
     """PUT JSON *body* to NSX (create/update on Policy API) and return parsed JSON."""
     session, host = _session(opts, profile=profile)
     url = f"https://{host}{path}"
-    resp = session.put(url, json=body, timeout=30)
+    resp = session.put(url, json=body, params=params, timeout=30)
     resp.raise_for_status()
     if resp.content:
         return resp.json()
     return {}
 
 
-def api_delete(opts, path, profile=None):
+def api_delete(opts, path, params=None, profile=None):
     """DELETE a resource from NSX."""
     session, host = _session(opts, profile=profile)
     url = f"https://{host}{path}"
-    resp = session.delete(url, timeout=30)
+    resp = session.delete(url, params=params, timeout=30)
     resp.raise_for_status()
     return {}
