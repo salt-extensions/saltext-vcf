@@ -62,6 +62,7 @@ ______________
     sddc_license_keys
     sddc_manager
     sddc_network_pools
+    sddc_personalities
     sddc_releases
     sddc_system
     sddc_tasks

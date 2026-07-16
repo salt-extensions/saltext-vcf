@@ -32,3 +32,31 @@ def download(opts, bundle_id, profile=None):
         body={"bundleDownloadSpec": {"downloadNow": True}},
         profile=profile,
     )
+
+
+def upload(opts, bundle_file_path, manifest_file_path, signature_file_path, profile=None):
+    """Register an offline patch bundle already staged on SDDC Manager.
+
+    All three paths are on the SDDC Manager appliance's local filesystem; the
+    caller is responsible for having placed the ``.tar``, ``.manifest`` and
+    ``.sig`` files there (that's the OFFLINE-mode step from the Async Patch
+    Tool workflow). Returns the task id for the import.
+    """
+    body = {
+        "bundleUploadSpec": {
+            "bundleFilePath": bundle_file_path,
+            "manifestFilePath": manifest_file_path,
+            "signatureFilePath": signature_file_path,
+        }
+    }
+    return sddc.api_post(opts, PATH, body=body, profile=profile)
+
+
+def delete(opts, bundle_id, profile=None):
+    """Delete a bundle from the SDDC Manager LCM repository."""
+    return sddc.api_delete(opts, f"{PATH}/{bundle_id}", profile=profile)
+
+
+def for_skip_upgrade(opts, domain_id, profile=None):
+    """List bundles applicable to a skip-upgrade of *domain_id*."""
+    return sddc.api_get(opts, f"{PATH}/domains/{domain_id}", profile=profile)

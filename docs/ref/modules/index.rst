@@ -53,6 +53,7 @@ _________________
     vcf_sddc_host
     vcf_sddc_manager
     vcf_sddc_network_pools
+    vcf_sddc_personalities
     vcf_sddc_releases
     vcf_sddc_system
     vcf_sddc_upgrades
