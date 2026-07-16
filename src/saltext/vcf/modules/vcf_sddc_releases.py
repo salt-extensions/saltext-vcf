@@ -46,3 +46,16 @@ def system(profile=None):
 
     """
     return c.system(__opts__, profile=profile)
+
+
+def custom_patches(domain_id, profile=None):
+    """List async / out-of-band patches registered on the given domain.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_sddc_releases.custom_patches <domain_id>
+
+    """
+    return c.custom_patches(__opts__, domain_id, profile=profile)
