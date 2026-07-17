@@ -16,6 +16,7 @@ ______________
     esxi_ntp
     esxi_service
     esxi_syslog
+    esxi_vlcm
     fleet_password
     installer_bringup
     nsx_cluster

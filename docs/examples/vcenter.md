@@ -76,3 +76,40 @@ salt-call vcf_vcenter_kms.list_
 salt-call vcf_vcenter_kms.get my-kms
 salt-call vcf_vcenter_kms.create '{"provider":"my-kms","type":"NATIVE", ...}'
 ```
+
+## ESXi Lifecycle (vLCM patching)
+
+Patch ESXi hosts in a vSphere cluster: depot → desired image → policy →
+compliance/precheck/stage/remediate. Same `vcenter` pillar connection as
+the rest of this page — no separate credentials needed.
+
+```bash
+salt-call vcf_esxi_vlcm.offline_depot_create '{"location": "http://repo.example.com/depot.zip"}'
+salt-call vcf_esxi_vlcm.depot_sync
+
+salt-call vcf_esxi_vlcm.desired_image_get domain-c9
+salt-call vcf_esxi_vlcm.draft_import_software_spec domain-c9 '{"base_image": {"version": "9.2.0.0.25504872"}}'
+salt-call vcf_esxi_vlcm.draft_commit domain-c9 draft-1
+
+salt-call vcf_esxi_vlcm.compliance_scan domain-c9
+salt-call vcf_esxi_vlcm.remediate domain-c9
+```
+
+Declaratively, via `vcf_esxi_vlcm` states:
+
+```yaml
+patch-depot:
+  vcf_esxi_vlcm.depot_configured:
+    - location: http://repo.example.com/VMware-ESXi-9.2.0.0.25504872-depot.zip
+
+domain-c9:
+  vcf_esxi_vlcm.image_configured:
+    - image_spec:
+        base_image:
+          version: "9.2.0.0.25504872"
+    - require:
+      - vcf_esxi_vlcm: patch-depot
+  vcf_esxi_vlcm.remediated:
+    - require:
+      - vcf_esxi_vlcm.image_configured: domain-c9
+```
