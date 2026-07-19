@@ -221,7 +221,7 @@ def test_resolve_update_version_falls_back_to_list_and_match(opts, vcenter_authe
         json={"value": {"version": "9.0.1.0.12345", "detail": "full"}},
         status=200,
     )
-    resolved, pending_updates, pending_update = c.resolve_update_version(
+    resolved, _pending_updates, pending_update = c.resolve_update_version(
         opts, version="9.0.1.0.12345"
     )
     assert resolved == "9.0.1.0.12345"
