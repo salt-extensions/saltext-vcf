@@ -153,9 +153,7 @@ def get_pending_update(opts, version, profile=None):
 
 def list_upgradeable_components(opts, version, profile=None):
     """List the components that would be upgraded by *version*."""
-    return vcenter.api_get(
-        opts, f"{_BASE}/pending/{_quoted(version)}/components", profile=profile
-    )
+    return vcenter.api_get(opts, f"{_BASE}/pending/{_quoted(version)}/components", profile=profile)
 
 
 def get_update_status(opts, profile=None):

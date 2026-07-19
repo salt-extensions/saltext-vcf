@@ -341,12 +341,8 @@ def test_monitor_stage_raises_on_stage_failed(opts, vcenter_authed):
 
 
 def test_monitor_stage_tolerates_transient_then_succeeds(opts, vcenter_authed):
-    vcenter_authed.add(
-        responses.GET, "https://vc.test/rest/appliance/update/staged", status=404
-    )
-    vcenter_authed.add(
-        responses.GET, "https://vc.test/rest/appliance/update", status=503
-    )
+    vcenter_authed.add(responses.GET, "https://vc.test/rest/appliance/update/staged", status=404)
+    vcenter_authed.add(responses.GET, "https://vc.test/rest/appliance/update", status=503)
     vcenter_authed.add(
         responses.GET,
         "https://vc.test/rest/appliance/update/staged",
@@ -381,9 +377,7 @@ def test_monitor_install_raises_on_install_failed(opts, vcenter_authed):
 
 
 def test_wait_for_staged_update_polls_until_match(opts, vcenter_authed):
-    vcenter_authed.add(
-        responses.GET, "https://vc.test/rest/appliance/update/staged", status=404
-    )
+    vcenter_authed.add(responses.GET, "https://vc.test/rest/appliance/update/staged", status=404)
     vcenter_authed.add(
         responses.GET,
         "https://vc.test/rest/appliance/update/staged",
@@ -395,8 +389,6 @@ def test_wait_for_staged_update_polls_until_match(opts, vcenter_authed):
 
 
 def test_wait_for_staged_update_times_out(opts, vcenter_authed):
-    vcenter_authed.add(
-        responses.GET, "https://vc.test/rest/appliance/update/staged", status=404
-    )
+    vcenter_authed.add(responses.GET, "https://vc.test/rest/appliance/update/staged", status=404)
     with pytest.raises(TimeoutError):
         c.wait_for_staged_update(opts, version="9.0", poll_interval=0, timeout=0)
