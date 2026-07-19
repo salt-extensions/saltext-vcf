@@ -193,7 +193,7 @@ def update_prepared(  # pylint: disable=too-many-locals,too-many-branches
                 data["repository_policy"] = c.set_update_policy(
                     __opts__, repository_url, profile=profile
                 )
-        resolved, pending_updates, pending_update = c.resolve_update_version(
+        resolved, _pending_updates, pending_update = c.resolve_update_version(
             __opts__, repository_url=repository_url, version=version, profile=profile
         )
         data["resolved_version"] = resolved
