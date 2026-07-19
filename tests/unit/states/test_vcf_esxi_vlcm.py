@@ -214,7 +214,15 @@ def test_image_configured_existing_draft_delete_dict_keyed_response(monkeypatch)
     draft "1"); second is the post-import re-query (finds the fresh
     draft "2").
     """
-    monkeypatch.setattr(c, "desired_image_get", lambda opts, cluster, profile=None: _img("0.9"))
+    # Called twice: once up front (still "0.9", not yet matching desired "1.0")
+    # and once post-commit to verify the version actually landed ("1.0").
+    image_gets = {"calls": 0}
+
+    def desired_image_get(opts, cluster, profile=None):
+        image_gets["calls"] += 1
+        return _img("0.9") if image_gets["calls"] == 1 else _img("1.0")
+
+    monkeypatch.setattr(c, "desired_image_get", desired_image_get)
 
     state = {"calls": 0}
 
