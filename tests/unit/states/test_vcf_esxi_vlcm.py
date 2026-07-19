@@ -336,9 +336,7 @@ def test_compliance_checked_runs_and_waits(monkeypatch):
     monkeypatch.setattr(
         c,
         "compliance_scan",
-        lambda opts, cluster, commit="1", hosts=None, profile=None: calls.append(
-            (commit, hosts)
-        )
+        lambda opts, cluster, commit="1", hosts=None, profile=None: calls.append((commit, hosts))
         or "task-1",
     )
     monkeypatch.setattr(c, "wait_for_task", lambda opts, resp, **kw: {"status": "SUCCEEDED"})

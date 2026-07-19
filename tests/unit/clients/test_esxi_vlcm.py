@@ -1,8 +1,8 @@
 """Tests for clients.esxi_vlcm (vCenter ESX Lifecycle Manager / vLCM API)."""
 
 import pytest
-import responses
 import requests
+import responses
 
 from saltext.vcf.clients import esxi_vlcm as c
 

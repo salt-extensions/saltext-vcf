@@ -231,9 +231,7 @@ def image_configured(  # pylint: disable=too-many-return-statements,too-many-bra
     if not image_spec:
         return _fail(
             ret,
-            ValueError(
-                "image_configured requires 'image_spec' (or pillar esxi_vlcm:image:spec)"
-            ),
+            ValueError("image_configured requires 'image_spec' (or pillar esxi_vlcm:image:spec)"),
         )
     desired_version = _base_version(image_spec)
 
