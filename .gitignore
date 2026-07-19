@@ -136,3 +136,15 @@ src/saltext/vcf/version.py
 artifacts/
 
 .claude/
+/.cursor-ai/.gitignore
+/.idea/.gitignore
+/src/saltext/vcf/states/.cursor/rules/ai-keep-marker.mdc
+/.cursor-ai/config.json
+/id_ed25519_github_new
+/id_ed25519_github_new.pub
+/.idea/misc.xml
+/.idea/modules.xml
+/saltext-vcf.iml
+/.cursor-ai/sync-vault.ps1
+/.cursor-ai/sync-vault.sh
+/.idea/vcs.xml

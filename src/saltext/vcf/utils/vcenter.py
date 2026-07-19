@@ -103,6 +103,27 @@ def _session(opts, profile=None):
     return get_session(opts, profile=profile)
 
 
+def _raise_for_status(resp):
+    """Raise ``requests.HTTPError`` that includes the vCenter response body.
+
+    ``requests``' own ``raise_for_status`` discards the response body, which for
+    the vCenter REST API is exactly where the actionable error lives (e.g. which
+    required field is missing on a 400). We attach the body to the message while
+    preserving ``exc.response`` so callers can still branch on ``status_code``.
+    """
+    if resp.status_code < 400:
+        return
+    try:
+        detail = resp.text
+    except Exception:  # pragma: no cover - defensive
+        detail = "<unreadable response body>"
+    method = resp.request.method if resp.request is not None else "?"
+    raise requests.HTTPError(
+        f"{resp.status_code} {resp.reason} for {method} {resp.url}: {detail}",
+        response=resp,
+    )
+
+
 def api_get(opts, path, params=None, profile=None, timeout=None):
     """GET ``/api/<path>`` from vCenter and return parsed JSON.
 
@@ -112,7 +133,7 @@ def api_get(opts, path, params=None, profile=None, timeout=None):
     session, host = _session(opts, profile=profile)
     url = f"https://{host}{path}"
     resp = session.get(url, params=params, timeout=_resolve_timeout(opts, profile, timeout))
-    resp.raise_for_status()
+    _raise_for_status(resp)
     if resp.content:
         return resp.json()
     return {}
@@ -129,7 +150,7 @@ def api_post(opts, path, body=None, params=None, profile=None, timeout=None):
     resp = session.post(
         url, json=body, params=params, timeout=_resolve_timeout(opts, profile, timeout)
     )
-    resp.raise_for_status()
+    _raise_for_status(resp)
     if resp.content:
         return resp.json()
     return {}
@@ -140,7 +161,7 @@ def api_patch(opts, path, body=None, profile=None, timeout=None):
     session, host = _session(opts, profile=profile)
     url = f"https://{host}{path}"
     resp = session.patch(url, json=body, timeout=_resolve_timeout(opts, profile, timeout))
-    resp.raise_for_status()
+    _raise_for_status(resp)
     if resp.content:
         return resp.json()
     return {}
@@ -151,7 +172,7 @@ def api_put(opts, path, body=None, profile=None, timeout=None):
     session, host = _session(opts, profile=profile)
     url = f"https://{host}{path}"
     resp = session.put(url, json=body, timeout=_resolve_timeout(opts, profile, timeout))
-    resp.raise_for_status()
+    _raise_for_status(resp)
     if resp.content:
         return resp.json()
     return {}
@@ -162,5 +183,5 @@ def api_delete(opts, path, profile=None, timeout=None):
     session, host = _session(opts, profile=profile)
     url = f"https://{host}{path}"
     resp = session.delete(url, timeout=_resolve_timeout(opts, profile, timeout))
-    resp.raise_for_status()
+    _raise_for_status(resp)
     return {}

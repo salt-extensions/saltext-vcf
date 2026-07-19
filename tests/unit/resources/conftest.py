@@ -70,6 +70,16 @@ def resources_pillar():
                     },
                 },
             },
+            "vmsp": {
+                "instances": {
+                    "vcf-vmsp": {
+                        "host": "vmsp.test",
+                        "username": "admin@vsp.local",
+                        "password": "p",
+                        "verify_ssl": False,
+                    },
+                },
+            },
             "vcf_vm": {
                 "instances": {
                     "web-01": {
