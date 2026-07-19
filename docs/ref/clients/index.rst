@@ -71,6 +71,7 @@ ______________
     sddc_users
     sddc_vcenters
     sddc_vcf_services
+    vc_patch
     vcenter_appliance
     vcenter_cluster
     vcenter_compute_policy

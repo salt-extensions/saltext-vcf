@@ -113,3 +113,43 @@ domain-c9:
     - require:
       - vcf_esxi_vlcm.image_configured: domain-c9
 ```
+
+## VC Patch (VCSA self-update)
+
+Patches the vCenter Server Appliance itself via its VAMI appliance-update
+API — a distinct workflow from ESXi/NSX/SDDC Manager patching. Same
+`vcenter` pillar connection as the rest of this page.
+
+```bash
+salt-call vcf_vc_patch.get_update_policy
+salt-call vcf_vc_patch.list_pending_updates
+
+# Stage without monitoring on flaky links, then poll separately
+salt-call vcf_vc_patch.stage 9.0.1.0.12345 monitor=false
+salt-call vcf_vc_patch.get_update_status
+salt-call vcf_vc_patch.get_staged_update
+
+# Install (requires the SSO admin password)
+salt-call vcf_vc_patch.install 9.0.1.0.12345 'VMware123!VMware123!'
+```
+
+Declaratively, via `vcf_vc_patch` states:
+
+```yaml
+vc-repo:
+  vcf_vc_patch.repository_configured:
+    - repository_url: http://repo.example.com/vcsa/
+
+vc-staged:
+  vcf_vc_patch.update_prepared:
+    - version: "9.0.1.0.12345"
+    - require:
+      - vcf_vc_patch: vc-repo
+
+vc-installed:
+  vcf_vc_patch.update_installed:
+    - version: "9.0.1.0.12345"
+    - sso_password: {{ pillar['vc_sso_password'] }}
+    - require:
+      - vcf_vc_patch: vc-staged
+```
