@@ -182,7 +182,7 @@ def test_update_prepared_precheck_retries_while_staging_in_progress(monkeypatch)
 
     attempts = {"n": 0}
 
-    def precheck(opts, version, component=None, profile=None):
+    def precheck(*_a, **_kw):
         attempts["n"] += 1
         if attempts["n"] == 1:
             raise RuntimeError("precheck.not_allowed_error")
