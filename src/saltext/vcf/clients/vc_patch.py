@@ -389,7 +389,7 @@ def wait_for_staged_update(opts, version=None, poll_interval=10, timeout=600, pr
     stage call may still be running server-side even though the REST
     response never came back in time.
     """
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     last = None
     while True:
         try:
@@ -399,7 +399,7 @@ def wait_for_staged_update(opts, version=None, poll_interval=10, timeout=600, pr
                 return {"success": True, "state": "STAGED", "staged_update": staged}
         except requests.HTTPError as exc:
             log.debug("staged update check failed: %s", exc)
-        if time.time() > deadline:
+        if time.monotonic() > deadline:
             raise TimeoutError(f"Timed out waiting for staged update. Last response: {last}")
         time.sleep(poll_interval)
 
@@ -412,7 +412,7 @@ def monitor_stage(
     Tolerates transient HTTP errors (appliance services bouncing mid-patch)
     up to *max_transient_errors*, re-authenticating before each retry.
     """
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     last_status = None
     last_state = None
     transient_errors = 0
@@ -454,7 +454,7 @@ def monitor_stage(
                     f"VCSA stage monitor failed after {max_transient_errors} transient "
                     f"errors. Last error: {exc}"
                 ) from exc
-        if time.time() > deadline:
+        if time.monotonic() > deadline:
             raise TimeoutError(
                 f"Timed out waiting for VCSA stage after {timeout}s. Last status: {last_status}"
             )
@@ -463,7 +463,7 @@ def monitor_stage(
 
 def monitor_install(opts, poll_interval=120, timeout=7200, max_transient_errors=10, profile=None):
     """Block until the appliance reports ``UP_TO_DATE``, or raise on failure/timeout."""
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     last_status = None
     transient_errors = 0
     while True:
@@ -493,6 +493,6 @@ def monitor_install(opts, poll_interval=120, timeout=7200, max_transient_errors=
                     f"VCSA install monitor failed after {max_transient_errors} transient "
                     f"errors. Last error: {exc}"
                 ) from exc
-        if time.time() > deadline:
+        if time.monotonic() > deadline:
             raise TimeoutError(f"Timed out waiting for install. Last status: {last_status}")
         time.sleep(poll_interval)
