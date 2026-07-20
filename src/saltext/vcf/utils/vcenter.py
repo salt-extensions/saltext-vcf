@@ -185,10 +185,10 @@ def wait_for_task(opts, task_id, timeout=1800, poll_interval=10, profile=None):
     after the task was previously seen running is a real failure and still
     raises.
     """
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     task = {}
     seen_task = False
-    while time.time() < deadline:
+    while time.monotonic() < deadline:
         try:
             task = api_get(opts, f"/api/cis/tasks/{task_id}", profile=profile)
         except requests.HTTPError as exc:
