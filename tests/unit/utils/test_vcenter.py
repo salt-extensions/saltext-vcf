@@ -158,3 +158,47 @@ def test_api_call_default_timeout(opts, vcenter_authed, monkeypatch):
     monkeypatch.setattr(requests.Session, "get", fake_get)
     vcenter.api_get(opts, "/api/vcenter/cluster")
     assert seen["timeout"] == vcenter.DEFAULT_TIMEOUT
+
+
+def test_wait_for_task_polls_to_success(opts, vcenter_authed):
+    vcenter_authed.add(
+        responses.GET, "https://vc.test/api/cis/tasks/task-1", json={"status": "RUNNING"}
+    )
+    vcenter_authed.add(
+        responses.GET, "https://vc.test/api/cis/tasks/task-1", json={"status": "SUCCEEDED"}
+    )
+    task = vcenter.wait_for_task(opts, "task-1", timeout=5, poll_interval=0)
+    assert task["status"] == "SUCCEEDED"
+
+
+def test_wait_for_task_raises_on_failed_status(opts, vcenter_authed):
+    vcenter_authed.add(
+        responses.GET, "https://vc.test/api/cis/tasks/task-1", json={"status": "FAILED"}
+    )
+    with pytest.raises(RuntimeError):
+        vcenter.wait_for_task(opts, "task-1", timeout=5, poll_interval=0)
+
+
+def test_wait_for_task_404_on_first_poll_means_ran_synchronously(opts, vcenter_authed):
+    """``vmw-task=true`` can still complete synchronously with no task ever created.
+
+    A 404 on the very first lookup means *task_id* was never a task at all
+    (e.g. it's actually the caller's direct result, like a draft id) — this
+    should report success, not raise.
+    """
+    vcenter_authed.add(responses.GET, "https://vc.test/api/cis/tasks/1", status=404)
+    task = vcenter.wait_for_task(opts, "1", timeout=5, poll_interval=0)
+    assert task["status"] == "SUCCEEDED"
+    assert task["synchronous"] is True
+
+
+def test_wait_for_task_404_after_running_still_raises(opts, vcenter_authed):
+    """A task that disappears *after* being seen running is a real failure."""
+    import requests
+
+    vcenter_authed.add(
+        responses.GET, "https://vc.test/api/cis/tasks/task-1", json={"status": "RUNNING"}
+    )
+    vcenter_authed.add(responses.GET, "https://vc.test/api/cis/tasks/task-1", status=404)
+    with pytest.raises(requests.HTTPError):
+        vcenter.wait_for_task(opts, "task-1", timeout=5, poll_interval=0)

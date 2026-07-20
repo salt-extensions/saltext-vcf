@@ -17,6 +17,7 @@ _________________
     vcf_esxi_ntp
     vcf_esxi_service
     vcf_esxi_syslog
+    vcf_esxi_vlcm
     vcf_fleet_password
     vcf_installer_bringup
     vcf_nsx_cluster

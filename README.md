@@ -12,6 +12,9 @@ VMSP (mediated), vSAN, and standalone ESXi.
   providers; pyVmomi/SOAP for alarms, perf, extensions, VM snapshots.
 - **vSphere 9 Cluster Configuration Profile** — desired-state profile
   API for vCenter-managed clusters (replaces direct ESXi REST).
+- **ESXi Lifecycle (vLCM patching)** — depot config/sync, desired-image
+  drafts, cluster apply policy, and compliance/precheck/stage/remediate
+  against vCenter's ESX Lifecycle Manager REST API.
 - **NSX** — Policy API (segments, tier-0/tier-1, groups, security
   policies, firewall rules, services, context profiles, NAT, IP
   blocks/pools, DHCP, edge clusters) and Management API (node,
