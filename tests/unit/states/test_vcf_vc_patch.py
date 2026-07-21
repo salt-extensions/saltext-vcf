@@ -47,9 +47,7 @@ def test_repository_configured_redacts_password_from_changes(monkeypatch):
         "set_update_policy",
         lambda opts, url, **kw: {"policy": {"password": "s3cret", "auto_stage": False}},
     )
-    ret = st.repository_configured(
-        "r1", repository_url="http://repo/vcsa/", repo_password="s3cret"
-    )
+    ret = st.repository_configured("r1", repository_url="http://repo/vcsa/", repo_password="s3cret")
     assert ret["result"] is True
     assert ret["changes"]["response"]["policy"]["password"] == "REDACTED"
     assert ret["changes"]["response"]["policy"]["auto_stage"] is False
