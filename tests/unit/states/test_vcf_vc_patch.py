@@ -40,6 +40,55 @@ def test_repository_configured_test_mode(monkeypatch):
     assert ret["result"] is None
 
 
+def test_repository_configured_redacts_password_from_changes(monkeypatch):
+    """Regression: VAMI's policy-set response can echo the repo password back."""
+    monkeypatch.setattr(
+        c,
+        "set_update_policy",
+        lambda opts, url, **kw: {"policy": {"password": "s3cret", "auto_stage": False}},
+    )
+    ret = st.repository_configured(
+        "r1", repository_url="http://repo/vcsa/", repo_password="s3cret"
+    )
+    assert ret["result"] is True
+    assert ret["changes"]["response"]["policy"]["password"] == "REDACTED"
+    assert ret["changes"]["response"]["policy"]["auto_stage"] is False
+    assert "s3cret" not in str(ret["changes"])
+
+
+# ---------------------------------------------------------------------------
+# _redact
+# ---------------------------------------------------------------------------
+
+
+def test_redact_top_level_password_key():
+    out = st._redact({"password": "s3cret", "other": "keep"})  # noqa: SLF001
+    assert out == {"password": "REDACTED", "other": "keep"}
+
+
+def test_redact_nested_password_key():
+    out = st._redact({"policy": {"password": "s3cret", "auto_stage": False}})  # noqa: SLF001
+    assert out == {"policy": {"password": "REDACTED", "auto_stage": False}}
+
+
+def test_redact_user_data_vmdir_password_entry():
+    """VAMI install requests carry the SSO password as a user_data 'value', not a
+    'password'-named key -- must be caught by the key-name check on the sibling 'key'
+    field, not the generic key-name pass."""
+    out = st._redact(  # noqa: SLF001
+        {"user_data": [{"key": "vmdir.password", "value": "s3cret"}], "component": "lcm"}
+    )
+    assert out == {
+        "user_data": [{"key": "vmdir.password", "value": "REDACTED"}],
+        "component": "lcm",
+    }
+
+
+def test_redact_leaves_non_sensitive_values_untouched():
+    out = st._redact({"a": 1, "b": [1, 2, {"c": "d"}], "e": None})  # noqa: SLF001
+    assert out == {"a": 1, "b": [1, 2, {"c": "d"}], "e": None}
+
+
 # ---------------------------------------------------------------------------
 # update_prepared
 # ---------------------------------------------------------------------------
@@ -79,6 +128,29 @@ def test_update_prepared_stages_when_not_staged(monkeypatch):
     assert ret["result"] is True
     assert stage_calls == ["9.0"]
     assert ret["changes"]["resolved_version"] == "9.0"
+
+
+def test_update_prepared_redacts_password_when_setting_repository_policy(monkeypatch):
+    """Regression: the real (non-test) set_update_policy call here has the same
+    password-echo risk as repository_configured's."""
+    monkeypatch.setattr(
+        c, "resolve_update_version", lambda opts, **kw: ("9.0", None, {"version": "9.0"})
+    )
+    monkeypatch.setattr(c, "get_staged_update", lambda opts, profile=None: {})
+    monkeypatch.setattr(c, "staged_matches", lambda staged, version=None: False)
+    monkeypatch.setattr(
+        c,
+        "set_update_policy",
+        lambda opts, url, **kw: {"policy": {"password": "s3cret"}},
+    )
+    monkeypatch.setattr(c, "stage", lambda opts, version, component=None, profile=None: "staged")
+
+    ret = st.update_prepared(
+        "p1", repository_url="http://repo/vcsa/", version="9.0", monitor=False, run_precheck=False
+    )
+    assert ret["result"] is True
+    assert ret["changes"]["repository_policy"]["policy"]["password"] == "REDACTED"
+    assert "s3cret" not in str(ret["changes"])
 
 
 def test_update_prepared_force_stage_bypasses_idempotency(monkeypatch):
@@ -228,6 +300,27 @@ def test_update_installed_runs_and_monitors(monkeypatch):
     ret = st.update_installed("i1", version="9.0", sso_password="s3cret")
     assert ret["result"] is True
     assert install_calls == [("9.0", "s3cret")]
+
+
+def test_update_installed_redacts_sso_password_from_changes(monkeypatch):
+    """Regression: an install response echoing its own user_data must not leak
+    the SSO admin password into ret['changes']."""
+    monkeypatch.setattr(
+        c, "resolve_update_version", lambda opts, **kw: ("9.0", None, {"version": "9.0"})
+    )
+    monkeypatch.setattr(
+        c,
+        "install",
+        lambda opts, version, sso_password, component=None, profile=None: {
+            "user_data": [{"key": "vmdir.password", "value": sso_password}]
+        },
+    )
+    monkeypatch.setattr(c, "monitor_install", lambda opts, **kw: {"success": True})
+
+    ret = st.update_installed("i1", version="9.0", sso_password="s3cret")
+    assert ret["result"] is True
+    assert ret["changes"]["install"]["user_data"][0]["value"] == "REDACTED"
+    assert "s3cret" not in str(ret["changes"])
 
 
 def test_update_installed_test_mode(monkeypatch):

@@ -64,6 +64,44 @@ def _opt(explicit, cfg, key, default):
     return cfg.get(key, default) if explicit is None else explicit
 
 
+_SENSITIVE_KEY_MARKERS = ("password", "passwd", "secret", "token")
+
+
+def _redact(value):
+    """Recursively redact credential-shaped values before they land in ``ret["changes"]``.
+
+    Salt logs, caches, and displays everything under a state's ``changes``
+    — an API response that echoes back a credential from its own request
+    (VAMI's policy-set response can include the repo password; an install
+    response could in principle echo the ``vmdir.password`` ``user_data``
+    entry) must never be stored verbatim.
+    """
+    if isinstance(value, dict):
+        out = {}
+        for key, val in value.items():
+            key_lower = str(key).lower()
+            if any(marker in key_lower for marker in _SENSITIVE_KEY_MARKERS):
+                out[key] = "REDACTED"
+            elif key == "user_data" and isinstance(val, list):
+                out[key] = [_redact_user_data_entry(item) for item in val]
+            else:
+                out[key] = _redact(val)
+        return out
+    if isinstance(value, list):
+        return [_redact(v) for v in value]
+    return value
+
+
+def _redact_user_data_entry(item):
+    """Redact a VAMI ``user_data`` entry (``{"key": "vmdir.password", "value": ...}``-shaped)."""
+    if isinstance(item, dict) and any(
+        marker in str(item.get("key", "")).lower() for marker in _SENSITIVE_KEY_MARKERS
+    ):
+        item = dict(item)
+        item["value"] = "REDACTED"
+    return item
+
+
 def repository_configured(
     name,
     repository_url=None,
@@ -111,7 +149,7 @@ def repository_configured(
     except Exception as exc:  # pylint: disable=broad-except
         return _fail(ret, exc)
 
-    ret["changes"] = {"repository_url": repository_url, "response": resp}
+    ret["changes"] = {"repository_url": repository_url, "response": _redact(resp)}
     ret["comment"] = f"update repository configured: {repository_url!r}"
     return ret
 
@@ -123,7 +161,7 @@ def _precheck_when_allowed(profile, resolved, component, poll_interval, timeout)
     (``precheck.not_allowed_error``) — wait on a short monitor_stage cycle
     and retry until it's allowed, or *timeout* elapses.
     """
-    deadline = time.time() + timeout
+    deadline = time.monotonic() + timeout
     last_exc = None
     while True:
         try:
@@ -140,7 +178,7 @@ def _precheck_when_allowed(profile, resolved, component, poll_interval, timeout)
                 timeout=min(600, timeout),
                 profile=profile,
             )
-        if time.time() > deadline:
+        if time.monotonic() > deadline:
             raise RuntimeError(
                 f"Timed out waiting to run precheck after staging. Last error: {last_exc}"
             )
@@ -190,8 +228,8 @@ def update_prepared(  # pylint: disable=too-many-locals,too-many-branches
                     "repository_url": repository_url,
                 }
             else:
-                data["repository_policy"] = c.set_update_policy(
-                    __opts__, repository_url, profile=profile
+                data["repository_policy"] = _redact(
+                    c.set_update_policy(__opts__, repository_url, profile=profile)
                 )
         resolved, _pending_updates, pending_update = c.resolve_update_version(
             __opts__, repository_url=repository_url, version=version, profile=profile
@@ -290,8 +328,8 @@ def update_installed(
             return ret
 
         data = {
-            "install": c.install(
-                __opts__, resolved, sso_password, component=component, profile=profile
+            "install": _redact(
+                c.install(__opts__, resolved, sso_password, component=component, profile=profile)
             )
         }
         if monitor:
