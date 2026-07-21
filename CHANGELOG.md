@@ -4,6 +4,29 @@ This project uses [Semantic Versioning](https://semver.org/) - MAJOR.MINOR.PATCH
 
 # Changelog
 
+## 1.1.0 (2026-07-21)
+
+
+### Fixed
+
+- Fix a batch of bugs surfaced when the ``vcf_esxi_*`` state modules are applied against a real ESXi 9.1 host (build 25370933) instead of the in-memory mocks used by the test suite: ``utils/esxi.get_host_system`` traversal, ``esxi_ntp.get`` property access, and ``esxi_advanced.get`` return shape.
+- Make ``vcf_esxi_firewall``, ``vcf_esxi_service``, and ``vcf_vim_host_network.vswitch_present`` cleanly idempotent so re-applying against an already-converged host produces zero changes. Adds a new ``vcf_esxi_firewall.global_enabled`` state (maps to ``HostFirewallSystem.UpdateDefaultPolicy``), renames the service-policy key to match the client, and stops treating ``num_ports`` as drift when ESXi auto-scales it.
+- Make ``vcf_vim_vm.present`` parallel-safe (needed when a lab brings up 4 nested VMs concurrently via ``state.orchestrate``) and route standalone-ESXi datastore uploads through the correct endpoint.
+- ``vim_vm_nic.add`` now falls back to a ``deviceName``-only NIC backing when the port group has no ``vim.Network`` MO (which is the case for standalone-ESXi port groups that only carry VMkernel traffic). ESXi resolves the port group by name at attach time.
+
+
+### Added
+
+- Add ``vim_vm_cdrom`` client + ``vcf_vim_vm_cdrom`` execution/state modules for CD-ROM device lifecycle (add, remove, attach ISO, detach), including the pyVmomi task-wait helper needed by ``state.apply`` orchestration of a nested-ESXi lab.
+- Add `esxi_vlcm` client, `vcf_esxi_vlcm` execution module, and `vcf_esxi_vlcm` state module for patching ESXi hosts via vCenter's ESX Lifecycle Manager (vLCM) REST API: depot configuration/sync, desired-image drafts, cluster apply policy, and compliance/precheck/stage/remediate workflows.
+- Add `vc_patch` client, `vcf_vc_patch` execution module, and `vcf_vc_patch` state module for patching the vCenter Server Appliance itself via VAMI's appliance-update REST API: repository policy configuration, idempotent staging (with version resolution and stage-timeout/precheck-retry recovery), monitoring, and install.
+- Add the SDDC Manager REST surface needed to drive VCF async patching directly (without shelling out to the ``vcf-async-patch-tool`` CLI): ``sddc_bundles.upload`` / ``delete`` / ``for_skip_upgrade`` for offline bundle staging, ``sddc_releases.custom_patches`` for reading which async patches are registered on a domain, and a new ``sddc_personalities`` client + ``vcf_sddc_personalities`` execution module for vSphere cluster-image lifecycle. The enable/disable half of the async-patch workflow and the orchestrating state module are left as follow-ups pending lab reverse-engineering of the ``vcf-async-patch-tool -e --patch`` traffic.
+- Extend ``vcf_vim_datastore_file.file_present`` with ``force`` and ``match_size`` options so a re-run of ``state.apply`` re-uploads a file whose size differs from the local source or when the caller wants an unconditional overwrite (useful for iterating on nested-lab ISO builds).
+- Extend `vcfops_resource_group` with `members(group_id)` and `list_types()` for the corresponding VCF Operations endpoints.
+- New ``vcf_vim_host_datastore`` state module (``vmfs_present``, ``nfs_mounted``, ``absent``) wrapping the existing execution module so a VMFS datastore can be declared in a Salt state file — standalone-aware and vCenter-aware.
+- New ``vcf_vim_vm`` state module for VM lifecycle (``present`` / ``absent`` / ``power_*``) against a standalone ESXi host, alongside port-group security-policy support (``promiscuous`` / ``mac_changes`` / ``forged_transmits``) on ``vim_host_network`` for nested-VM labs.
+- Route every ``vim_*`` client through a shared ``utils/vim.resolve_host_system`` helper so state modules can target a standalone ESXi host with only the ``saltext.vcf.esxi`` pillar (no vCenter present). Detection is automatic based on which pillar block is populated; the vCenter path is unchanged.
+
 ## 1.0.0 (2026-06-07)
 
 
