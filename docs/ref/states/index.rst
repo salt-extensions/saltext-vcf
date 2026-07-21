@@ -25,6 +25,7 @@ _____________
     vcf_nsx_segment
     vcf_nsx_service
     vcf_sddc_host
+    vcf_vc_patch
     vcf_vcenter_appliance
     vcf_vcenter_cluster
     vcf_vcenter_host

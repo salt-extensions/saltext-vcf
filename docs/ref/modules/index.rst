@@ -60,6 +60,7 @@ _________________
     vcf_sddc_upgrades
     vcf_sddc_vcenters
     vcf_sddc_workload_domain
+    vcf_vc_patch
     vcf_vcenter_appliance
     vcf_vcenter_cluster
     vcf_vcenter_compute_policy
