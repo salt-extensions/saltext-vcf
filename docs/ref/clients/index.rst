@@ -12,6 +12,7 @@ ______________
     cluster_config
     cluster_config_software
     esxi_advanced
+    esxi_auth_proxy
     esxi_firewall
     esxi_host
     esxi_ntp
