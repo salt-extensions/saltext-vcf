@@ -17,6 +17,7 @@ _____________
     vcf_esxi_service
     vcf_esxi_syslog
     vcf_installer_bringup
+    vcf_nsx_cluster_vip
     vcf_nsx_firewall_rule
     vcf_nsx_group
     vcf_nsx_role_binding
