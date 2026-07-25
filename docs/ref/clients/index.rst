@@ -41,6 +41,7 @@ ______________
     nsx_lb_virtual_server
     nsx_nat
     nsx_node
+    nsx_node_services
     nsx_qos_profile
     nsx_role_binding
     nsx_security_policy

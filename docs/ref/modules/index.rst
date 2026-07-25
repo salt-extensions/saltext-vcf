@@ -36,6 +36,7 @@ _________________
     vcf_nsx_lb
     vcf_nsx_nat
     vcf_nsx_node
+    vcf_nsx_node_services
     vcf_nsx_qos_profile
     vcf_nsx_role_binding
     vcf_nsx_security_policy
