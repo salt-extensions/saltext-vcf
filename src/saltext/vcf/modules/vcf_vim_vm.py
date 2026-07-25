@@ -128,6 +128,47 @@ def get_advanced_settings(vm, profile=None):
     return c.get_advanced_settings(__opts__, vm, profile=profile)
 
 
+def get_resource_config(vm, profile=None):
+    """Return VM CPU affinity/shares + memory reservation/lock snapshot.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm.get_resource_config vm-100
+    """
+    return c.get_resource_config(__opts__, vm, profile=profile)
+
+
+def set_resource_config(
+    vm,
+    cpu_affinity=None,
+    cpu_shares_level=None,
+    cpu_shares=None,
+    memory_reservation_mb=None,
+    memory_reservation_locked_to_max=None,
+    profile=None,
+):
+    """Set VM CPU affinity/shares + memory reservation/lock.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm.set_resource_config vm-100 cpu_affinity='[]' memory_reservation_mb=0
+    """
+    return c.set_resource_config(
+        __opts__,
+        vm,
+        cpu_affinity=cpu_affinity,
+        cpu_shares_level=cpu_shares_level,
+        cpu_shares=cpu_shares,
+        memory_reservation_mb=memory_reservation_mb,
+        memory_reservation_locked_to_max=memory_reservation_locked_to_max,
+        profile=profile,
+    )
+
+
 def destroy(vm, profile=None):
     """Power off (if needed) and destroy the VM.
 

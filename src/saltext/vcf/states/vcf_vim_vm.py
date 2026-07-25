@@ -231,6 +231,82 @@ def powered_on(name, profile=None):
     return ret
 
 
+def resource_pinning_disabled(
+    name,
+    cpu_affinity=None,
+    cpu_shares_level="normal",
+    cpu_shares=1000,
+    memory_reservation_mb=0,
+    memory_reservation_locked_to_max=False,
+    profile=None,
+):
+    """Ensure a VM has no CPU/memory pinning (912 Controls compliance).
+
+    Prohibits:
+      * ``VM to CPU Pinning`` — ``cpuAffinity`` must be empty.
+      * ``Disable CPU Pinning (Affinity)`` — same field.
+      * ``Disable CPU Pinning (Shares)`` — ``cpuAllocation.shares`` must
+        be ``normal`` (default 1000 shares).
+      * ``VM to Memory Pinning`` — ``memoryAllocation.reservation`` must
+        be ``0`` and ``memoryReservationLockedToMax`` must be ``False``.
+
+    Defaults enforce the compliance target.  Callers may override any of
+    the parameters for documented exception cases.
+
+    ``cpu_affinity`` default of ``None`` is interpreted as "cleared"
+    (``[]``); pass an explicit list to hold a non-default (non-compliant)
+    affinity for an exception.
+    """
+    ret = _ret(name)
+    current = __salt__["vcf_vim_vm.get_resource_config"](name, profile=profile)
+
+    desired_affinity = list(cpu_affinity) if cpu_affinity else []
+    current_affinity = list(current.get("cpu_affinity") or [])
+
+    drift = {}
+    if current_affinity != desired_affinity:
+        drift["cpu_affinity"] = (current_affinity, desired_affinity)
+    if current.get("cpu_shares_level") != cpu_shares_level:
+        drift["cpu_shares_level"] = (current.get("cpu_shares_level"), cpu_shares_level)
+    if current.get("cpu_shares") != int(cpu_shares):
+        drift["cpu_shares"] = (current.get("cpu_shares"), int(cpu_shares))
+    if current.get("memory_reservation_mb") != int(memory_reservation_mb):
+        drift["memory_reservation_mb"] = (
+            current.get("memory_reservation_mb"),
+            int(memory_reservation_mb),
+        )
+    if bool(current.get("memory_reservation_locked_to_max")) != bool(
+        memory_reservation_locked_to_max
+    ):
+        drift["memory_reservation_locked_to_max"] = (
+            bool(current.get("memory_reservation_locked_to_max")),
+            bool(memory_reservation_locked_to_max),
+        )
+
+    if not drift:
+        ret["comment"] = f"VM {name!r} already has resource pinning cleared."
+        return ret
+
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"Would clear resource pinning on VM {name!r}: {sorted(drift)}"
+        ret["changes"] = drift
+        return ret
+
+    __salt__["vcf_vim_vm.set_resource_config"](
+        name,
+        cpu_affinity=desired_affinity,
+        cpu_shares_level=cpu_shares_level,
+        cpu_shares=int(cpu_shares),
+        memory_reservation_mb=int(memory_reservation_mb),
+        memory_reservation_locked_to_max=bool(memory_reservation_locked_to_max),
+        profile=profile,
+    )
+    ret["changes"] = drift
+    ret["comment"] = f"Cleared resource pinning on VM {name!r}."
+    return ret
+
+
 def powered_off(name, profile=None):
     """Ensure VM *name* is powered off."""
     ret = _ret(name)

@@ -222,6 +222,101 @@ def get_advanced_settings(opts, vm_id_or_name, profile=None):
 
 
 # ---------------------------------------------------------------------------
+# Resource pinning (CPU affinity/shares, memory reservation/lock)
+# ---------------------------------------------------------------------------
+#
+# 912 Controls prohibits VM-to-CPU and VM-to-memory pinning, plus CPU
+# affinity/shares tuning.  These helpers give the state layer a
+# read+clear surface for those fields without disturbing the generic
+# ``reconfigure`` signature.
+
+
+def get_resource_config(opts, vm_id_or_name, profile=None):
+    """Return the VM's CPU affinity + shares and memory reservation/lock.
+
+    Shape::
+
+        {
+            "cpu_affinity": [<int>, ...] or None,   # None when unpinned
+            "cpu_shares_level": "low"|"normal"|"high"|"custom",
+            "cpu_shares": <int>,
+            "memory_reservation_mb": <int>,
+            "memory_reservation_locked_to_max": <bool>,
+        }
+    """
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    cfg = vm.config
+    affinity = getattr(cfg, "cpuAffinity", None)
+    affinity_set = getattr(affinity, "affinitySet", None) if affinity is not None else None
+    cpu_alloc = getattr(cfg, "cpuAllocation", None)
+    cpu_shares = getattr(cpu_alloc, "shares", None) if cpu_alloc is not None else None
+    mem_alloc = getattr(cfg, "memoryAllocation", None)
+    mem_reservation = getattr(mem_alloc, "reservation", None) if mem_alloc is not None else None
+    locked = getattr(cfg, "memoryReservationLockedToMax", None)
+    return {
+        "cpu_affinity": list(affinity_set) if affinity_set else None,
+        "cpu_shares_level": str(cpu_shares.level) if cpu_shares is not None else None,
+        "cpu_shares": int(cpu_shares.shares) if cpu_shares is not None else None,
+        "memory_reservation_mb": int(mem_reservation) if mem_reservation is not None else None,
+        "memory_reservation_locked_to_max": bool(locked) if locked is not None else None,
+    }
+
+
+def set_resource_config(
+    opts,
+    vm_id_or_name,
+    *,
+    cpu_affinity=None,
+    cpu_shares_level=None,
+    cpu_shares=None,
+    memory_reservation_mb=None,
+    memory_reservation_locked_to_max=None,
+    profile=None,
+):
+    """Set the VM's resource pinning knobs. Only non-None fields are touched.
+
+    * ``cpu_affinity`` — iterable of physical CPU ids, or ``[]`` to clear.
+    * ``cpu_shares_level`` — one of ``low``, ``normal``, ``high``, ``custom``.
+    * ``cpu_shares`` — integer share count (typically only meaningful when
+      ``cpu_shares_level="custom"``).
+    * ``memory_reservation_mb`` — MB pinned to the VM; ``0`` clears.
+    * ``memory_reservation_locked_to_max`` — pre-allocation lock; ``False``
+      unlocks so ballooning/paging can reclaim memory.
+
+    Returns the ReconfigVM_Task moId.
+    """
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    config = vim.vm.ConfigSpec()
+
+    if cpu_affinity is not None:
+        # Empty list => clear affinity; pyVmomi accepts an AffinityInfo with
+        # an empty affinitySet and applies it as "no affinity".
+        config.cpuAffinity = vim.vm.AffinityInfo(affinitySet=[int(c) for c in cpu_affinity])
+
+    if cpu_shares_level is not None or cpu_shares is not None:
+        alloc = vim.ResourceAllocationInfo()
+        shares = vim.SharesInfo()
+        if cpu_shares_level is not None:
+            shares.level = cpu_shares_level
+        if cpu_shares is not None:
+            shares.shares = int(cpu_shares)
+        alloc.shares = shares
+        config.cpuAllocation = alloc
+
+    if memory_reservation_mb is not None:
+        alloc = vim.ResourceAllocationInfo()
+        alloc.reservation = int(memory_reservation_mb)
+        config.memoryAllocation = alloc
+
+    if memory_reservation_locked_to_max is not None:
+        config.memoryReservationLockedToMax = bool(memory_reservation_locked_to_max)
+
+    task = vm.ReconfigVM_Task(spec=config)
+    soap.wait_for_task(task)
+    return task._moId  # noqa: SLF001
+
+
+# ---------------------------------------------------------------------------
 # Destroy
 # ---------------------------------------------------------------------------
 

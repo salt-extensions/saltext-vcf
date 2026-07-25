@@ -247,3 +247,89 @@ def test_mark_as_virtual_machine(lookup_factory, opts):
     lookup_factory["type_to_obj"][(vim.ResourcePool, "resgroup-c9")] = pool
     vim_vm.mark_as_virtual_machine(opts, "tmpl-1", "resgroup-c9")
     lookup_factory["vm"].MarkAsVirtualMachine.assert_called_once_with(pool=pool, host=None)
+
+
+# ---------- resource pinning (912 controls compliance) ----------
+
+
+def _fake_vm_with_resources(*, affinity_set, shares_level, shares, reservation_mb, locked):
+    vm = _fake_vm()
+    cfg = vm.config
+    cfg.cpuAffinity = vim.vm.AffinityInfo(affinitySet=list(affinity_set))
+    cfg.cpuAllocation = vim.ResourceAllocationInfo(
+        shares=vim.SharesInfo(level=shares_level, shares=shares),
+    )
+    cfg.memoryAllocation = vim.ResourceAllocationInfo(reservation=reservation_mb)
+    cfg.memoryReservationLockedToMax = locked
+    return vm
+
+
+def test_get_resource_config_pinned(lookup_factory, opts, monkeypatch):
+    lookup_factory["vm"] = _fake_vm_with_resources(
+        affinity_set=[0, 2],
+        shares_level="high",
+        shares=4000,
+        reservation_mb=2048,
+        locked=True,
+    )
+    out = vim_vm.get_resource_config(opts, "vm-100")
+    assert out == {
+        "cpu_affinity": [0, 2],
+        "cpu_shares_level": "high",
+        "cpu_shares": 4000,
+        "memory_reservation_mb": 2048,
+        "memory_reservation_locked_to_max": True,
+    }
+
+
+def test_get_resource_config_unpinned(lookup_factory, opts):
+    lookup_factory["vm"] = _fake_vm_with_resources(
+        affinity_set=[],
+        shares_level="normal",
+        shares=1000,
+        reservation_mb=0,
+        locked=False,
+    )
+    out = vim_vm.get_resource_config(opts, "vm-100")
+    assert out["cpu_affinity"] is None
+    assert out["cpu_shares_level"] == "normal"
+    assert out["cpu_shares"] == 1000
+    assert out["memory_reservation_mb"] == 0
+    assert out["memory_reservation_locked_to_max"] is False
+
+
+def test_set_resource_config_clears_all(lookup_factory, opts, monkeypatch):
+    monkeypatch.setattr(vim_vm.soap, "wait_for_task", lambda t: None)
+    vim_vm.set_resource_config(
+        opts,
+        "vm-100",
+        cpu_affinity=[],
+        cpu_shares_level="normal",
+        cpu_shares=1000,
+        memory_reservation_mb=0,
+        memory_reservation_locked_to_max=False,
+    )
+    spec = lookup_factory["vm"].ReconfigVM_Task.call_args.kwargs["spec"]
+    assert list(spec.cpuAffinity.affinitySet) == []
+    assert spec.cpuAllocation.shares.level == "normal"
+    assert spec.cpuAllocation.shares.shares == 1000
+    assert spec.memoryAllocation.reservation == 0
+    assert spec.memoryReservationLockedToMax is False
+
+
+def test_set_resource_config_only_touches_non_none(lookup_factory, opts, monkeypatch):
+    monkeypatch.setattr(vim_vm.soap, "wait_for_task", lambda t: None)
+    vim_vm.set_resource_config(opts, "vm-100", memory_reservation_mb=0)
+    spec = lookup_factory["vm"].ReconfigVM_Task.call_args.kwargs["spec"]
+    # only memoryAllocation should be populated on the spec
+    assert spec.memoryAllocation.reservation == 0
+    assert spec.cpuAffinity is None
+    assert spec.cpuAllocation is None
+    assert spec.memoryReservationLockedToMax is None
+
+
+def test_set_resource_config_accepts_explicit_affinity(lookup_factory, opts, monkeypatch):
+    monkeypatch.setattr(vim_vm.soap, "wait_for_task", lambda t: None)
+    vim_vm.set_resource_config(opts, "vm-100", cpu_affinity=[0, 1, 3])
+    spec = lookup_factory["vm"].ReconfigVM_Task.call_args.kwargs["spec"]
+    assert list(spec.cpuAffinity.affinitySet) == [0, 1, 3]
