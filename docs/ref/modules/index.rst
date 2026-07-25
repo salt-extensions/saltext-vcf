@@ -40,6 +40,7 @@ _________________
     vcf_nsx_security_policy
     vcf_nsx_segment
     vcf_nsx_service
+    vcf_nsx_telemetry
     vcf_nsx_tier0
     vcf_nsx_tier1
     vcf_nsx_transport_node

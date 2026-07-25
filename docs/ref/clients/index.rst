@@ -45,6 +45,7 @@ ______________
     nsx_security_policy
     nsx_segment
     nsx_service
+    nsx_telemetry
     nsx_tier0
     nsx_tier1
     nsx_transport_node
