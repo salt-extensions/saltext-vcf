@@ -25,6 +25,8 @@ _____________
     vcf_nsx_segment
     vcf_nsx_service
     vcf_nsx_telemetry
+    vcf_nsx_tier0
+    vcf_nsx_tier1
     vcf_sddc_host
     vcf_vc_patch
     vcf_vcenter_appliance

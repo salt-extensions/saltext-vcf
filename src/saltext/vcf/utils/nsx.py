@@ -87,6 +87,17 @@ def api_put(opts, path, body=None, params=None, profile=None):
     return {}
 
 
+def api_patch(opts, path, body=None, params=None, profile=None):
+    """PATCH JSON *body* to NSX Policy API and return parsed JSON."""
+    session, host = _session(opts, profile=profile)
+    url = f"https://{host}{path}"
+    resp = session.patch(url, json=body, params=params, timeout=30)
+    resp.raise_for_status()
+    if resp.content:
+        return resp.json()
+    return {}
+
+
 def api_delete(opts, path, params=None, profile=None):
     """DELETE a resource from NSX."""
     session, host = _session(opts, profile=profile)

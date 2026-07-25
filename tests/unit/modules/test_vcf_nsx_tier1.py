@@ -53,3 +53,25 @@ def test_delete(mocked_responses):
         status=200,
     )
     assert mod.delete("t1-a") == {}
+
+
+def test_multicast_get(mocked_responses):
+    mocked_responses.add(
+        responses.GET,
+        "https://nsx.test/policy/api/v1/infra/tier-1s/t1-a/locale-services/default/multicast",
+        json={"enabled": False},
+        status=200,
+    )
+    assert mod.multicast_get("t1-a") == {"enabled": False}
+
+
+def test_multicast_set(mocked_responses):
+    mocked_responses.add(
+        responses.PATCH,
+        "https://nsx.test/policy/api/v1/infra/tier-1s/t1-a/locale-services/default/multicast",
+        json={"enabled": False},
+        status=200,
+    )
+    mod.multicast_set("t1-a", False)
+    body = json.loads(mocked_responses.calls[-1].request.body)
+    assert body == {"enabled": False}
