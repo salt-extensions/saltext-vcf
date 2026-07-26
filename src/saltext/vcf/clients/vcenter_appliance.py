@@ -1,12 +1,16 @@
 """Client for vCenter appliance APIs under ``/api/appliance/``.
 
 Covers the VAMI-equivalent REST surface: services, system version, health
-summary, DNS, syslog forwarding, and the Customer Experience Improvement
-Program (CEIP) opt-in.
+summary, DNS, and syslog forwarding.
 
 Note: ``/api/appliance/health/system`` returns a JSON-encoded plain string
 (e.g. ``"green"``) rather than a dict. ``utils/vcenter.api_get`` returns
 that string verbatim; callers should not assume a dict shape.
+
+CEIP (Customer Experience Improvement Program) opt-in used to live here
+against ``/api/appliance/ceip``. That endpoint does not exist on VCF 9.x
+builds -- CEIP is centrally managed by SDDC Manager. See
+:mod:`saltext.vcf.clients.sddc_ceip` for the working equivalent.
 """
 
 import requests
@@ -112,24 +116,7 @@ def logging_forwarding_set(opts, servers, profile=None):
 # ---------------------------------------------------------------------------
 # Customer Experience Improvement Program (CEIP)
 # ---------------------------------------------------------------------------
-
-_CEIP = "/api/appliance/ceip"
-
-
-def ceip_get(opts, profile=None):
-    """Return the CEIP participation config: ``{"accepted": bool}``.
-
-    On some vCenter builds the endpoint returns a bare ``{"accepted": ...}``
-    dict; on others the value is wrapped as ``{"value": {"accepted": ...}}``.
-    Callers should tolerate both shapes.
-    """
-    return vcenter.api_get(opts, _CEIP, profile=profile)
-
-
-def ceip_set(opts, accepted, profile=None):
-    """Set CEIP participation.
-
-    Pass ``accepted=False`` to opt the vCenter out of the Customer Experience
-    Improvement Program (912 controls / STIG requirement).
-    """
-    return vcenter.api_put(opts, _CEIP, body={"accepted": bool(accepted)}, profile=profile)
+# Intentionally not implemented here on VCF 9.x. The historical
+# ``/api/appliance/ceip`` REST surface returns 404 on this build (verified
+# against VCF 9.1 GA); CEIP is orchestrated by SDDC Manager instead. See
+# :mod:`saltext.vcf.clients.sddc_ceip`.

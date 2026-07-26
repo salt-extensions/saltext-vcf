@@ -23,6 +23,7 @@ _____________
     vcf_nsx_security_policy
     vcf_nsx_segment
     vcf_nsx_service
+    vcf_sddc_ceip
     vcf_sddc_host
     vcf_vcenter_appliance
     vcf_vcenter_cluster

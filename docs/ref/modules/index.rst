@@ -46,6 +46,7 @@ _________________
     vcf_nsx_transport_zone
     vcf_nsx_upgrade
     vcf_sddc_bundles
+    vcf_sddc_ceip
     vcf_sddc_certificates
     vcf_sddc_cluster
     vcf_sddc_credentials

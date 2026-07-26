@@ -52,6 +52,7 @@ ______________
     nsx_upgrade
     sddc_avn
     sddc_bundles
+    sddc_ceip
     sddc_certificates
     sddc_cluster
     sddc_cluster_ops

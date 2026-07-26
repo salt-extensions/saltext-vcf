@@ -156,28 +156,5 @@ def logging_forwarding_set(servers, profile=None):
     return c.logging_forwarding_set(__opts__, servers, profile=profile)
 
 
-# CEIP
-def ceip_get(profile=None):
-    """Return the CEIP participation status.
-
-    CLI Example:
-
-    .. code-block:: bash
-
-        salt '*' vcf_vcenter_appliance.ceip_get
-
-    """
-    return c.ceip_get(__opts__, profile=profile)
-
-
-def ceip_set(accepted, profile=None):
-    """Set CEIP participation. Pass ``accepted=False`` to opt out.
-
-    CLI Example:
-
-    .. code-block:: bash
-
-        salt '*' vcf_vcenter_appliance.ceip_set accepted=False
-
-    """
-    return c.ceip_set(__opts__, accepted, profile=profile)
+# CEIP is not available at the vCenter-appliance layer on VCF 9.x.
+# Use ``vcf_sddc_ceip.get`` / ``vcf_sddc_ceip.disable`` instead.
