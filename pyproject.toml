@@ -44,11 +44,6 @@ dynamic = ["version"]
 dependencies = [
     "salt>=3006",
     "requests>=2.3.0",
-    "pyvmomi>=8.0.0",
-    "pywbem>=1.7.0",
-    # SSH transport for appliance-local SDDC Manager controls (/etc/passwd,
-    # localhost appliancemanager API). Bundled with Salt, pinned here for clarity.
-    "paramiko>=2.7.0",
 ]
 
 [project.readme]
@@ -62,9 +57,18 @@ Source = "https://github.com/salt-extensions/saltext-vcf"
 Tracker = "https://github.com/salt-extensions/saltext-vcf/issues"
 
 [project.optional-dependencies]
-vcenter = ["vmware-vcenter>=9.0.0.0"]
-sddc = ["vmware-vcf>=0.4.0"]
+# Runtime sub-component extras. Install only the areas you use, e.g.
+# ``pip install saltext.vcf[vcenter,nsx]``. Use ``[all]`` to pull every
+# runtime dependency (matches pre-split base install behavior).
+esxi = ["pyvmomi>=8.0.0", "pywbem>=1.7.0"]
+vcenter = ["pyvmomi>=8.0.0", "vmware-vcenter>=9.0.0.0"]
+nsx = []
+sddc = ["vmware-vcf>=0.4.0", "paramiko>=2.7.0"]
+vcfops = []
+vcfa = []
+installer = ["pyvmomi>=8.0.0"]
 vks = ["saltext.kubernetes>=2.1.0", "kubernetes>=27.2.0"]
+all = ["saltext.vcf[esxi,vcenter,nsx,sddc,vcfops,vcfa,installer,vks]"]
 changelog = ["towncrier==25.8.0"]
 dev = [
     "nox[uv]>=2024.3,!=2025.05.01",

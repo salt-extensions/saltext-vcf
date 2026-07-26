@@ -139,7 +139,10 @@ def _install_requirements(
 
 @nox.session(python=PYTHON_VERSIONS)
 def tests(session):
-    _install_requirements(session, install_source=True)
+    # ``all`` pulls in every runtime extra (pyvmomi, pywbem, vmware-vcenter,
+    # vmware-vcf, kubernetes, saltext.kubernetes) so unit tests for the
+    # esxi/vcenter/vim/vsan/installer surfaces can import their clients.
+    _install_requirements(session, install_source=True, install_extras=["all"])
 
     sitecustomize_dir = session.run("salt-factories", "--coverage", silent=True, log=False)
     python_path_env_var = os.environ.get("PYTHONPATH") or None

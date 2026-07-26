@@ -44,9 +44,19 @@ six VCF components.
 
 ## Quickstart
 
+Base install ships the core Salt loader wiring and the REST client
+plumbing only. Every runtime dependency (pyvmomi, pywbem, the VMware
+SDKs, kubernetes) is opt-in via pip extras — pick the components you
+plan to use, or install everything with `[all]`:
+
 ```bash
-pip install saltext-vcf
+pip install saltext.vcf            # base only; most modules will not load
+pip install 'saltext.vcf[all]'     # equivalent to the pre-split default
+pip install 'saltext.vcf[vcenter,nsx]'
 ```
+
+See [Installing sub-components](#installing-sub-components) below for
+the full list of extras.
 
 Configure pillar:
 
@@ -84,16 +94,28 @@ salt-call vcf_vcfops_deployment.healthy
 salt-call vcf_vcf_services.status_map
 ```
 
-## Extras
+## Installing sub-components
 
-| Extra | Adds |
-|---|---|
-| `[vcenter]` | `vmware-vcenter` SDK for advanced vCenter REST flows |
-| `[sddc]` | `vmware-vcf` SDK for SDDC Manager flows |
-| `[vks]` | `saltext-kubernetes` + `kubernetes` for the VKS kubeconfig bridge |
+`saltext.vcf` is split into per-component extras. The base install is
+minimal on purpose — modules whose deps are missing return
+`__virtual__ = False` and are silently skipped by the Salt loader.
+Pick the extras that match the VCF surface area you actually manage:
+
+| Extra | Adds | Enables |
+|---|---|---|
+| `[esxi]` | `pyvmomi`, `pywbem` | Standalone ESXi (`vcf_esxi_*`), CIM hardware health, vSAN SOAP helpers |
+| `[vcenter]` | `pyvmomi`, `vmware-vcenter` SDK | vCenter REST + SOAP (`vcf_vcenter_*`, `vim_*` clients, alarms, perf, snapshots) |
+| `[nsx]` | — (uses `requests` only) | NSX Policy + Management API (`vcf_nsx_*`) |
+| `[sddc]` | `vmware-vcf` SDK | SDDC Manager (`vcf_sddc_*`) |
+| `[vcfops]` | — (uses `requests` only) | VCF Operations (`vcf_vcfops_*`) |
+| `[vcfa]` | — (uses `requests` only) | VCF Automation (`vcf_vcfa_*`) |
+| `[installer]` | `pyvmomi` | VCF Installer OVA deploy (`vcf_installer_*`) |
+| `[vks]` | `saltext.kubernetes`, `kubernetes` | VKS Supervisor kubeconfig bridge |
+| `[all]` | Every runtime extra above | Matches the pre-split default install |
 
 ```bash
-pip install 'saltext-vcf[vks]'
+pip install 'saltext.vcf[vcenter,nsx,sddc]'
+pip install 'saltext.vcf[all]'   # everything
 ```
 
 ## Documentation
