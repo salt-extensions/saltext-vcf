@@ -22,14 +22,14 @@ def get(profile=None):
     return c.get(__opts__, profile=profile)
 
 
-def set_optin(optin, profile=None):
-    """Set the CEIP ``optin`` flag on the NSX Manager.
+def set_ceip_acceptance(ceip_acceptance, profile=None):
+    """Set the CEIP ``ceip_acceptance`` flag on the NSX Manager.
 
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' vcf_nsx_telemetry.set_optin optin=False
+        salt '*' vcf_nsx_telemetry.set_ceip_acceptance ceip_acceptance=False
 
     """
-    return c.set_optin(__opts__, optin, profile=profile)
+    return c.set_ceip_acceptance(__opts__, ceip_acceptance, profile=profile)

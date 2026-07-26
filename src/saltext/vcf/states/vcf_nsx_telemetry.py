@@ -1,8 +1,8 @@
 """State module for NSX Manager telemetry / CEIP opt-in.
 
 Enforces the 912 Controls requirement that the NSX-T Manager must not send
-environment information to third parties by pinning the CEIP ``optin`` flag
-to ``False`` (or an explicit caller-supplied value).
+environment information to third parties by pinning the CEIP
+``ceip_acceptance`` flag to ``False`` (or an explicit caller-supplied value).
 """
 
 from saltext.vcf.clients import nsx_telemetry as c
@@ -18,32 +18,32 @@ def _ret(name):
     return {"name": name, "changes": {}, "result": True, "comment": ""}
 
 
-def optin_set(name, optin=False, profile=None):
-    """Ensure the NSX Manager CEIP ``optin`` flag matches *optin*.
+def ceip_acceptance_set(name, ceip_acceptance=False, profile=None):
+    """Ensure the NSX Manager CEIP ``ceip_acceptance`` flag matches *ceip_acceptance*.
 
     ``name`` is a label for the state and is not sent to NSX. The default of
-    ``optin=False`` disables CEIP, satisfying the 912 Controls control.
+    ``ceip_acceptance=False`` disables CEIP, satisfying the 912 Controls control.
     """
     ret = _ret(name)
-    desired = bool(optin)
+    desired = bool(ceip_acceptance)
     current = c.get(__opts__, profile=profile) or {}
-    current_optin = bool(current.get("optin"))
+    current_val = bool(current.get("ceip_acceptance"))
 
-    if current_optin == desired:
-        ret["comment"] = f"CEIP optin already {desired}"
+    if current_val == desired:
+        ret["comment"] = f"CEIP ceip_acceptance already {desired}"
         return ret
 
     if __opts__["test"]:
         ret["result"] = None
-        ret["comment"] = f"CEIP optin would change from {current_optin} to {desired}"
+        ret["comment"] = f"CEIP ceip_acceptance would change from {current_val} to {desired}"
         return ret
 
-    c.set_optin(__opts__, desired, profile=profile)
-    ret["changes"] = {"optin": {"old": current_optin, "new": desired}}
-    ret["comment"] = f"CEIP optin set to {desired}"
+    c.set_ceip_acceptance(__opts__, desired, profile=profile)
+    ret["changes"] = {"ceip_acceptance": {"old": current_val, "new": desired}}
+    ret["comment"] = f"CEIP ceip_acceptance set to {desired}"
     return ret
 
 
 def ceip_disabled(name, profile=None):
     """Convenience alias: ensure CEIP telemetry is opted out."""
-    return optin_set(name, optin=False, profile=profile)
+    return ceip_acceptance_set(name, ceip_acceptance=False, profile=profile)
