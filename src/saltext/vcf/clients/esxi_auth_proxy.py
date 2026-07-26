@@ -20,6 +20,8 @@ The advanced-setting keys are stable across ESXi 7.0/8.0/9.x; the
 actually accepts and log an issue.
 """
 
+from http.client import HTTPException
+
 from pyVmomi import vim
 from pyVmomi import vmodl  # pylint: disable=no-name-in-module
 
@@ -50,20 +52,31 @@ def _advanced_set(h, key, value):
 
 
 def _ad_state(h):
-    """Return ``{"joined": bool, "domain": str|None}`` from HostAuthenticationManager."""
-    auth_mgr = h.configManager.authenticationManager
-    info = getattr(auth_mgr, "info", None)
-    stores = getattr(info, "authConfig", None) if info is not None else None
-    if stores is None:
-        # Some pyVmomi shapes surface authenticationManagerInfo on config.
-        info = getattr(h.config, "authenticationManagerInfo", None) if h.config else None
+    """Return ``{"joined": bool, "domain": str|None}`` from HostAuthenticationManager.
+
+    Some ESXi builds (observed on VCF 9.1 GA) return an HTTP 503 from the
+    HostAgent when the CAM/AD auth store info is queried through vCenter,
+    presumably because the auth service is not initialized on a host that
+    has never been joined to a domain.  Treat that surface as "unknown
+    join state" — the advanced CAM settings we return alongside are still
+    a truthful view of the ``ESXi.enable-auth-proxy`` config.
+    """
+    try:
+        auth_mgr = h.configManager.authenticationManager
+        info = getattr(auth_mgr, "info", None)
         stores = getattr(info, "authConfig", None) if info is not None else None
-    for store in stores or []:
-        if isinstance(store, vim.host.ActiveDirectoryInfo):
-            return {
-                "joined": bool(store.enabled),
-                "domain": store.joinedDomain or None,
-            }
+        if stores is None:
+            # Some pyVmomi shapes surface authenticationManagerInfo on config.
+            info = getattr(h.config, "authenticationManagerInfo", None) if h.config else None
+            stores = getattr(info, "authConfig", None) if info is not None else None
+        for store in stores or []:
+            if isinstance(store, vim.host.ActiveDirectoryInfo):
+                return {
+                    "joined": bool(store.enabled),
+                    "domain": store.joinedDomain or None,
+                }
+    except (HTTPException, vim.fault.VimFault, vmodl.MethodFault):
+        return {"joined": False, "domain": None}
     return {"joined": False, "domain": None}
 
 
