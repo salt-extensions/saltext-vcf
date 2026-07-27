@@ -30,14 +30,37 @@ def _net(opts, host, profile=None):
     return _host(opts, host, profile=profile).configManager.networkSystem
 
 
+def _network_info(opts, host, profile=None):
+    """Return ``hostSystem.config.network`` or ``None`` if the host has none.
+
+    On VCF 9.1 GA we observe some ESXi hosts return ``hostSystem.config``
+    as ``None`` through vCenter's SOAP proxy, presumably because the host
+    hasn't reported a full network config yet (e.g. transient state, or
+    an all-VDS deployment where the standard-switch surface is empty).
+    Read-side helpers treat that as "no standard networking present"
+    rather than exploding on the ``None`` deref.
+    """
+    h = _host(opts, host, profile=profile)
+    try:
+        return h.config.network
+    except AttributeError:
+        return None
+
+
 # ---------------------------------------------------------------------------
 # vSwitches
 # ---------------------------------------------------------------------------
 
 
 def vswitch_list(opts, host, profile=None):
-    """List standard vSwitches on *host*."""
-    info = _host(opts, host, profile=profile).config.network
+    """List standard vSwitches on *host*.
+
+    Returns an empty list when the host has no reported network config
+    (e.g. a not-fully-initialized host, or a pure-VDS deployment).
+    """
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return []
     return [_vswitch_to_dict(vs) for vs in (info.vswitch or [])]
 
 
@@ -118,7 +141,132 @@ def _vswitch_to_dict(vs):
         "mtu": vs.mtu,
         "pnic_devices": pnic_devices,
         "portgroup_names": [pg.split("-", 1)[-1] for pg in (vs.portgroup or [])],
+        "teaming": _teaming_to_dict(getattr(vs.spec, "policy", None)),
     }
+
+
+# ---------------------------------------------------------------------------
+# NIC teaming / failover policy on a standard vSwitch
+# ---------------------------------------------------------------------------
+#
+# Physical-uplink failover mode (Requirement: virtual switches must be set up
+# in a physical network failover mode — LACP, teaming). LACP-with-LAG on the
+# standard vSwitch is not supported by vSphere (LACP is DVS-only), so on a
+# standard vSwitch the available policies are the four load-balancing modes
+# plus explicit failover order.
+
+_VSWITCH_TEAMING_POLICIES = {
+    "loadbalance_ip",
+    "loadbalance_srcmac",
+    "loadbalance_srcid",
+    "failover_explicit",
+}
+
+
+def _teaming_to_dict(policy):
+    """Return a plain-dict rendering of ``HostNetworkPolicy.nicTeaming`` (or ``None``)."""
+    if policy is None or getattr(policy, "nicTeaming", None) is None:
+        return None
+    t = policy.nicTeaming
+    failure = getattr(t, "failureCriteria", None)
+    order = getattr(t, "nicOrder", None)
+    return {
+        "policy": getattr(t, "policy", None),
+        "reverse_policy": getattr(t, "reversePolicy", None),
+        "notify_switches": getattr(t, "notifySwitches", None),
+        "rolling_order": getattr(t, "rollingOrder", None),
+        "check_beacon": getattr(failure, "checkBeacon", None) if failure else None,
+        "active_nic": list(getattr(order, "activeNic", None) or []) if order else [],
+        "standby_nic": list(getattr(order, "standbyNic", None) or []) if order else [],
+    }
+
+
+def _build_nic_teaming(
+    policy,
+    *,
+    reverse_policy=None,
+    notify_switches=None,
+    rolling_order=None,
+    check_beacon=None,
+    active_nic=None,
+    standby_nic=None,
+):
+    """Build a ``HostNicTeamingPolicy`` from validated kwargs."""
+    if policy not in _VSWITCH_TEAMING_POLICIES:
+        raise ValueError(
+            f"teaming policy must be one of {sorted(_VSWITCH_TEAMING_POLICIES)}; got {policy!r}"
+        )
+    kwargs = {"policy": policy}
+    if reverse_policy is not None:
+        kwargs["reversePolicy"] = bool(reverse_policy)
+    if notify_switches is not None:
+        kwargs["notifySwitches"] = bool(notify_switches)
+    if rolling_order is not None:
+        kwargs["rollingOrder"] = bool(rolling_order)
+    if check_beacon is not None:
+        kwargs["failureCriteria"] = vim.host.NetworkPolicy.NicFailureCriteria(
+            checkBeacon=bool(check_beacon),
+        )
+    if active_nic is not None or standby_nic is not None:
+        kwargs["nicOrder"] = vim.host.NetworkPolicy.NicOrderPolicy(
+            activeNic=list(active_nic or []),
+            standbyNic=list(standby_nic or []),
+        )
+    return vim.host.NetworkPolicy.NicTeamingPolicy(**kwargs)
+
+
+def vswitch_get_teaming(opts, host, name, profile=None):
+    """Return the NIC teaming/failover policy on standard vSwitch *name*.
+
+    Returns ``None`` when the vSwitch has no explicit teaming policy set
+    (rare — ESXi always populates a default policy in practice).
+    """
+    return vswitch_get(opts, host, name, profile=profile).get("teaming")
+
+
+def vswitch_set_teaming(
+    opts,
+    host,
+    name,
+    *,
+    policy,
+    reverse_policy=None,
+    notify_switches=None,
+    rolling_order=None,
+    check_beacon=None,
+    active_nic=None,
+    standby_nic=None,
+    profile=None,
+):
+    """Set the NIC teaming/failover policy on standard vSwitch *name*.
+
+    *policy* is one of ``loadbalance_ip``, ``loadbalance_srcmac``,
+    ``loadbalance_srcid``, ``failover_explicit``.
+
+    All other fields are optional and only sent when non-None; existing
+    non-teaming vSwitch spec fields (numPorts, mtu, bridge) are preserved
+    by reading and re-sending the current spec.
+    """
+    existing = vswitch_get(opts, host, name, profile=profile)
+    spec = vim.host.VirtualSwitch.Specification(
+        numPorts=int(existing["num_ports"]),
+        mtu=int(existing["mtu"]),
+    )
+    if existing.get("pnic_devices"):
+        spec.bridge = vim.host.VirtualSwitch.BondBridge(nicDevice=existing["pnic_devices"])
+    spec.policy = vim.host.NetworkPolicy(
+        nicTeaming=_build_nic_teaming(
+            policy,
+            reverse_policy=reverse_policy,
+            notify_switches=notify_switches,
+            rolling_order=rolling_order,
+            check_beacon=check_beacon,
+            active_nic=active_nic,
+            standby_nic=standby_nic,
+        ),
+    )
+    _net(opts, host, profile=profile).UpdateVirtualSwitch(vswitchName=name, spec=spec)
+    return vswitch_get_teaming(opts, host, name, profile=profile)
 
 
 # ---------------------------------------------------------------------------
@@ -127,7 +275,9 @@ def _vswitch_to_dict(vs):
 
 
 def portgroup_list(opts, host, profile=None):
-    info = _host(opts, host, profile=profile).config.network
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return []
     return [_pg_to_dict(pg) for pg in (info.portgroup or [])]
 
 
@@ -232,7 +382,9 @@ def _pg_to_dict(pg):
 
 
 def vmkernel_list(opts, host, profile=None):
-    info = _host(opts, host, profile=profile).config.network
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return []
     return [_vnic_to_dict(v) for v in (info.vnic or [])]
 
 
@@ -338,8 +490,10 @@ def vmkernel_migrate(opts, host, device, dst_portgroup, profile=None):
 
 def ipv6_get(opts, host, profile=None):
     """Return ``{enabled}`` for IPv6 on *host*'s network config."""
-    h = _host(opts, host, profile=profile)
-    return {"enabled": bool(getattr(h.config.network, "ipV6Enabled", False))}
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return {"enabled": False}
+    return {"enabled": bool(getattr(info, "ipV6Enabled", False))}
 
 
 def ipv6_set(opts, host, enabled, profile=None):
@@ -394,7 +548,9 @@ def _vnic_to_dict(v):
 
 def physical_nic_list(opts, host, profile=None):
     """List physical NICs (``pnics``) on *host* — driver, link state, etc."""
-    info = _host(opts, host, profile=profile).config.network
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return []
     out = []
     for p in info.pnic or []:
         ls = p.linkSpeed

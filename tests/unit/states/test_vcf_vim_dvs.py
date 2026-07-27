@@ -142,3 +142,92 @@ def test_portgroup_absent_when_present(monkeypatch):
     )
     ret = st.portgroup_absent("prod-web", dvs="prod-dvs")
     assert ret["changes"] == {"deleted": "prod-web"}
+
+
+# ---------- teaming_configured (physical-uplink failover mode) ----------
+
+
+def test_teaming_configured_missing_dpg(monkeypatch):
+    monkeypatch.setattr(pg_c, "get_or_none", lambda o, d, n, profile=None: None)
+    ret = st.teaming_configured("prod-web", dvs="prod-dvs", policy="loadbalance_ip")
+    assert ret["result"] is False
+    assert "not found" in ret["comment"]
+
+
+def test_teaming_configured_already_matches(monkeypatch):
+    monkeypatch.setattr(
+        pg_c,
+        "get_or_none",
+        lambda o, d, n, profile=None: {
+            "name": n,
+            "teaming": {
+                "policy": "loadbalance_ip",
+                "notify_switches": True,
+                "active_uplinks": ["Uplink 1", "Uplink 2"],
+                "standby_uplinks": [],
+            },
+        },
+    )
+    ret = st.teaming_configured(
+        "prod-web",
+        dvs="prod-dvs",
+        policy="loadbalance_ip",
+        notify_switches=True,
+        active_uplinks=["Uplink 1", "Uplink 2"],
+        standby_uplinks=[],
+    )
+    assert ret["changes"] == {}
+    assert "already matches" in ret["comment"]
+
+
+def test_teaming_configured_updates_on_drift(monkeypatch):
+    actions = {"set": []}
+    monkeypatch.setattr(
+        pg_c,
+        "get_or_none",
+        lambda o, d, n, profile=None: {
+            "name": n,
+            "teaming": {"policy": "loadbalance_srcid", "notify_switches": True},
+        },
+    )
+    monkeypatch.setattr(
+        pg_c,
+        "set_teaming",
+        lambda o, d, n, **kw: actions["set"].append((d, n, kw)),
+    )
+    ret = st.teaming_configured("prod-web", dvs="prod-dvs", policy="loadbalance_ip")
+    assert "policy" in ret["changes"]
+    assert ret["changes"]["policy"] == ("loadbalance_srcid", "loadbalance_ip")
+    assert actions["set"][0][2]["policy"] == "loadbalance_ip"
+
+
+def test_teaming_configured_test_mode(monkeypatch, opts):
+    monkeypatch.setattr(st, "__opts__", {**opts, "test": True}, raising=False)
+    monkeypatch.setattr(
+        pg_c,
+        "get_or_none",
+        lambda o, d, n, profile=None: {"name": n, "teaming": {"policy": "loadbalance_srcid"}},
+    )
+    ret = st.teaming_configured("prod-web", dvs="prod-dvs", policy="loadbalance_ip")
+    assert ret["result"] is None
+    assert "would be updated" in ret["comment"]
+
+
+def test_teaming_configured_ignores_none_fields(monkeypatch):
+    """Only fields the caller sets should be diffed — omit standby_uplinks etc."""
+    monkeypatch.setattr(
+        pg_c,
+        "get_or_none",
+        lambda o, d, n, profile=None: {
+            "name": n,
+            "teaming": {
+                "policy": "loadbalance_ip",
+                "notify_switches": True,
+                "active_uplinks": ["Uplink 1", "Uplink 2"],
+                "standby_uplinks": ["Uplink 3"],  # would drift if we checked it
+            },
+        },
+    )
+    ret = st.teaming_configured("prod-web", dvs="prod-dvs", policy="loadbalance_ip")
+    assert ret["changes"] == {}
+    assert "already matches" in ret["comment"]

@@ -12,6 +12,15 @@ Two creation paths:
 - :py:func:`create_vlan` for VLAN-backed (standard / trunk / private)
 - :py:func:`create_overlay` for overlay-backed (early-binding ephemeral
   for use under NSX/Avi)
+
+NIC teaming / physical-uplink failover mode: :py:func:`get_teaming` and
+:py:func:`set_teaming` cover the load-balancing / explicit-failover
+policies on the DPG's default port config.
+
+LACP-with-LAG is a follow-up: it requires LAG creation and
+``ReconfigureLacp_Task`` on the parent DVS (see
+:py:mod:`saltext.vcf.clients.vim_dvs`) plus per-DPG
+``VMwareDvsLagVlanConfig`` binding via ``UplinkPortOrderPolicy``.
 """
 
 from pyVmomi import vim
@@ -68,6 +77,9 @@ def _to_dict(pg):
             }
         elif isinstance(v, vim.dvs.VmwareDistributedVirtualSwitch.PvlanSpec):
             vlan_info = {"kind": "pvlan", "primary_vlan_id": int(v.pvlanId)}
+    teaming_info = None
+    if cfg.defaultPortConfig is not None:
+        teaming_info = _teaming_to_dict(getattr(cfg.defaultPortConfig, "uplinkTeamingPolicy", None))
     return {
         "moid": pg._moId,  # noqa: SLF001
         "key": pg.key,
@@ -76,6 +88,7 @@ def _to_dict(pg):
         "type": str(cfg.type),
         "binding": str(cfg.portBinding) if hasattr(cfg, "portBinding") else None,
         "vlan": vlan_info,
+        "teaming": teaming_info,
     }
 
 
@@ -191,3 +204,134 @@ def delete(opts, dvs_name_or_id, name, profile=None):
     task = pg.Destroy_Task()
     soap.wait_for_task(task)
     return task._moId  # noqa: SLF001
+
+
+# ---------------------------------------------------------------------------
+# NIC teaming / failover policy on a DVS port group
+# ---------------------------------------------------------------------------
+#
+# Physical-uplink failover mode (Requirement: virtual switches must be set up
+# in a physical network failover mode — LACP, teaming). This surface covers
+# the common teaming policies on a DPG. LACP-with-LAG (LAG creation +
+# ``ReconfigureLacp_Task`` on the DVS) is a follow-up; see the module
+# docstring.
+
+_DVS_TEAMING_POLICIES = {
+    "loadbalance_ip",
+    "loadbalance_srcmac",
+    "loadbalance_srcid",
+    "failover_explicit",
+    "loadbalance_loadbased",
+}
+
+
+def _teaming_to_dict(teaming):
+    """Return a plain-dict rendering of ``VmwareUplinkPortTeamingPolicy`` (or ``None``)."""
+    if teaming is None:
+        return None
+
+    def _v(field):
+        wrapper = getattr(teaming, field, None)
+        return getattr(wrapper, "value", None) if wrapper is not None else None
+
+    order = getattr(teaming, "uplinkPortOrder", None)
+    failure = getattr(teaming, "failureCriteria", None)
+    return {
+        "inherited": getattr(teaming, "inherited", None),
+        "policy": _v("policy"),
+        "reverse_policy": _v("reversePolicy"),
+        "notify_switches": _v("notifySwitches"),
+        "rolling_order": _v("rollingOrder"),
+        "check_beacon": (
+            getattr(getattr(failure, "checkBeacon", None), "value", None) if failure else None
+        ),
+        "active_uplinks": list(getattr(order, "activeUplinkPort", None) or []) if order else [],
+        "standby_uplinks": list(getattr(order, "standbyUplinkPort", None) or []) if order else [],
+    }
+
+
+def _build_uplink_teaming_policy(
+    policy,
+    *,
+    reverse_policy=None,
+    notify_switches=None,
+    rolling_order=None,
+    check_beacon=None,
+    active_uplinks=None,
+    standby_uplinks=None,
+):
+    if policy not in _DVS_TEAMING_POLICIES:
+        raise ValueError(
+            f"teaming policy must be one of {sorted(_DVS_TEAMING_POLICIES)}; got {policy!r}"
+        )
+    t = vim.dvs.VmwareDistributedVirtualSwitch.UplinkPortTeamingPolicy(
+        inherited=False,
+        policy=vim.StringPolicy(inherited=False, value=policy),
+    )
+    if reverse_policy is not None:
+        t.reversePolicy = vim.BoolPolicy(inherited=False, value=bool(reverse_policy))
+    if notify_switches is not None:
+        t.notifySwitches = vim.BoolPolicy(inherited=False, value=bool(notify_switches))
+    if rolling_order is not None:
+        t.rollingOrder = vim.BoolPolicy(inherited=False, value=bool(rolling_order))
+    if check_beacon is not None:
+        t.failureCriteria = vim.dvs.VmwareDistributedVirtualSwitch.FailureCriteria(
+            inherited=False,
+            checkBeacon=vim.BoolPolicy(inherited=False, value=bool(check_beacon)),
+        )
+    if active_uplinks is not None or standby_uplinks is not None:
+        t.uplinkPortOrder = vim.dvs.VmwareDistributedVirtualSwitch.UplinkPortOrderPolicy(
+            inherited=False,
+            activeUplinkPort=list(active_uplinks or []),
+            standbyUplinkPort=list(standby_uplinks or []),
+        )
+    return t
+
+
+def get_teaming(opts, dvs_name_or_id, name, profile=None):
+    """Return the current uplink teaming policy for DPG *name* (or ``None``)."""
+    pg = _dpg(opts, dvs_name_or_id, name, profile=profile)
+    default = pg.config.defaultPortConfig
+    if default is None:
+        return None
+    return _teaming_to_dict(getattr(default, "uplinkTeamingPolicy", None))
+
+
+def set_teaming(
+    opts,
+    dvs_name_or_id,
+    name,
+    *,
+    policy,
+    reverse_policy=None,
+    notify_switches=None,
+    rolling_order=None,
+    check_beacon=None,
+    active_uplinks=None,
+    standby_uplinks=None,
+    profile=None,
+):
+    """Set the uplink teaming policy on DPG *name*.
+
+    *policy* is one of ``loadbalance_ip``, ``loadbalance_srcmac``,
+    ``loadbalance_srcid``, ``failover_explicit``, ``loadbalance_loadbased``.
+    """
+    pg = _dpg(opts, dvs_name_or_id, name, profile=profile)
+    port_cfg = vim.dvs.VmwareDistributedVirtualSwitch.VmwarePortConfigPolicy(
+        uplinkTeamingPolicy=_build_uplink_teaming_policy(
+            policy,
+            reverse_policy=reverse_policy,
+            notify_switches=notify_switches,
+            rolling_order=rolling_order,
+            check_beacon=check_beacon,
+            active_uplinks=active_uplinks,
+            standby_uplinks=standby_uplinks,
+        ),
+    )
+    cfg = vim.dvs.DistributedVirtualPortgroup.ConfigSpec(
+        configVersion=pg.config.configVersion,
+        defaultPortConfig=port_cfg,
+    )
+    task = pg.ReconfigureDVPortgroup_Task(spec=cfg)
+    soap.wait_for_task(task)
+    return get_teaming(opts, dvs_name_or_id, name, profile=profile)

@@ -133,3 +133,54 @@ def delete(dvs, name, profile=None):
         salt '*' vcf_vim_dvs_portgroup.delete prod-dvs prod-web
     """
     return c.delete(__opts__, dvs, name, profile=profile)
+
+
+def get_teaming(dvs, name, profile=None):
+    """Return the current uplink teaming policy for DPG *name*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_dvs_portgroup.get_teaming prod-dvs prod-web
+    """
+    return c.get_teaming(__opts__, dvs, name, profile=profile)
+
+
+def set_teaming(
+    dvs,
+    name,
+    policy,
+    reverse_policy=None,
+    notify_switches=None,
+    rolling_order=None,
+    check_beacon=None,
+    active_uplinks=None,
+    standby_uplinks=None,
+    profile=None,
+):
+    """Set the uplink teaming / physical-failover policy on DPG *name*.
+
+    *policy* is one of ``loadbalance_ip``, ``loadbalance_srcmac``,
+    ``loadbalance_srcid``, ``failover_explicit``, ``loadbalance_loadbased``.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_dvs_portgroup.set_teaming prod-dvs prod-web loadbalance_loadbased \\
+            active_uplinks='["Uplink 1","Uplink 2"]'
+    """
+    return c.set_teaming(
+        __opts__,
+        dvs,
+        name,
+        policy=policy,
+        reverse_policy=reverse_policy,
+        notify_switches=notify_switches,
+        rolling_order=rolling_order,
+        check_beacon=check_beacon,
+        active_uplinks=active_uplinks,
+        standby_uplinks=standby_uplinks,
+        profile=profile,
+    )

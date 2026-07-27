@@ -1,4 +1,13 @@
-"""State module for VDS + DPG."""
+"""State module for VDS + DPG.
+
+Notes on NIC teaming / physical-failover mode:
+
+* :py:func:`teaming_configured` sets the uplink-teaming policy on a
+  distributed port group (load balancing or explicit failover order).
+* LACP-with-LAG on a DVS (LAG create + ``ReconfigureLacp_Task`` on the
+  parent DVS, plus per-DPG ``VMwareDvsLagVlanConfig`` binding) is a
+  follow-up — this state ships the common non-LAG cases.
+"""
 
 from saltext.vcf.clients import vim_dvs as dvs_c
 from saltext.vcf.clients import vim_dvs_portgroup as pg_c
@@ -141,4 +150,77 @@ def portgroup_absent(name, dvs, profile=None):
     pg_c.delete(__opts__, dvs, name, profile=profile)
     ret["changes"] = {"deleted": name}
     ret["comment"] = f"DPG {name} on {dvs} deleted"
+    return ret
+
+
+def teaming_configured(
+    name,
+    dvs,
+    policy,
+    reverse_policy=None,
+    notify_switches=None,
+    rolling_order=None,
+    check_beacon=None,
+    active_uplinks=None,
+    standby_uplinks=None,
+    profile=None,
+):
+    """Ensure DPG *name* on *dvs* uses the given uplink-teaming policy.
+
+    Satisfies the "virtual switches must be set up in a physical network
+    failover mode (LACP, teaming)" requirement for distributed port
+    groups. LACP-with-LAG (LAG creation + ``ReconfigureLacp_Task`` on
+    the parent DVS) is a follow-up; this state covers the common
+    load-balance / failover-explicit cases.
+
+    Only fields the caller passes (non-``None``) are diffed; fields left
+    as ``None`` are treated as "don't manage".
+    """
+    ret = _ret(name)
+    existing = pg_c.get_or_none(__opts__, dvs, name, profile=profile)
+    if existing is None:
+        ret["result"] = False
+        ret["comment"] = f"DPG {name} not found on {dvs}"
+        return ret
+    current = existing.get("teaming") or {}
+    desired = {
+        "policy": policy,
+        "reverse_policy": reverse_policy,
+        "notify_switches": notify_switches,
+        "rolling_order": rolling_order,
+        "check_beacon": check_beacon,
+        "active_uplinks": list(active_uplinks) if active_uplinks is not None else None,
+        "standby_uplinks": list(standby_uplinks) if standby_uplinks is not None else None,
+    }
+    drift = {}
+    for k, want in desired.items():
+        if want is None:
+            continue
+        have = current.get(k)
+        if k in ("active_uplinks", "standby_uplinks"):
+            have = list(have or [])
+        if have != want:
+            drift[k] = (have, want)
+    if not drift:
+        ret["comment"] = f"DPG {name} teaming on {dvs} already matches"
+        return ret
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"DPG {name} teaming on {dvs} would be updated: {sorted(drift)}"
+        return ret
+    pg_c.set_teaming(
+        __opts__,
+        dvs,
+        name,
+        policy=policy,
+        reverse_policy=reverse_policy,
+        notify_switches=notify_switches,
+        rolling_order=rolling_order,
+        check_beacon=check_beacon,
+        active_uplinks=active_uplinks,
+        standby_uplinks=standby_uplinks,
+        profile=profile,
+    )
+    ret["changes"] = drift
+    ret["comment"] = f"DPG {name} teaming on {dvs} updated"
     return ret

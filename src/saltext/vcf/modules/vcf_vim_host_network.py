@@ -100,6 +100,57 @@ def vswitch_remove(host, name, profile=None):
     return c.vswitch_remove(__opts__, host, name, profile=profile)
 
 
+def vswitch_get_teaming(host, name, profile=None):
+    """Return the NIC teaming / physical-failover policy on standard vSwitch *name*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_network.vswitch_get_teaming esxi-01 vSwitch0
+    """
+    return c.vswitch_get_teaming(__opts__, host, name, profile=profile)
+
+
+def vswitch_set_teaming(
+    host,
+    name,
+    policy,
+    reverse_policy=None,
+    notify_switches=None,
+    rolling_order=None,
+    check_beacon=None,
+    active_nic=None,
+    standby_nic=None,
+    profile=None,
+):
+    """Set the NIC teaming / physical-failover policy on standard vSwitch *name*.
+
+    *policy* is one of ``loadbalance_ip``, ``loadbalance_srcmac``,
+    ``loadbalance_srcid``, ``failover_explicit``.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_network.vswitch_set_teaming esxi-01 vSwitch0 loadbalance_srcid \\
+            notify_switches=True active_nic='["vmnic0","vmnic1"]'
+    """
+    return c.vswitch_set_teaming(
+        __opts__,
+        host,
+        name,
+        policy=policy,
+        reverse_policy=reverse_policy,
+        notify_switches=notify_switches,
+        rolling_order=rolling_order,
+        check_beacon=check_beacon,
+        active_nic=active_nic,
+        standby_nic=standby_nic,
+        profile=profile,
+    )
+
+
 # Port groups
 
 
