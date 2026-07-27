@@ -1,4 +1,9 @@
-"""Tests for states.vcf_vcenter_appliance."""
+"""Tests for states.vcf_vcenter_appliance.
+
+CEIP-related state coverage moved to ``tests/unit/states/test_vcf_sddc_ceip.py``
+after CEIP was rehomed to SDDC Manager on VCF 9.x. See
+``clients/sddc_ceip.py`` for the endpoint rationale.
+"""
 
 import pytest
 
@@ -16,10 +21,8 @@ def stub(monkeypatch):
     state = {
         "dns": {"mode": "is_static", "servers": []},
         "syslog": [],
-        "ceip": {"accepted": True},
         "dns_set_calls": [],
         "syslog_set_calls": [],
-        "ceip_set_calls": [],
     }
 
     monkeypatch.setattr(c, "dns_get", lambda opts, profile=None: state["dns"])
@@ -35,12 +38,6 @@ def stub(monkeypatch):
         c,
         "logging_forwarding_set",
         lambda opts, servers, profile=None: state["syslog_set_calls"].append(list(servers)),
-    )
-    monkeypatch.setattr(c, "ceip_get", lambda opts, profile=None: state["ceip"])
-    monkeypatch.setattr(
-        c,
-        "ceip_set",
-        lambda opts, accepted, profile=None: state["ceip_set_calls"].append(bool(accepted)),
     )
     return state
 
@@ -88,47 +85,7 @@ def test_logging_forwarding_change(stub):
     assert stub["syslog_set_calls"] == [new]
 
 
-def test_ceip_set_no_change(stub):
-    stub["ceip"] = {"accepted": False}
-    ret = st.ceip_set("name", accepted=False)
-    assert ret["changes"] == {}
-    assert stub["ceip_set_calls"] == []
-    assert ret["result"] is True
-
-
-def test_ceip_set_disables_when_accepted(stub):
-    stub["ceip"] = {"accepted": True}
-    ret = st.ceip_set("name", accepted=False)
-    assert ret["changes"] == {"accepted": {"old": True, "new": False}}
-    assert stub["ceip_set_calls"] == [False]
-
-
-def test_ceip_set_enables_when_declined(stub):
-    stub["ceip"] = {"accepted": False}
-    ret = st.ceip_set("name", accepted=True)
-    assert ret["changes"] == {"accepted": {"old": False, "new": True}}
-    assert stub["ceip_set_calls"] == [True]
-
-
-def test_ceip_set_tolerates_value_wrapper(stub):
-    """Some vCenter builds wrap the response as ``{"value": {"accepted": ...}}``."""
-    stub["ceip"] = {"value": {"accepted": True}}
-    ret = st.ceip_set("name", accepted=False)
-    assert ret["changes"] == {"accepted": {"old": True, "new": False}}
-    assert stub["ceip_set_calls"] == [False]
-
-
-def test_ceip_set_test_mode(monkeypatch, stub):
-    stub["ceip"] = {"accepted": True}
-    monkeypatch.setattr(st, "__opts__", {"test": True}, raising=False)
-    ret = st.ceip_set("name", accepted=False)
-    assert ret["result"] is None
-    assert stub["ceip_set_calls"] == []
-    assert "would change" in ret["comment"]
-
-
-def test_ceip_disabled_shortcut(stub):
-    stub["ceip"] = {"accepted": True}
-    ret = st.ceip_disabled("name")
-    assert stub["ceip_set_calls"] == [False]
-    assert ret["changes"] == {"accepted": {"old": True, "new": False}}
+def test_ceip_state_functions_removed():
+    """CEIP state helpers were relocated to vcf_sddc_ceip; ensure they're gone here."""
+    assert not hasattr(st, "ceip_set")
+    assert not hasattr(st, "ceip_disabled")
