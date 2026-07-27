@@ -10,6 +10,7 @@ _____________
     :toctree:
 
     vcf_cluster_config
+    vcf_esxi_ad_auth
     vcf_esxi_advanced
     vcf_esxi_auth_proxy
     vcf_esxi_firewall
