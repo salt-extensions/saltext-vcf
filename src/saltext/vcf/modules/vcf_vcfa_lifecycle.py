@@ -143,3 +143,105 @@ def delete_snapshot(snapshot_id, profile=None):
 def restore_snapshot(snapshot_id, profile=None):
     """Restore the system to a snapshot."""
     return c.restore_snapshot(__opts__, snapshot_id, profile=profile)
+
+
+# -- patches (baseline management) ----------------------------------------
+
+
+def list_patches(product_id, profile=None):
+    """List installed + available patches for a product.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcfa_lifecycle.list_patches <product_id>
+    """
+    return c.list_patches(__opts__, product_id, profile=profile)
+
+
+def installed_patches(product_id, profile=None):
+    """List currently-installed patches for a product.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcfa_lifecycle.installed_patches <product_id>
+    """
+    return c.installed_patches(__opts__, product_id, profile=profile)
+
+
+def available_patches(product_id, profile=None):
+    """List patches available (not yet installed) for a product."""
+    return c.available_patches(__opts__, product_id, profile=profile)
+
+
+def installed_patch_versions(product_id, profile=None):
+    """Return the version strings of every installed patch (short form)."""
+    return c.installed_patch_versions(__opts__, product_id, profile=profile)
+
+
+def find_patch(product_id, version, profile=None):
+    """Return the patch record matching *version*, or ``None``."""
+    return c.find_patch(__opts__, product_id, version, profile=profile)
+
+
+def stage_patch(product_id, version, profile=None):
+    """Stage (download) a patch for a product without installing.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcfa_lifecycle.stage_patch <product_id> 9.0.1.2
+    """
+    return c.stage_patch(__opts__, product_id, version, profile=profile)
+
+
+def apply_patch(product_id, version, options=None, profile=None):
+    """Apply a patch — installs (stages if needed) *version* for *product_id*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcfa_lifecycle.apply_patch <product_id> 9.0.1.2
+    """
+    return c.apply_patch(__opts__, product_id, version, options=options, profile=profile)
+
+
+def baseline_check(product_id, allowed_versions, profile=None):
+    """Compare installed patches against *allowed_versions*.
+
+    Returns a dict::
+
+        {"compliant": bool,
+         "installed": ["9.0.1.2", ...],
+         "allowed": [...],
+         "in_baseline": ["9.0.1.2"],
+         "out_of_baseline": ["9.0.1.1"]}
+
+    Compliant is true when there is at least one installed patch and
+    every installed patch matches an entry in *allowed_versions*.
+    """
+    installed = c.installed_patches(__opts__, product_id, profile=profile)
+    in_baseline = []
+    out_of_baseline = []
+    for entry in installed:
+        version = c.resolve_patch_version(entry)
+        if version is None:
+            continue
+        if c.is_patch_allowed(entry, allowed_versions):
+            in_baseline.append(version)
+        else:
+            out_of_baseline.append(version)
+    installed_versions = [c.resolve_patch_version(e) for e in installed]
+    installed_versions = [v for v in installed_versions if v]
+    return {
+        "compliant": bool(installed_versions) and not out_of_baseline,
+        "installed": installed_versions,
+        "allowed": list(allowed_versions),
+        "in_baseline": in_baseline,
+        "out_of_baseline": out_of_baseline,
+    }

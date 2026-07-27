@@ -161,3 +161,186 @@ def test_restore_snapshot(opts, vcfa_authed):
 def test_delete_snapshot(opts, vcfa_authed):
     vcfa_authed.add(responses.DELETE, f"{_BASE}/snapshots/s-1", status=204)
     assert lc.delete_snapshot(opts, "s-1") == {}
+
+
+# -- patches / baseline management ---------------------------------------
+
+
+def test_list_patches_prefers_patches_endpoint(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.GET,
+        f"{_BASE}/products/p-1/patches",
+        json={"content": [{"version": "9.0.1", "status": "INSTALLED"}]},
+        status=200,
+    )
+    out = lc.list_patches(opts, "p-1")
+    assert [e["version"] for e in out] == ["9.0.1"]
+
+
+def test_list_patches_falls_back_to_versions_on_404(opts, vcfa_authed):
+    vcfa_authed.add(responses.GET, f"{_BASE}/products/p-1/patches", status=404)
+    vcfa_authed.add(
+        responses.GET,
+        f"{_BASE}/products/p-1/versions",
+        json={
+            "content": [
+                {"version": "9.0.0", "kind": "MAJOR"},
+                {"version": "9.0.1", "kind": "PATCH", "status": "INSTALLED"},
+                {"version": "9.0.2", "kind": "PATCH", "status": "AVAILABLE"},
+            ]
+        },
+        status=200,
+    )
+    out = lc.list_patches(opts, "p-1")
+    assert sorted(e["version"] for e in out) == ["9.0.1", "9.0.2"]
+
+
+def test_installed_patches_filters_by_status(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.GET,
+        f"{_BASE}/products/p-1/patches",
+        json={
+            "content": [
+                {"version": "9.0.1", "status": "INSTALLED"},
+                {"version": "9.0.2", "status": "AVAILABLE"},
+                {"version": "9.0.3", "state": "APPLIED"},
+            ]
+        },
+        status=200,
+    )
+    out = lc.installed_patches(opts, "p-1")
+    assert sorted(e["version"] for e in out) == ["9.0.1", "9.0.3"]
+
+
+def test_available_patches_filters_by_status(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.GET,
+        f"{_BASE}/products/p-1/patches",
+        json={
+            "content": [
+                {"version": "9.0.1", "status": "INSTALLED"},
+                {"version": "9.0.2", "status": "AVAILABLE"},
+                {"version": "9.0.3", "status": "STAGED"},
+            ]
+        },
+        status=200,
+    )
+    out = lc.available_patches(opts, "p-1")
+    assert sorted(e["version"] for e in out) == ["9.0.2", "9.0.3"]
+
+
+def test_installed_patch_versions(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.GET,
+        f"{_BASE}/products/p-1/patches",
+        json={
+            "content": [
+                {"version": "9.0.1", "status": "INSTALLED"},
+                {"version": "9.0.2", "status": "AVAILABLE"},
+            ]
+        },
+        status=200,
+    )
+    assert lc.installed_patch_versions(opts, "p-1") == ["9.0.1"]
+
+
+def test_find_patch_exact(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.GET,
+        f"{_BASE}/products/p-1/patches",
+        json={
+            "content": [
+                {"version": "9.0.1", "status": "INSTALLED"},
+                {"version": "9.0.2", "status": "AVAILABLE"},
+            ]
+        },
+        status=200,
+    )
+    entry = lc.find_patch(opts, "p-1", "9.0.2")
+    assert entry["version"] == "9.0.2"
+
+
+def test_find_patch_prefix(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.GET,
+        f"{_BASE}/products/p-1/patches",
+        json={"content": [{"version": "9.0.2.12345", "status": "AVAILABLE"}]},
+        status=200,
+    )
+    entry = lc.find_patch(opts, "p-1", "9.0.2")
+    assert entry["version"] == "9.0.2.12345"
+
+
+def test_find_patch_missing(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.GET,
+        f"{_BASE}/products/p-1/patches",
+        json={"content": [{"version": "9.0.1"}]},
+        status=200,
+    )
+    assert lc.find_patch(opts, "p-1", "9.9.9") is None
+
+
+def test_is_patch_allowed_exact():
+    entry = {"version": "9.0.1"}
+    assert lc.is_patch_allowed(entry, ["9.0.1"])
+    assert not lc.is_patch_allowed(entry, ["9.0.2"])
+
+
+def test_is_patch_allowed_prefix():
+    entry = {"version": "9.0.1.12345"}
+    assert lc.is_patch_allowed(entry, ["9.0.1"])
+    assert lc.is_patch_allowed({"version": "9.0.1"}, ["9.0.1.12345"])
+
+
+def test_is_patch_allowed_none_and_empty():
+    assert not lc.is_patch_allowed(None, ["9.0.1"])
+    assert not lc.is_patch_allowed({"version": "9.0.1"}, [])
+    assert not lc.is_patch_allowed({}, ["9.0.1"])
+
+
+def test_resolve_patch_version_falls_through_fields():
+    assert lc.resolve_patch_version({"version": "9.0.1"}) == "9.0.1"
+    assert lc.resolve_patch_version({"name": "9.0.1"}) == "9.0.1"
+    assert lc.resolve_patch_version({"id": "abc"}) == "abc"
+    assert lc.resolve_patch_version({}) is None
+
+
+def test_stage_patch_posts_stage_action(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.POST,
+        f"{_BASE}/upgrades",
+        json={"id": "u-2", "state": "STAGING"},
+        status=200,
+    )
+    lc.stage_patch(opts, "p-1", "9.0.2")
+    body = json.loads(vcfa_authed.calls[-1].request.body)
+    assert body == {"productId": "p-1", "targetVersion": "9.0.2", "action": "STAGE"}
+
+
+def test_apply_patch_posts_apply_action(opts, vcfa_authed):
+    vcfa_authed.add(
+        responses.POST,
+        f"{_BASE}/upgrades",
+        json={"id": "u-3", "state": "RUNNING"},
+        status=200,
+    )
+    out = lc.apply_patch(opts, "p-1", "9.0.2", options={"reboot": True})
+    assert out == {"id": "u-3", "state": "RUNNING"}
+    body = json.loads(vcfa_authed.calls[-1].request.body)
+    assert body == {
+        "productId": "p-1",
+        "targetVersion": "9.0.2",
+        "action": "APPLY_PATCH",
+        "options": {"reboot": True},
+    }
+
+
+def test_unwrap_collection_shapes():
+    # pylint: disable=protected-access
+    assert lc._unwrap_collection({"content": [1, 2]}) == [1, 2]
+    assert lc._unwrap_collection({"items": [3]}) == [3]
+    assert lc._unwrap_collection({"patches": [4]}) == [4]
+    assert lc._unwrap_collection({"results": [5]}) == [5]
+    assert lc._unwrap_collection([6]) == [6]
+    assert lc._unwrap_collection({"nope": "x"}) == []
