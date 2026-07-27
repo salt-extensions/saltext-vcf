@@ -20,6 +20,7 @@ _____________
     vcf_installer_bringup
     vcf_nsx_firewall_rule
     vcf_nsx_group
+    vcf_nsx_node_services
     vcf_nsx_role_binding
     vcf_nsx_security_policy
     vcf_nsx_segment
