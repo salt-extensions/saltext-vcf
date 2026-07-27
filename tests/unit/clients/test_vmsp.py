@@ -67,7 +67,11 @@ def test_ntp_set_applies_and_waits(opts, vmsp_authed):
     )
     result = vmsp_ntp.set_(opts, ["10.0.0.250"])
     assert result["phase"] == "Succeeded"
-    apply_call = [c for c in vmsp_authed.calls if c.request.method == "POST" and "components/comp-vsp-1" in c.request.url][0]
+    apply_call = [
+        c
+        for c in vmsp_authed.calls
+        if c.request.method == "POST" and "components/comp-vsp-1" in c.request.url
+    ][0]
     assert b'"ntpServers"' in apply_call.request.body
     assert b"10.0.0.250" in apply_call.request.body
 

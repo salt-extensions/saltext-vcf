@@ -77,7 +77,7 @@ def _raise_for_status(resp):
         return
     try:
         detail = resp.text
-    except Exception:  # pragma: no cover - defensive
+    except Exception:  # pylint: disable=broad-except
         detail = "<unreadable response body>"
     method = resp.request.method if resp.request is not None else "?"
     raise requests.HTTPError(
@@ -189,7 +189,9 @@ def apply_component(opts, component_id, payload, profile=None):
     resp = api_post(opts, COMPONENT_APPLY_PATH.format(component_id), body=payload, profile=profile)
     task_id = resp.get("id") if isinstance(resp, dict) else None
     if not task_id:
-        raise requests.HTTPError(f"No task id returned from apply on component {component_id}: {resp}")
+        raise requests.HTTPError(
+            f"No task id returned from apply on component {component_id}: {resp}"
+        )
     return task_id
 
 

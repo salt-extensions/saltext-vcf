@@ -67,8 +67,7 @@ def compliant(name, profile_name="NIST_2024", profile=None):
     if __opts__.get("test"):  # noqa: F821
         ret["result"] = None
         ret["comment"] = (
-            f"Would check TLS cipher profile on SDDC Manager. "
-            f"Detected profile: {detected}."
+            f"Would check TLS cipher profile on SDDC Manager. " f"Detected profile: {detected}."
         )
         return ret
 

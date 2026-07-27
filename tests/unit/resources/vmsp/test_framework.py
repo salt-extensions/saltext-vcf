@@ -48,5 +48,7 @@ def test_ping_ok(inject_resource_dunders, framework_opts, mocked_responses):
 def test_ntp_get_routed(inject_resource_dunders, framework_opts, vmsp_authed):
     instances = framework_opts["pillar"]["resources"]["vmsp"]["instances"]
     inject_resource_dunders(vm, "vcf-vmsp", KEY, instances)
-    vmsp_authed.add(responses.GET, COMPONENTS_URL, json=_vsp(network={"ntpServers": ["10.0.0.250"]}), status=200)
+    vmsp_authed.add(
+        responses.GET, COMPONENTS_URL, json=_vsp(network={"ntpServers": ["10.0.0.250"]}), status=200
+    )
     assert vm.ntp_get() == {"servers": ["10.0.0.250"]}

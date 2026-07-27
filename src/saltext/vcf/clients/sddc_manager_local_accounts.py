@@ -91,6 +91,6 @@ def list_or_none(opts, profile=None):
     """Return the OS user list, or ``None`` if it cannot be retrieved."""
     try:
         return list_(opts, profile=profile)
-    except Exception as exc:  # noqa: BLE001 - audit control degrades to "unknown"
+    except Exception as exc:  # pylint: disable=broad-except
         log.warning("Could not read local OS users from SDDC Manager: %s", exc)
         return None

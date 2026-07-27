@@ -116,7 +116,7 @@ def _raise_for_status(resp):
         return
     try:
         detail = resp.text
-    except Exception:  # pragma: no cover - defensive
+    except Exception:  # pylint: disable=broad-except
         detail = "<unreadable response body>"
     method = resp.request.method if resp.request is not None else "?"
     raise requests.HTTPError(

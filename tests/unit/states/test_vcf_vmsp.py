@@ -62,14 +62,21 @@ def test_syslog_requires_host(monkeypatch):
 
 
 def test_syslog_applies_drift(monkeypatch):
-    state = {"current": {"host": "old.test", "port": 514, "insecure": False, "transport": "tcp"}, "applied": []}
-    monkeypatch.setattr(syslog_client, "get", lambda opts, profile=None: {"syslog": state["current"]})
+    state = {
+        "current": {"host": "old.test", "port": 514, "insecure": False, "transport": "tcp"},
+        "applied": [],
+    }
+    monkeypatch.setattr(
+        syslog_client, "get", lambda opts, profile=None: {"syslog": state["current"]}
+    )
     monkeypatch.setattr(
         syslog_client,
         "set_",
         lambda opts, host, port=514, transport="tcp", insecure=False, cacert=None, profile=None: state[
             "applied"
-        ].append((host, port, transport)),
+        ].append(
+            (host, port, transport)
+        ),
     )
     monkeypatch.setattr(syslog_state, "__opts__", {"test": False}, raising=False)
     ret = syslog_state.compliant("syslog", host="new.test", port=514)

@@ -19,9 +19,6 @@ Config is read from Salt opts/pillar under ``saltext.vcf.sddc_manager``
 
 import logging
 import subprocess
-from typing import Dict
-from typing import List
-from typing import Optional
 
 from saltext.vcf.utils import sddc
 
@@ -51,7 +48,7 @@ PROFILE_COMPATIBLE = "COMPATIBLE"
 PROFILE_MANUAL = "MANUAL"
 
 
-def _probe(host: str, tls_flag: str, cipher: Optional[str] = None) -> bool:
+def _probe(host: str, tls_flag: str, cipher: str | None = None) -> bool:
     """Run a single ``openssl s_client`` probe against *host*:443.
 
     Sends ``Q\\n`` to stdin so the process exits immediately after the
@@ -71,17 +68,18 @@ def _probe(host: str, tls_flag: str, cipher: Optional[str] = None) -> bool:
             input=b"Q\n",
             capture_output=True,
             timeout=CMD_TIMEOUT,
+            check=False,
         )
         stdout = result.stdout.decode("utf-8", errors="ignore")
         accepted = _ACCEPTED_SIGNAL in stdout
         log.debug("TLS probe %s cipher=%s → %s", tls_flag, cipher or "default", accepted)
         return accepted
-    except Exception as exc:  # pragma: no cover – subprocess errors
+    except Exception as exc:  # pylint: disable=broad-except
         log.error("openssl probe failed (host=%s flag=%s): %s", host, tls_flag, exc)
         return False
 
 
-def get_tls_min_version(opts, profile=None) -> Dict:
+def get_tls_min_version(opts, profile=None) -> dict:
     """Return the minimum TLS version accepted by the SDDC Manager listener.
 
     Probes TLS 1.0 → 1.3 in order; the first accepted version is the minimum.
@@ -91,7 +89,7 @@ def get_tls_min_version(opts, profile=None) -> Dict:
     :return: ``{"min_version": str|None, "supported_versions": list}``
     """
     host = sddc.get_config(opts, profile=profile)["host"]
-    supported: List[str] = []
+    supported: list[str] = []
 
     for version_str, flag in _TLS_FLAGS:
         if _probe(host, flag):
@@ -102,7 +100,7 @@ def get_tls_min_version(opts, profile=None) -> Dict:
     return {"min_version": min_version, "supported_versions": supported}
 
 
-def get_tls_profile(opts, profile=None) -> Dict:
+def get_tls_profile(opts, profile=None) -> dict:
     """Detect the TLS cipher profile active on the SDDC Manager listener.
 
     Detection logic (mirrors the mops config-modules controller):

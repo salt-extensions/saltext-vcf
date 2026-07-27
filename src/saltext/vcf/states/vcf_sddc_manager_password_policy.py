@@ -76,9 +76,7 @@ def within_max_age(name, max_days=120, profile=None):
 
     if current_days is None:
         ret["result"] = False
-        ret["comment"] = (
-            "Could not read passwordExpirationDays from SDDC Manager password policy."
-        )
+        ret["comment"] = "Could not read passwordExpirationDays from SDDC Manager password policy."
         return ret
 
     if current_days <= max_days:
@@ -102,9 +100,7 @@ def within_max_age(name, max_days=120, profile=None):
     updated_policy["passwordExpirationDays"] = max_days
     r.set_(__opts__, updated_policy, profile=profile)  # noqa: F821
 
-    ret["changes"] = {
-        "passwordExpirationDays": {"old": current_days, "new": max_days}
-    }
+    ret["changes"] = {"passwordExpirationDays": {"old": current_days, "new": max_days}}
     ret["comment"] = (
         f"Updated SDDC Manager passwordExpirationDays from {current_days} to {max_days}."
     )
@@ -131,9 +127,7 @@ def present(name, profile=None, **desired):
 
     if __opts__.get("test"):  # noqa: F821
         ret["result"] = None
-        ret["comment"] = (
-            f"Would check SDDC Manager password policy fields: {list(desired.keys())}."
-        )
+        ret["comment"] = f"Would check SDDC Manager password policy fields: {list(desired.keys())}."
         return ret
 
     mismatches = {
@@ -147,14 +141,12 @@ def present(name, profile=None, **desired):
         ret["comment"] = (
             "SDDC Manager password policy fields do not match desired values: "
             + "; ".join(
-                f"{f}: got {v['actual']!r}, want {v['desired']!r}"
-                for f, v in mismatches.items()
+                f"{f}: got {v['actual']!r}, want {v['desired']!r}" for f, v in mismatches.items()
             )
         )
     else:
         ret["comment"] = (
-            f"SDDC Manager password policy matches all desired values: "
-            f"{list(desired.keys())}."
+            f"SDDC Manager password policy matches all desired values: " f"{list(desired.keys())}."
         )
 
     return ret

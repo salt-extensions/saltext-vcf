@@ -31,7 +31,9 @@ def _ret(name):
     return {"name": name, "changes": {}, "result": True, "comment": ""}
 
 
-def compliant(name, host=None, port=514, transport="tcp", insecure=False, cacert=None, profile=None):
+def compliant(
+    name, host=None, port=514, transport="tcp", insecure=False, cacert=None, profile=None
+):
     """Ensure the VMSP syslog server settings match the desired values.
 
     :param name: Descriptive identifier for this state.
