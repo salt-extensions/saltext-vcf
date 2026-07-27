@@ -11,6 +11,7 @@ ______________
 
     cluster_config
     cluster_config_software
+    esxi_ad_auth
     esxi_advanced
     esxi_firewall
     esxi_host
