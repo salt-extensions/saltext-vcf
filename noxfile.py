@@ -450,7 +450,7 @@ def docs(session):
         install_coverage_requirements=False,
         install_test_requirements=False,
         install_source=True,
-        install_extras=["docs"],
+        install_extras=["all", "docs"],
     )
     os.chdir("docs/")
     env = _get_docs_env(session)
@@ -480,7 +480,7 @@ def docs_dev(session):
         install_coverage_requirements=False,
         install_test_requirements=False,
         install_source=True,
-        install_extras=["docs", "docsauto"],
+        install_extras=["all", "docs", "docsauto"],
     )
 
     build_dir = Path("docs", "_build", "html")
@@ -511,7 +511,7 @@ def docs_crosslink_info(session):
         install_coverage_requirements=False,
         install_test_requirements=False,
         install_source=True,
-        install_extras=["docs"],
+        install_extras=["all", "docs"],
     )
     os.chdir("docs/")
     intersphinx_mapping = json.loads(
