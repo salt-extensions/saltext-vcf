@@ -79,9 +79,7 @@ def _to_dict(pg):
             vlan_info = {"kind": "pvlan", "primary_vlan_id": int(v.pvlanId)}
     teaming_info = None
     if cfg.defaultPortConfig is not None:
-        teaming_info = _teaming_to_dict(
-            getattr(cfg.defaultPortConfig, "uplinkTeamingPolicy", None)
-        )
+        teaming_info = _teaming_to_dict(getattr(cfg.defaultPortConfig, "uplinkTeamingPolicy", None))
     return {
         "moid": pg._moId,  # noqa: SLF001
         "key": pg.key,

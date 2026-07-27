@@ -30,14 +30,37 @@ def _net(opts, host, profile=None):
     return _host(opts, host, profile=profile).configManager.networkSystem
 
 
+def _network_info(opts, host, profile=None):
+    """Return ``hostSystem.config.network`` or ``None`` if the host has none.
+
+    On VCF 9.1 GA we observe some ESXi hosts return ``hostSystem.config``
+    as ``None`` through vCenter's SOAP proxy, presumably because the host
+    hasn't reported a full network config yet (e.g. transient state, or
+    an all-VDS deployment where the standard-switch surface is empty).
+    Read-side helpers treat that as "no standard networking present"
+    rather than exploding on the ``None`` deref.
+    """
+    h = _host(opts, host, profile=profile)
+    try:
+        return h.config.network
+    except AttributeError:
+        return None
+
+
 # ---------------------------------------------------------------------------
 # vSwitches
 # ---------------------------------------------------------------------------
 
 
 def vswitch_list(opts, host, profile=None):
-    """List standard vSwitches on *host*."""
-    info = _host(opts, host, profile=profile).config.network
+    """List standard vSwitches on *host*.
+
+    Returns an empty list when the host has no reported network config
+    (e.g. a not-fully-initialized host, or a pure-VDS deployment).
+    """
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return []
     return [_vswitch_to_dict(vs) for vs in (info.vswitch or [])]
 
 
@@ -252,7 +275,9 @@ def vswitch_set_teaming(
 
 
 def portgroup_list(opts, host, profile=None):
-    info = _host(opts, host, profile=profile).config.network
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return []
     return [_pg_to_dict(pg) for pg in (info.portgroup or [])]
 
 
@@ -357,7 +382,9 @@ def _pg_to_dict(pg):
 
 
 def vmkernel_list(opts, host, profile=None):
-    info = _host(opts, host, profile=profile).config.network
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return []
     return [_vnic_to_dict(v) for v in (info.vnic or [])]
 
 
@@ -463,8 +490,10 @@ def vmkernel_migrate(opts, host, device, dst_portgroup, profile=None):
 
 def ipv6_get(opts, host, profile=None):
     """Return ``{enabled}`` for IPv6 on *host*'s network config."""
-    h = _host(opts, host, profile=profile)
-    return {"enabled": bool(getattr(h.config.network, "ipV6Enabled", False))}
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return {"enabled": False}
+    return {"enabled": bool(getattr(info, "ipV6Enabled", False))}
 
 
 def ipv6_set(opts, host, enabled, profile=None):
@@ -519,7 +548,9 @@ def _vnic_to_dict(v):
 
 def physical_nic_list(opts, host, profile=None):
     """List physical NICs (``pnics``) on *host* — driver, link state, etc."""
-    info = _host(opts, host, profile=profile).config.network
+    info = _network_info(opts, host, profile=profile)
+    if info is None:
+        return []
     out = []
     for p in info.pnic or []:
         ls = p.linkSpeed

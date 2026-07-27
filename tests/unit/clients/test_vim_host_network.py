@@ -352,9 +352,7 @@ def _vswitch_with_teaming(
 def test_vswitch_get_teaming_returns_policy(host_factory, opts):
     host_factory["host"] = _fake_host(
         vswitches=[
-            _vswitch_with_teaming(
-                policy="loadbalance_ip", active=("vmnic0",), standby=("vmnic1",)
-            )
+            _vswitch_with_teaming(policy="loadbalance_ip", active=("vmnic0",), standby=("vmnic1",))
         ]
     )
     teaming = vim_host_network.vswitch_get_teaming(opts, "esxi-01", "vSwitch0")
@@ -401,3 +399,61 @@ def test_vswitch_list_exposes_teaming_in_dict(host_factory, opts):
     )
     result = vim_host_network.vswitch_list(opts, "esxi-01")
     assert result[0]["teaming"]["policy"] == "loadbalance_srcmac"
+
+
+# ---------- Graceful degrade: host reports no network config ----------
+
+
+def _fake_host_without_config():
+    """Simulate a host where ``hostSystem.config`` is ``None``.
+
+    Observed on VCF 9.1 GA — some hosts return ``config = None`` through
+    vCenter's SOAP proxy, likely because the host has not yet reported a
+    full network config to vCenter.  Read helpers must not explode on the
+    ``None`` deref.
+    """
+    h = MagicMock()
+    h.config = None
+    h.configManager.networkSystem = MagicMock()
+    return h
+
+
+def test_vswitch_list_returns_empty_when_host_config_is_none(host_factory, opts):
+    host_factory["host"] = _fake_host_without_config()
+    assert vim_host_network.vswitch_list(opts, "esxi-01") == []
+
+
+def test_portgroup_list_returns_empty_when_host_config_is_none(host_factory, opts):
+    host_factory["host"] = _fake_host_without_config()
+    assert vim_host_network.portgroup_list(opts, "esxi-01") == []
+
+
+def test_vmkernel_list_returns_empty_when_host_config_is_none(host_factory, opts):
+    host_factory["host"] = _fake_host_without_config()
+    assert vim_host_network.vmkernel_list(opts, "esxi-01") == []
+
+
+def test_physical_nic_list_returns_empty_when_host_config_is_none(host_factory, opts):
+    host_factory["host"] = _fake_host_without_config()
+    assert vim_host_network.physical_nic_list(opts, "esxi-01") == []
+
+
+def test_ipv6_get_returns_disabled_when_host_config_is_none(host_factory, opts):
+    host_factory["host"] = _fake_host_without_config()
+    assert vim_host_network.ipv6_get(opts, "esxi-01") == {"enabled": False}
+
+
+def test_vswitch_get_teaming_raises_lookup_when_host_config_is_none(host_factory, opts):
+    """No vSwitches surfaced → ``vswitch_get`` LookupError propagates."""
+    host_factory["host"] = _fake_host_without_config()
+    with pytest.raises(LookupError, match="vSwitch"):
+        vim_host_network.vswitch_get_teaming(opts, "esxi-01", "vSwitch0")
+
+
+def test_vswitch_set_teaming_raises_lookup_when_host_config_is_none(host_factory, opts):
+    """Attempting to configure teaming on a host with no vSwitches is a hard error."""
+    host_factory["host"] = _fake_host_without_config()
+    with pytest.raises(LookupError, match="vSwitch"):
+        vim_host_network.vswitch_set_teaming(
+            opts, "esxi-01", "vSwitch0", policy="loadbalance_srcid"
+        )

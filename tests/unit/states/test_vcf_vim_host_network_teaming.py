@@ -13,9 +13,7 @@ def inject_opts(monkeypatch, opts):
 
 def test_teaming_missing_vswitch(monkeypatch):
     monkeypatch.setattr(c, "vswitch_get_or_none", lambda o, h, n, profile=None: None)
-    ret = st.vswitch_teaming_configured(
-        "vSwitch0", host="esxi-01", policy="loadbalance_srcid"
-    )
+    ret = st.vswitch_teaming_configured("vSwitch0", host="esxi-01", policy="loadbalance_srcid")
     assert ret["result"] is False
     assert "not found" in ret["comment"]
 
@@ -79,9 +77,7 @@ def test_teaming_test_mode(monkeypatch, opts):
         "vswitch_get_or_none",
         lambda o, h, n, profile=None: {"name": n, "teaming": {"policy": "loadbalance_srcid"}},
     )
-    ret = st.vswitch_teaming_configured(
-        "vSwitch0", host="esxi-01", policy="failover_explicit"
-    )
+    ret = st.vswitch_teaming_configured("vSwitch0", host="esxi-01", policy="failover_explicit")
     assert ret["result"] is None
     assert "would be updated" in ret["comment"]
 
@@ -101,8 +97,6 @@ def test_teaming_ignores_none_fields(monkeypatch):
             },
         },
     )
-    ret = st.vswitch_teaming_configured(
-        "vSwitch0", host="esxi-01", policy="loadbalance_srcid"
-    )
+    ret = st.vswitch_teaming_configured("vSwitch0", host="esxi-01", policy="loadbalance_srcid")
     assert ret["changes"] == {}
     assert "already matches" in ret["comment"]
