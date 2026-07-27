@@ -173,6 +173,14 @@ def tests(session):
         "--showlocals",
         "-ra",
         "-s",
+        # Disable pytest-system-statistics: its per-test sysstats sampler
+        # can wedge collection under Salt's zmq threads (observed as a
+        # multi-minute silent hang in CI mid-suite). See PR #42.
+        "-p",
+        "no:system-statistics",
+        # Belt-and-braces: kill any individual test that runs > 60s so a
+        # future hang surfaces as a test failure instead of a job timeout.
+        "--timeout=60",
     ]
     if session._runner.global_config.forcecolor:
         args.append("--color=yes")
