@@ -1,6 +1,8 @@
 """Tests for clients.esxi_auth_proxy (CAM / vSphere Authentication Proxy)."""
 
+from http.client import HTTPException
 from unittest.mock import MagicMock
+from unittest.mock import PropertyMock
 
 import pytest
 from pyVmomi import vim
@@ -74,6 +76,27 @@ def test_get_config_reads_advanced_settings(host_holder, opts):
 def test_get_config_verify_zero_is_false(host_holder, opts):
     host_holder["host"] = _fake_host(advanced_options={c.CAM_VERIFY_KEY: 0})
     assert c.get_config(opts, "esxi-01")["verify_cam_cert"] is False
+
+
+def test_get_config_survives_503_from_authentication_manager(host_holder, opts):
+    """VCF 9.1 GA ESXi hosts 503 on ``authenticationManager.info`` — fall back."""
+    h = _fake_host(advanced_options={c.CAM_ADDRESS_KEY: "cam.example.com"})
+    # PropertyMock is the only way to make attribute *access* raise on a MagicMock.
+    type(h.configManager.authenticationManager).info = PropertyMock(
+        side_effect=HTTPException("503 Service Unavailable")
+    )
+    host_holder["host"] = h
+    try:
+        result = c.get_config(opts, "esxi-01")
+    finally:
+        # Reset the class-level PropertyMock so it doesn't leak between tests.
+        del type(h.configManager.authenticationManager).info
+    assert result == {
+        "cam_address": "cam.example.com",
+        "verify_cam_cert": None,
+        "joined": False,
+        "domain": None,
+    }
 
 
 def test_get_config_reports_ad_join(host_holder, opts):
