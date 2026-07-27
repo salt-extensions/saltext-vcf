@@ -55,5 +55,6 @@ _____________
     vcf_vim_role
     vcf_vim_scheduled_task
     vcf_vim_vm_devices
+    vcf_vim_vm_hardening
     vcf_vsan_cluster
     vcf_vsan_fault_domain
