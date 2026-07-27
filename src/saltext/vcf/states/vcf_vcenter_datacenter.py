@@ -16,7 +16,7 @@ def _ret(name):
 def present(name, folder=None, profile=None):
     """Ensure a datacenter exists."""
     ret = _ret(name)
-    if r.get_or_none(__opts__, name, profile=profile) is not None:  # noqa: F821
+    if r.get_by_name(__opts__, name, profile=profile) is not None:  # noqa: F821
         ret["comment"] = f"Datacenter {name} is already present"
         return ret
     if __opts__["test"]:  # noqa: F821
@@ -32,14 +32,17 @@ def present(name, folder=None, profile=None):
 def absent(name, profile=None):
     """Ensure a datacenter is absent."""
     ret = _ret(name)
-    if r.get_or_none(__opts__, name, profile=profile) is None:  # noqa: F821
+    existing = r.get_by_name(__opts__, name, profile=profile)  # noqa: F821
+    if existing is None:
         ret["comment"] = f"Datacenter {name} is already absent"
         return ret
     if __opts__["test"]:  # noqa: F821
         ret["result"] = None
         ret["comment"] = f"Datacenter {name} would be deleted"
         return ret
-    r.delete(__opts__, name, profile=profile)  # noqa: F821
+    # Delete addresses the datacenter by managed-object id, not display name.
+    moid = existing.get("datacenter")
+    r.delete(__opts__, moid, profile=profile)  # noqa: F821
     ret["changes"] = {"deleted": name}
     ret["comment"] = f"Datacenter {name} deleted"
     return ret
