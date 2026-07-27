@@ -1,4 +1,14 @@
-"""State module for standard vSwitch / port group / VMkernel adapters."""
+"""State module for standard vSwitch / port group / VMkernel adapters.
+
+Note on NIC teaming / physical-failover mode:
+
+* :py:func:`vswitch_teaming_configured` covers the four load-balancing
+  policies plus explicit-failover order on a standard vSwitch.
+* LACP is DVS-only in vSphere — it is not available on a standard
+  vSwitch. See :py:mod:`saltext.vcf.states.vcf_vim_dvs` for the DPG
+  equivalent; LACP-with-LAG (LAG creation +
+  ``ReconfigureLacp_Task`` on the DVS) is a follow-up.
+"""
 
 from saltext.vcf.clients import vim_host_network as c
 
@@ -263,4 +273,78 @@ def vmkernel_absent(name, host, profile=None):
     c.vmkernel_remove(__opts__, host, name, profile=profile)
     ret["changes"] = {"deleted": name}
     ret["comment"] = f"vmkernel {name} on {host} deleted"
+    return ret
+
+
+def vswitch_teaming_configured(
+    name,
+    host,
+    policy,
+    reverse_policy=None,
+    notify_switches=None,
+    rolling_order=None,
+    check_beacon=None,
+    active_nic=None,
+    standby_nic=None,
+    profile=None,
+):
+    """Ensure standard vSwitch *name* on *host* uses the given NIC-teaming policy.
+
+    Satisfies the "virtual switches must be set up in a physical network
+    failover mode (LACP, teaming)" requirement for standard vSwitches.
+    LACP itself is DVS-only in vSphere; on a standard vSwitch the
+    ``policy`` value covers all four load-balancing modes and explicit
+    failover order.
+
+    Only fields the caller passes (non-``None``) are considered for drift;
+    ``None`` means "don't manage this field", so callers can pin just the
+    policy while leaving everything else as ESXi sees it.
+    """
+    ret = _ret(name)
+    existing = c.vswitch_get_or_none(__opts__, host, name, profile=profile)
+    if existing is None:
+        ret["result"] = False
+        ret["comment"] = f"vSwitch {name} not found on {host}"
+        return ret
+    current = existing.get("teaming") or {}
+    desired = {
+        "policy": policy,
+        "reverse_policy": reverse_policy,
+        "notify_switches": notify_switches,
+        "rolling_order": rolling_order,
+        "check_beacon": check_beacon,
+        "active_nic": list(active_nic) if active_nic is not None else None,
+        "standby_nic": list(standby_nic) if standby_nic is not None else None,
+    }
+    drift = {}
+    for k, want in desired.items():
+        if want is None:
+            continue
+        have = current.get(k)
+        if k in ("active_nic", "standby_nic"):
+            have = list(have or [])
+        if have != want:
+            drift[k] = (have, want)
+    if not drift:
+        ret["comment"] = f"vSwitch {name} teaming on {host} already matches"
+        return ret
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"vSwitch {name} teaming on {host} would be updated: {sorted(drift)}"
+        return ret
+    c.vswitch_set_teaming(
+        __opts__,
+        host,
+        name,
+        policy=policy,
+        reverse_policy=reverse_policy,
+        notify_switches=notify_switches,
+        rolling_order=rolling_order,
+        check_beacon=check_beacon,
+        active_nic=active_nic,
+        standby_nic=standby_nic,
+        profile=profile,
+    )
+    ret["changes"] = drift
+    ret["comment"] = f"vSwitch {name} teaming on {host} updated"
     return ret

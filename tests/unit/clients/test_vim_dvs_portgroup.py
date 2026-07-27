@@ -140,3 +140,82 @@ def test_get_missing_raises(dvs_factory, opts):
     dvs_factory["dvs"] = _fake_dvs(portgroups=[])
     with pytest.raises(LookupError):
         vim_dvs_portgroup.get(opts, "prod-dvs", "missing")
+
+
+# ---------- Uplink NIC teaming (physical-uplink failover mode) ----------
+
+
+def _pg_with_teaming(
+    name="prod-web",
+    policy="loadbalance_srcid",
+    active=("Uplink 1", "Uplink 2"),
+    standby=(),
+    notify=True,
+    check_beacon=False,
+):
+    pg = _vlan_pg(name=name)
+    t = vim.dvs.VmwareDistributedVirtualSwitch.UplinkPortTeamingPolicy(
+        inherited=False,
+        policy=vim.StringPolicy(inherited=False, value=policy),
+        notifySwitches=vim.BoolPolicy(inherited=False, value=notify),
+        failureCriteria=vim.dvs.VmwareDistributedVirtualSwitch.FailureCriteria(
+            inherited=False,
+            checkBeacon=vim.BoolPolicy(inherited=False, value=check_beacon),
+        ),
+        uplinkPortOrder=vim.dvs.VmwareDistributedVirtualSwitch.UplinkPortOrderPolicy(
+            inherited=False,
+            activeUplinkPort=list(active),
+            standbyUplinkPort=list(standby),
+        ),
+    )
+    pg.config.defaultPortConfig.uplinkTeamingPolicy = t
+    return pg
+
+
+def test_get_teaming_returns_policy(dvs_factory, opts):
+    pg = _pg_with_teaming(policy="loadbalance_ip", active=("Uplink 1",), standby=("Uplink 2",))
+    dvs_factory["dvs"] = _fake_dvs(portgroups=[pg])
+    t = vim_dvs_portgroup.get_teaming(opts, "prod-dvs", "prod-web")
+    assert t["policy"] == "loadbalance_ip"
+    assert t["active_uplinks"] == ["Uplink 1"]
+    assert t["standby_uplinks"] == ["Uplink 2"]
+    assert t["notify_switches"] is True
+
+
+def test_set_teaming_builds_spec(dvs_factory, opts):
+    pg = _vlan_pg()
+    dvs_factory["dvs"] = _fake_dvs(portgroups=[pg])
+    vim_dvs_portgroup.set_teaming(
+        opts,
+        "prod-dvs",
+        "prod-web",
+        policy="loadbalance_loadbased",
+        notify_switches=True,
+        active_uplinks=["Uplink 1", "Uplink 2"],
+        standby_uplinks=[],
+        check_beacon=False,
+    )
+    spec = pg.ReconfigureDVPortgroup_Task.call_args.kwargs["spec"]
+    t = spec.defaultPortConfig.uplinkTeamingPolicy
+    assert t.policy.value == "loadbalance_loadbased"
+    assert t.notifySwitches.value is True
+    assert t.uplinkPortOrder.activeUplinkPort == ["Uplink 1", "Uplink 2"]
+    assert t.uplinkPortOrder.standbyUplinkPort == []
+    assert t.failureCriteria.checkBeacon.value is False
+    assert spec.configVersion == pg.config.configVersion
+
+
+def test_set_teaming_rejects_bad_policy(dvs_factory, opts):
+    pg = _vlan_pg()
+    dvs_factory["dvs"] = _fake_dvs(portgroups=[pg])
+    with pytest.raises(ValueError, match="teaming policy"):
+        vim_dvs_portgroup.set_teaming(opts, "prod-dvs", "prod-web", policy="bogus")
+
+
+def test_list_exposes_teaming_in_dict(dvs_factory, opts):
+    dvs_factory["dvs"] = _fake_dvs(
+        portgroups=[_pg_with_teaming(policy="loadbalance_srcmac", active=("Uplink 1",))]
+    )
+    result = vim_dvs_portgroup.list_(opts, "prod-dvs")
+    assert result[0]["teaming"]["policy"] == "loadbalance_srcmac"
+    assert result[0]["teaming"]["active_uplinks"] == ["Uplink 1"]
