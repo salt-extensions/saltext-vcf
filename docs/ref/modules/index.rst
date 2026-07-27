@@ -12,6 +12,7 @@ _________________
     vcf_cluster_config
     vcf_cluster_config_software
     vcf_esxi_advanced
+    vcf_esxi_auth_proxy
     vcf_esxi_firewall
     vcf_esxi_host
     vcf_esxi_ntp
