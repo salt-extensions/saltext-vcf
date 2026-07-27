@@ -70,6 +70,39 @@ def test_get_ad_state_when_info_raises_connection_error(host_holder, opts):
     assert result["joined"] is False
 
 
+def test_get_ad_state_when_configmanager_lacks_ad_attribute(host_holder, opts):
+    """VCF 9.1 GA hosts don't expose ``activeDirectoryAuthentication`` at all."""
+    h = MagicMock()
+
+    # Restrict ``configManager`` so unknown attribute access raises AttributeError,
+    # matching pyVmomi's behaviour on a real never-joined host.
+    class _Cfg:
+        pass
+
+    h.configManager = _Cfg()
+    host_holder["host"] = h
+    result = c.get_ad_state(opts, "esxi-01")
+    assert result == {
+        "joined": False,
+        "domain": None,
+        "trusted_domains": [],
+        "membership_status": None,
+        "smb_file_shares": None,
+    }
+
+
+def test_join_domain_raises_when_ad_attribute_missing(host_holder, opts):
+    h = MagicMock()
+
+    class _Cfg:
+        pass
+
+    h.configManager = _Cfg()
+    host_holder["host"] = h
+    with pytest.raises(RuntimeError, match="does not expose"):
+        c.join_domain(opts, "esxi-01", "corp.example.com", "u", "p")
+
+
 def test_get_ad_state_reports_join(host_holder, opts):
     host_holder["host"] = _fake_host(
         info=_fake_info(
