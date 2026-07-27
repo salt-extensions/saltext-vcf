@@ -59,3 +59,31 @@ def delete(tier1, profile=None):
 
     """
     return r.delete(__opts__, tier1, profile=profile)
+
+
+def multicast_get(tier1, locale_service="default", profile=None):
+    """Return the multicast config for a Tier-1 locale-service.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_nsx_tier1.multicast_get <tier1>
+
+    """
+    return r.multicast_get(__opts__, tier1, locale_service=locale_service, profile=profile)
+
+
+def multicast_set(tier1, enabled, locale_service="default", profile=None, **extra):
+    """Patch the multicast config for a Tier-1 locale-service (at minimum ``enabled``).
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_nsx_tier1.multicast_set <tier1> enabled=False
+
+    """
+    return r.multicast_set(
+        __opts__, tier1, enabled, locale_service=locale_service, profile=profile, **extra
+    )

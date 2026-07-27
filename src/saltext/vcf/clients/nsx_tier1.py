@@ -32,3 +32,21 @@ def create(opts, tier1, profile=None, **spec):
 
 def delete(opts, tier1, profile=None):
     return nsx.api_delete(opts, f"{PATH}/{tier1}", profile=profile)
+
+
+def _ls_path(tier1, locale_service, suffix):
+    return f"{PATH}/{tier1}/locale-services/{locale_service}/{suffix}"
+
+
+def multicast_get(opts, tier1, locale_service="default", profile=None):
+    """Return the multicast config for a Tier-1 locale-service."""
+    return nsx.api_get(opts, _ls_path(tier1, locale_service, "multicast"), profile=profile)
+
+
+def multicast_set(opts, tier1, enabled, locale_service="default", profile=None, **extra):
+    """PATCH the multicast config, at minimum setting ``enabled``."""
+    body = {"enabled": bool(enabled)}
+    body.update(extra)
+    return nsx.api_patch(
+        opts, _ls_path(tier1, locale_service, "multicast"), body=body, profile=profile
+    )
