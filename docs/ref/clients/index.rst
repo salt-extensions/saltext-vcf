@@ -99,6 +99,7 @@ ______________
     vcfa_action
     vcfa_action_secret
     vcfa_action_subscription
+    vcfa_appliance
     vcfa_catalog
     vcfa_cloud_account
     vcfa_cloud_template

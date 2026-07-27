@@ -88,6 +88,7 @@ _________________
     vcf_vcfa_action
     vcf_vcfa_action_secret
     vcf_vcfa_action_subscription
+    vcf_vcfa_appliance
     vcf_vcfa_catalog
     vcf_vcfa_cloud_account
     vcf_vcfa_cloud_template

@@ -33,6 +33,7 @@ _____________
     vcf_vcenter_supervisor_service
     vcf_vcenter_vm_class
     vcf_vcf_services
+    vcf_vcfa_appliance
     vcf_vcfops_credential
     vcf_vcfops_role
     vcf_vcfops_supermetric
