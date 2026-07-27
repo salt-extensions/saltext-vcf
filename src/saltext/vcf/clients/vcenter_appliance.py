@@ -1,7 +1,8 @@
 """Client for vCenter appliance APIs under ``/api/appliance/``.
 
 Covers the VAMI-equivalent REST surface: services, system version, health
-summary, DNS, syslog forwarding.
+summary, DNS, syslog forwarding, and the Customer Experience Improvement
+Program (CEIP) opt-in.
 
 Note: ``/api/appliance/health/system`` returns a JSON-encoded plain string
 (e.g. ``"green"``) rather than a dict. ``utils/vcenter.api_get`` returns
@@ -106,3 +107,29 @@ def logging_forwarding_set(opts, servers, profile=None):
         {"hostname": "collector.example.com", "port": 514, "protocol": "UDP"}
     """
     return vcenter.api_put(opts, _SYSLOG, body={"cfg_list": list(servers)}, profile=profile)
+
+
+# ---------------------------------------------------------------------------
+# Customer Experience Improvement Program (CEIP)
+# ---------------------------------------------------------------------------
+
+_CEIP = "/api/appliance/ceip"
+
+
+def ceip_get(opts, profile=None):
+    """Return the CEIP participation config: ``{"accepted": bool}``.
+
+    On some vCenter builds the endpoint returns a bare ``{"accepted": ...}``
+    dict; on others the value is wrapped as ``{"value": {"accepted": ...}}``.
+    Callers should tolerate both shapes.
+    """
+    return vcenter.api_get(opts, _CEIP, profile=profile)
+
+
+def ceip_set(opts, accepted, profile=None):
+    """Set CEIP participation.
+
+    Pass ``accepted=False`` to opt the vCenter out of the Customer Experience
+    Improvement Program (912 controls / STIG requirement).
+    """
+    return vcenter.api_put(opts, _CEIP, body={"accepted": bool(accepted)}, profile=profile)

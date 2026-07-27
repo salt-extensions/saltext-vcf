@@ -171,3 +171,41 @@ def test_appliance_logging_forwarding_get_set(opts, vcenter_authed):
     vcenter_appliance.logging_forwarding_set(
         opts, [{"hostname": "c", "port": 514, "protocol": "UDP"}]
     )
+
+
+def test_appliance_ceip_get(opts, vcenter_authed):
+    vcenter_authed.add(
+        responses.GET,
+        "https://vc.test/api/appliance/ceip",
+        json={"accepted": True},
+        status=200,
+    )
+    assert vcenter_appliance.ceip_get(opts) == {"accepted": True}
+
+
+def test_appliance_ceip_set_disable(opts, vcenter_authed):
+    """Opting out sends ``{"accepted": false}`` on PUT."""
+    import json
+
+    vcenter_authed.add(
+        responses.PUT,
+        "https://vc.test/api/appliance/ceip",
+        status=204,
+    )
+    vcenter_appliance.ceip_set(opts, False)
+    body = json.loads(vcenter_authed.calls[-1].request.body)
+    assert body == {"accepted": False}
+
+
+def test_appliance_ceip_set_enable_coerces_truthy(opts, vcenter_authed):
+    """Truthy values still serialize as the JSON boolean ``true``."""
+    import json
+
+    vcenter_authed.add(
+        responses.PUT,
+        "https://vc.test/api/appliance/ceip",
+        status=204,
+    )
+    vcenter_appliance.ceip_set(opts, 1)
+    body = json.loads(vcenter_authed.calls[-1].request.body)
+    assert body == {"accepted": True}

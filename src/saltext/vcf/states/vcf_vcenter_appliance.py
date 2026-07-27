@@ -74,3 +74,42 @@ def logging_forwarding(name, servers, profile=None):
     ret["changes"] = {"forwarders": {"old": current, "new": list(servers)}}
     ret["comment"] = "Syslog forwarding updated"
     return ret
+
+
+def _current_ceip_accepted(profile=None):
+    """Read CEIP status, tolerating both bare and value-wrapped response shapes."""
+    current = c.ceip_get(__opts__, profile=profile) or {}
+    if isinstance(current, dict) and "accepted" not in current and "value" in current:
+        current = current["value"] or {}
+    return bool(current.get("accepted")) if isinstance(current, dict) else False
+
+
+def ceip_set(name, accepted, profile=None):
+    """Ensure CEIP participation matches *accepted*.
+
+    *name* is descriptive. Set *accepted* to ``False`` to opt the vCenter
+    out of the Customer Experience Improvement Program (912 controls / STIG).
+    """
+    ret = _ret(name)
+    desired = bool(accepted)
+    current = _current_ceip_accepted(profile=profile)
+
+    if current == desired:
+        ret["comment"] = f"CEIP already accepted={desired}"
+        return ret
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"CEIP would change accepted: {current} -> {desired}"
+        return ret
+    c.ceip_set(__opts__, desired, profile=profile)
+    ret["changes"] = {"accepted": {"old": current, "new": desired}}
+    ret["comment"] = f"CEIP updated to accepted={desired}"
+    return ret
+
+
+def ceip_disabled(name, profile=None):
+    """Ensure CEIP participation is disabled (``accepted=False``).
+
+    Thin wrapper around :func:`ceip_set` for the common compliance case.
+    """
+    return ceip_set(name, accepted=False, profile=profile)
