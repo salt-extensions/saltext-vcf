@@ -1,0 +1,1 @@
+Add NSX Manager LDAP/AD identity-source client, exec module, and idempotent state (``vcf_nsx_identity_source``) so operators can register Active Directory as an authentication source on NSX and centralize role/privilege assignments per 912 controls.

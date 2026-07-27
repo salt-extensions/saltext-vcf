@@ -27,6 +27,7 @@ ______________
     nsx_edge_cluster
     nsx_firewall_rule
     nsx_group
+    nsx_identity_source
     nsx_ids
     nsx_ip_block
     nsx_ip_pool

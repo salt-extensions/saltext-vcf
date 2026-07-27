@@ -27,6 +27,7 @@ _________________
     vcf_nsx_edge_cluster
     vcf_nsx_firewall_rule
     vcf_nsx_group
+    vcf_nsx_identity_source
     vcf_nsx_ids
     vcf_nsx_ip_block
     vcf_nsx_ip_pool
