@@ -33,6 +33,9 @@ _____________
     vcf_vcenter_supervisor_service
     vcf_vcenter_vm_class
     vcf_vcf_services
+    vcf_vcfa_identity_provider
+    vcf_vcfa_session_policy
+    vcf_vcfa_vidm_peer
     vcf_vcfops_credential
     vcf_vcfops_role
     vcf_vcfops_supermetric

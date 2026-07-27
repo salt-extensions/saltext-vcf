@@ -105,6 +105,7 @@ ______________
     vcfa_cloud_zone
     vcfa_custom_role
     vcfa_iam
+    vcfa_identity_provider
     vcfa_lifecycle
     vcfa_network_profile
     vcfa_organization
@@ -112,7 +113,9 @@ ______________
     vcfa_project
     vcfa_project_user
     vcfa_resource_action
+    vcfa_session_policy
     vcfa_storage_profile
+    vcfa_vidm_peer
     vcfa_vro_config_element
     vcfa_vro_package
     vcfa_workflow_run

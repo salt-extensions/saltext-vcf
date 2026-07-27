@@ -6,6 +6,17 @@ role-binding surface (the "IAM configuration" most operators care
 about); see :mod:`saltext.vcf.clients.vcfa_custom_role` for role
 definitions.
 
+Related identity surfaces on the same CSP gateway:
+
+* :mod:`saltext.vcf.clients.vcfa_identity_provider` — register /
+  delete AD, LDAP, SAML, and OIDC identity providers on an org (the
+  912-controls "all regular access must be AD authenticated"
+  requirement).
+* :mod:`saltext.vcf.clients.vcfa_session_policy` — max-auth-failures
+  and inactive-timeout policy per org.
+* :mod:`saltext.vcf.clients.vcfa_vidm_peer` — vRA→vIDM peer TLS trust
+  anchor.
+
 Endpoints:
 
 * ``GET    /csp/gateway/am/api/loggedin/user/orgs``            — orgs the caller can see
