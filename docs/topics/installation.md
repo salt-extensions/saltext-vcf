@@ -39,7 +39,7 @@ default.
 | `[esxi]` | `pyvmomi`, `pywbem` | Standalone ESXi (`vcf_esxi_*`), CIM hardware health, vSAN SOAP helpers |
 | `[vcenter]` | `pyvmomi`, `vmware-vcenter` SDK | vCenter REST + SOAP (`vcf_vcenter_*`, `vim_*` clients) |
 | `[nsx]` | — (uses `requests` only) | NSX Policy + Management API (`vcf_nsx_*`) |
-| `[sddc]` | `vmware-vcf` SDK | SDDC Manager (`vcf_sddc_*`) |
+| `[sddc]` | `vmware-vcf` SDK, `paramiko` | SDDC Manager (`vcf_sddc_*`), including appliance-local SSH controls |
 | `[vcfops]` | — (uses `requests` only) | VCF Operations (`vcf_vcfops_*`) |
 | `[vcfa]` | — (uses `requests` only) | VCF Automation (`vcf_vcfa_*`) |
 | `[installer]` | `pyvmomi` | VCF Installer OVA deploy (`vcf_installer_*`) |

@@ -261,12 +261,17 @@ class Tee:
 
 
 def _lint(session, rcfile, flags, paths, tee_output=True):
+    # ``all`` pulls every runtime extra (pyvmomi, pywbem, vmware-vcenter,
+    # vmware-vcf, saltext.kubernetes, kubernetes). Pylint needs those
+    # importable to lint the modules that use them — otherwise it flags
+    # every ``from pyVmomi import ...`` as ``import-error``. See PR #43
+    # (per-component extras split).
     _install_requirements(
         session,
         install_salt=False,
         install_coverage_requirements=False,
         install_test_requirements=False,
-        install_extras=["lint", "tests"],
+        install_extras=["all", "lint", "tests"],
     )
 
     if tee_output:
