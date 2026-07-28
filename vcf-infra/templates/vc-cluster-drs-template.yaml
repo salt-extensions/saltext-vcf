@@ -1,0 +1,8 @@
+cluster:
+  name: domain-c9
+
+drs:
+  enabled: true
+  default_vm_behavior: fullyAutomated
+  migration_threshold: 3
+  vm_monitoring_enabled: true

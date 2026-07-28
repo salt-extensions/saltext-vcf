@@ -1,0 +1,4 @@
+ad_domain:
+  name: corp.example.com
+  username: svc-vcenter@corp.example.com
+  password: changeme
