@@ -1,0 +1,8 @@
+dvs:
+  name: mgmt-mgmt-anchor-vds01
+
+portgroup:
+  name: pg-cluster
+  vlan_id: 10
+  num_ports: 8
+  binding: earlyBinding

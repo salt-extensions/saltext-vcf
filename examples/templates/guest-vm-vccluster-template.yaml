@@ -1,0 +1,17 @@
+vm:
+  name: vm-guest-01
+  guest_id: otherGuest64
+
+placement:
+  esxi_host: esx-0-01-25-0-0-0.vcf.nimbus.internal
+  datastore: mgmt-mgmt-anchor-vc
+
+hardware:
+  cpu_count: 1
+  memory_mb: 1024
+
+storage:
+  disk_size_gb: 10
+
+network:
+  portgroup: pg-cluster
