@@ -139,7 +139,10 @@ def _install_requirements(
 
 @nox.session(python=PYTHON_VERSIONS)
 def tests(session):
-    _install_requirements(session, install_source=True)
+    # ``all`` pulls in every runtime extra (pyvmomi, pywbem, vmware-vcenter,
+    # vmware-vcf, kubernetes, saltext.kubernetes) so unit tests for the
+    # esxi/vcenter/vim/vsan/installer surfaces can import their clients.
+    _install_requirements(session, install_source=True, install_extras=["all"])
 
     sitecustomize_dir = session.run("salt-factories", "--coverage", silent=True, log=False)
     python_path_env_var = os.environ.get("PYTHONPATH") or None
@@ -173,6 +176,14 @@ def tests(session):
         "--showlocals",
         "-ra",
         "-s",
+        # Disable pytest-system-statistics: its per-test sysstats sampler
+        # can wedge collection under Salt's zmq threads (observed as a
+        # multi-minute silent hang in CI mid-suite). See PR #42.
+        "-p",
+        "no:system-statistics",
+        # Belt-and-braces: kill any individual test that runs > 60s so a
+        # future hang surfaces as a test failure instead of a job timeout.
+        "--timeout=60",
     ]
     if session._runner.global_config.forcecolor:
         args.append("--color=yes")
@@ -258,12 +269,17 @@ class Tee:
 
 
 def _lint(session, rcfile, flags, paths, tee_output=True):
+    # ``all`` pulls every runtime extra (pyvmomi, pywbem, vmware-vcenter,
+    # vmware-vcf, saltext.kubernetes, kubernetes). Pylint needs those
+    # importable to lint the modules that use them — otherwise it flags
+    # every ``from pyVmomi import ...`` as ``import-error``. See PR #43
+    # (per-component extras split).
     _install_requirements(
         session,
         install_salt=False,
         install_coverage_requirements=False,
         install_test_requirements=False,
-        install_extras=["lint", "tests"],
+        install_extras=["all", "lint", "tests"],
     )
 
     if tee_output:
@@ -442,7 +458,7 @@ def docs(session):
         install_coverage_requirements=False,
         install_test_requirements=False,
         install_source=True,
-        install_extras=["docs"],
+        install_extras=["all", "docs"],
     )
     os.chdir("docs/")
     env = _get_docs_env(session)
@@ -472,7 +488,7 @@ def docs_dev(session):
         install_coverage_requirements=False,
         install_test_requirements=False,
         install_source=True,
-        install_extras=["docs", "docsauto"],
+        install_extras=["all", "docs", "docsauto"],
     )
 
     build_dir = Path("docs", "_build", "html")
@@ -503,7 +519,7 @@ def docs_crosslink_info(session):
         install_coverage_requirements=False,
         install_test_requirements=False,
         install_source=True,
-        install_extras=["docs"],
+        install_extras=["all", "docs"],
     )
     os.chdir("docs/")
     intersphinx_mapping = json.loads(
