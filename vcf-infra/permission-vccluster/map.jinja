@@ -1,0 +1,9 @@
+{% import_yaml "permission-vccluster/defaults.yaml" as defaults %}
+
+{% set overrides = {
+    "permission": {
+        "entity_ref": "domain-c9"
+    }
+} %}
+
+{% set cfg = salt['slsutil.merge'](defaults, overrides) %}

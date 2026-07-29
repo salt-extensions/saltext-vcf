@@ -1,0 +1,9 @@
+{% import_yaml "permission/defaults.yaml" as defaults %}
+
+{% set overrides = {
+    "permission": {
+        "entity_ref": "group-d1"
+    }
+} %}
+
+{% set cfg = salt['slsutil.merge'](defaults, overrides) %}

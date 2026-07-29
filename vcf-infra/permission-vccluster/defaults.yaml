@@ -1,5 +1,4 @@
 permission:
-  entity_ref: "domain-c9"
   principal: svc-automation@vsphere.local
   role: automation-operator-role
   propagate: true

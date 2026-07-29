@@ -1,6 +1,6 @@
-{% import_yaml "templates/permission-template.yaml" as cfg %}
+{% from "permission-vccluster/map.jinja" import cfg with context %}
 
-svc-automation-on-root:
+svc-automation-on-vccluster:
   vcf_vim_permission.present:
     - entity_ref: {{ cfg.permission.entity_ref }}
     - principal: {{ cfg.permission.principal }}

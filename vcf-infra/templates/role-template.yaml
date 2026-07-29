@@ -1,5 +1,0 @@
-role:
-  name: automation-operator-role
-  privileges:
-    - System.Anonymous
-    - System.View

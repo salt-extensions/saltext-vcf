@@ -1,0 +1,4 @@
+role:
+  privileges:
+    - System.Anonymous
+    - System.View

@@ -1,0 +1,16 @@
+{% import_yaml "guest-vm-vccluster/defaults.yaml" as defaults %}
+
+{% set overrides = {
+    "vm": {
+        "name": "vm-guest-01"
+    },
+    "placement": {
+        "esxi_host": "esx-0-01-25-0-0-0.vcf.nimbus.internal",
+        "datastore": "mgmt-mgmt-anchor-vc"
+    },
+    "network": {
+        "portgroup": "pg-cluster"
+    }
+} %}
+
+{% set cfg = salt['slsutil.merge'](defaults, overrides) %}

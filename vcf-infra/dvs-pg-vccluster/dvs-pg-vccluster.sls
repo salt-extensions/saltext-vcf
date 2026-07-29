@@ -1,4 +1,4 @@
-{% import_yaml "templates/dvs-pg-vccluster-template.yaml" as cfg %}
+{% from "dvs-pg-vccluster/map.jinja" import cfg with context %}
 
 {{ cfg.portgroup.name }}:
   vcf_vim_dvs.portgroup_present:

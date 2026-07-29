@@ -1,4 +1,4 @@
-{% import_yaml "templates/guest-vm-vccluster-template.yaml" as cfg %}
+{% from "guest-vm-vccluster/map.jinja" import cfg with context %}
 
 {{ cfg.vm.name }}:
   vcf_vim_vm.present:
