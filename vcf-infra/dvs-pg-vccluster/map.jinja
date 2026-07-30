@@ -1,13 +1,3 @@
 {% import_yaml "dvs-pg-vccluster/defaults.yaml" as defaults %}
 
-{% set overrides = {
-    "dvs": {
-        "name": "mgmt-mgmt-anchor-vds01"
-    },
-    "portgroup": {
-        "name": "pg-cluster",
-        "vlan_id": 10
-    }
-} %}
-
-{% set cfg = salt['slsutil.merge'](defaults, overrides) %}
+{% set cfg = salt['pillar.get']('dvs-pg-vccluster', default=defaults, merge=True) %}
