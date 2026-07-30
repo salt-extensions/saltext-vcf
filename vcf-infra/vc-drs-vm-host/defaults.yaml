@@ -1,0 +1,4 @@
+vm_host:
+  affine: true
+  enabled: true
+  mandatory: false

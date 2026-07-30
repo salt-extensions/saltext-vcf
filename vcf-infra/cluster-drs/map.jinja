@@ -1,0 +1,3 @@
+{% import_yaml "cluster-drs/defaults.yaml" as defaults %}
+
+{% set cfg = salt['pillar.get']('cluster-drs', default=defaults, merge=True) %}

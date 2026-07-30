@@ -1,8 +1,0 @@
-cluster:
-  name: domain-c9
-
-profile:
-  key: profile.esx.health.ntp_health.servers
-  value:
-    - pool.ntp.org
-    - time.cloudflare.com

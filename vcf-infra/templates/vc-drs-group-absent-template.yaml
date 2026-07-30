@@ -1,5 +1,0 @@
-cluster:
-  name: mgmt-anchor
-
-group:
-  name: drs-vm-group-01

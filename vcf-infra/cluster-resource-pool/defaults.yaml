@@ -1,0 +1,5 @@
+shares:
+  cpu:
+    shares_level: high
+  memory:
+    shares_level: high

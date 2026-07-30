@@ -1,0 +1,4 @@
+portgroup:
+  num_ports: 8
+  binding: earlyBinding
+  promiscuous: false
