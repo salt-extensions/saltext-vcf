@@ -64,5 +64,8 @@ _____________
     vcf_vim_role
     vcf_vim_scheduled_task
     vcf_vim_vm_devices
+    vcf_vrli_ad
+    vcf_vrli_certificate
+    vcf_vrli_settings
     vcf_vsan_cluster
     vcf_vsan_fault_domain

@@ -68,7 +68,10 @@ vcfops = []
 vcfa = []
 installer = ["pyvmomi>=8.0.0"]
 vks = ["saltext.kubernetes>=2.1.0", "kubernetes>=27.2.0"]
-all = ["saltext.vcf[esxi,vcenter,nsx,sddc,vcfops,vcfa,installer,vks]"]
+# vRLI (VCF Operations for Logs) uses requests for REST + paramiko for
+# SSH-based session-timeout / DNS controls the API doesn't expose.
+vrli = ["paramiko>=2.7.0"]
+all = ["saltext.vcf[esxi,vcenter,nsx,sddc,vcfops,vcfa,installer,vks,vrli]"]
 changelog = ["towncrier==25.8.0"]
 dev = [
     "nox[uv]>=2024.3,!=2025.05.01",

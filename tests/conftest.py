@@ -59,6 +59,18 @@ def opts():
                     "password": "p",
                     "verify_ssl": False,
                 },
+                "vrli": {
+                    "host": "vrli.test",
+                    "port": 9543,
+                    "username": "admin",
+                    "password": "p",
+                    "verify_ssl": False,
+                    "ssh": {
+                        "host": "vrli.test",
+                        "username": "root",
+                        "password": "p",
+                    },
+                },
                 "profiles": {
                     "alt": {
                         "vcenter": {
@@ -117,6 +129,7 @@ def reset_caches():
     from saltext.vcf.utils import vcfops
     from saltext.vcf.utils import vim as soap
     from saltext.vcf.utils import vmsp
+    from saltext.vcf.utils import vrli
     from saltext.vcf.utils import vsan
 
     caches = [
@@ -130,6 +143,7 @@ def reset_caches():
         vsan._VSAN_STUB_CACHE,
         vcfa._TOKEN_CACHE,
         vmsp._TOKEN_CACHE,
+        vrli._TOKEN_CACHE,
     ]
     for c in caches:
         c.clear()
@@ -193,6 +207,18 @@ def vcfops_authed(mocked_responses):
         responses_lib.POST,
         "https://ops.test/suite-api/api/auth/token/acquire",
         json={"token": "ops-tok-abc", "validity": 1736294400000},
+        status=200,
+    )
+    return mocked_responses
+
+
+@pytest.fixture
+def vrli_authed(mocked_responses):
+    """Pre-register the vRLI ``/api/v2/sessions`` POST."""
+    mocked_responses.add(
+        responses_lib.POST,
+        "https://vrli.test:9543/api/v2/sessions",
+        json={"userId": "u1", "sessionId": "vrli-tok-abc", "ttl": 1800},
         status=200,
     )
     return mocked_responses
