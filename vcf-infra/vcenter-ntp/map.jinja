@@ -1,0 +1,5 @@
+{% import_yaml "vcenter-ntp/defaults.yaml" as defaults %}
+
+{% set overrides = {} %}
+
+{% set cfg = salt['slsutil.merge'](defaults, overrides) %}
