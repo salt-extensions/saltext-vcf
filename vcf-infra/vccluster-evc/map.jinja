@@ -1,7 +1,3 @@
 {% import_yaml "vccluster-evc/defaults.yaml" as defaults %}
 
-{% set overrides = {
-    "cluster": "mgmt-anchor"
-} %}
-
-{% set cfg = salt['slsutil.merge'](defaults, overrides) %}
+{% set cfg = salt['pillar.get']('vccluster-evc', default=defaults, merge=True) %}

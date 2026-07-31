@@ -1,5 +1,5 @@
-permission:
-  principal: svc-automation@vsphere.local
-  role: automation-operator-role
-  propagate: true
-  group: false
+entity_ref: group-d1
+principal: svc-automation@vsphere.local
+role: automation-operator-role
+propagate: true
+group: false

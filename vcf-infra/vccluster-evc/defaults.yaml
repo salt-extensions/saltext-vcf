@@ -1,2 +1,3 @@
+cluster: mgmt-anchor
 evc:
   mode: intel-broadwell

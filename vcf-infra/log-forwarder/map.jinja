@@ -1,8 +1,7 @@
 {% import_yaml "log-forwarder/defaults.yaml" as defaults %}
 
-{# Note: slsutil.merge replaces lists wholesale, it does not merge list items
-   one by one. To point at a different syslog target, redefine the full
-   "syslog.servers" list here rather than editing a single field of it. #}
-{% set overrides = {} %}
-
-{% set cfg = salt['slsutil.merge'](defaults, overrides) %}
+{# Note: pillar.get's merge=True replaces lists wholesale, it does not merge
+   list items one by one. To point at a different syslog target, redefine
+   the full "syslog.servers" list in the pillar/data override rather than
+   editing a single field of it. #}
+{% set cfg = salt['pillar.get']('log-forwarder', default=defaults, merge=True) %}
