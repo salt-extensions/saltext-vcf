@@ -1,9 +1,3 @@
 {% import_yaml "role/defaults.yaml" as defaults %}
 
-{% set overrides = {
-    "role": {
-        "name": "automation-operator-role"
-    }
-} %}
-
-{% set cfg = salt['slsutil.merge'](defaults, overrides) %}
+{% set cfg = salt['pillar.get']('role', default=defaults, merge=True) %}

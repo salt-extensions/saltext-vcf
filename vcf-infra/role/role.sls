@@ -1,5 +1,5 @@
 {% from "role/map.jinja" import cfg with context %}
 
-{{ cfg.role.name }}:
+{{ cfg.name }}:
   vcf_vim_role.present:
-    - privileges: {{ cfg.role.privileges }}
+    - privileges: {{ cfg.privileges }}

@@ -1,4 +1,4 @@
-role:
-  privileges:
-    - System.Anonymous
-    - System.View
+name: automation-operator-role
+privileges:
+  - System.Anonymous
+  - System.View
