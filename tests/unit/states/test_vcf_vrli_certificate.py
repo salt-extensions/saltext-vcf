@@ -1,7 +1,6 @@
 """Tests for states.vcf_vrli_certificate."""
 
 import subprocess
-import tempfile
 
 import pytest
 
@@ -14,35 +13,36 @@ def inject_opts(monkeypatch, opts):
     monkeypatch.setattr(st, "__opts__", opts, raising=False)
 
 
-def _mkcert():
-    """Generate a throwaway self-signed cert and return (pem, key, serial_lc_hex)."""
-    with (
-        tempfile.NamedTemporaryFile(suffix=".key") as key_f,
-        tempfile.NamedTemporaryFile(suffix=".crt") as crt_f,
-    ):
-        subprocess.check_call(
-            [
-                "openssl",
-                "req",
-                "-x509",
-                "-newkey",
-                "rsa:2048",
-                "-nodes",
-                "-keyout",
-                key_f.name,
-                "-out",
-                crt_f.name,
-                "-days",
-                "1",
-                "-subj",
-                "/CN=vrli-test",
-            ],
-            stderr=subprocess.DEVNULL,
-        )
-        with open(crt_f.name, encoding="utf-8") as fh:
-            cert_pem = fh.read()
-        with open(key_f.name, encoding="utf-8") as fh:
-            key_pem = fh.read()
+def _mkcert(tmp_path):
+    """Generate a throwaway self-signed cert and return (pem, key, serial_lc_hex).
+
+    Uses ``tmp_path`` (pytest fixture) rather than ``NamedTemporaryFile``
+    because on Windows the latter opens the file exclusively — openssl
+    can't reopen it while the ``with`` block still holds the handle.
+    """
+    key_path = tmp_path / "vrli-test.key"
+    crt_path = tmp_path / "vrli-test.crt"
+    subprocess.check_call(
+        [
+            "openssl",
+            "req",
+            "-x509",
+            "-newkey",
+            "rsa:2048",
+            "-nodes",
+            "-keyout",
+            str(key_path),
+            "-out",
+            str(crt_path),
+            "-days",
+            "1",
+            "-subj",
+            "/CN=vrli-test",
+        ],
+        stderr=subprocess.DEVNULL,
+    )
+    cert_pem = crt_path.read_text(encoding="utf-8")
+    key_pem = key_path.read_text(encoding="utf-8")
     # Extract serial with openssl for cross-checking.
     proc = subprocess.run(
         ["openssl", "x509", "-noout", "-serial"],
@@ -56,8 +56,8 @@ def _mkcert():
 
 
 @pytest.fixture
-def certmat():
-    return _mkcert()
+def certmat(tmp_path):
+    return _mkcert(tmp_path)
 
 
 @pytest.fixture

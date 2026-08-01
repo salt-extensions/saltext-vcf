@@ -1,3 +1,7 @@
+---
+orphan: true
+---
+
 # vRLI (VCF Operations for Logs 9.0.2.0) client scoping
 
 **Status: implemented.** See PR #TBD on `salt-extensions/saltext-vcf`
