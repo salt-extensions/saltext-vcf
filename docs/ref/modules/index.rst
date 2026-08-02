@@ -179,6 +179,10 @@ _________________
     vcf_vim_vm_snapshot
     vcf_vim_vm_tools
     vcf_vks
+    vcf_vrli_ad
+    vcf_vrli_certificate
+    vcf_vrli_settings
+    vcf_vrli_version
     vcf_vsan_cluster
     vcf_vsan_disk
     vcf_vsan_fault_domain

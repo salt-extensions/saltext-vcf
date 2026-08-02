@@ -189,6 +189,10 @@ ______________
     vim_vm_power
     vim_vm_snapshot
     vim_vm_tools
+    vrli_ad
+    vrli_certificate
+    vrli_settings
+    vrli_version
     vsan_cluster
     vsan_disk
     vsan_fault_domain
