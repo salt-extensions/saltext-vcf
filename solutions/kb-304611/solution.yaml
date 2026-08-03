@@ -1,0 +1,40 @@
+api_version: saltext.vcf/v1
+kind: KBResolution
+metadata:
+  id: kb-304611
+  title: Broadcom KB 304611
+  status: needs-review
+  searchable: true
+  source_verified: false
+  owner: saltext-vcf
+  review:
+    required: true
+    reason: The article title, affected products, versions, and remediation content were not available from an authoritative public source during packaging. They must be reviewed before this entry is marked verified or executable.
+kb:
+  provider: broadcom
+  id: '304611'
+  canonical_url: https://knowledge.broadcom.com/external/article/304611
+search:
+  summary: Search-only entry for KB 304611 until authoritative article metadata and a reviewed Salt-state mapping are supplied.
+  keywords:
+  - '304611'
+  - kb 304611
+  aliases: []
+applicability:
+  products: []
+  components: []
+  versions: []
+execution:
+  enabled: false
+  mode: unavailable
+  state: null
+  entrypoint: null
+  resource: null
+  values_schema: null
+  dry_run_supported: false
+  requires_confirmation: true
+  disabled_reason: No reviewed KB-to-SLS mapping is available. Salt Config CLI must not offer plan, dry-run, or apply for this entry.
+risk:
+  level: unknown
+  notes:
+  - Do not enable execution until the KB content and mapped state are reviewed.

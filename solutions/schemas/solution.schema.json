@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "api_version",
+    "kind",
+    "metadata",
+    "kb",
+    "search",
+    "applicability",
+    "execution",
+    "risk"
+  ],
+  "properties": {
+    "api_version": {
+      "const": "saltext.vcf/v1"
+    },
+    "kind": {
+      "const": "KBResolution"
+    }
+  }
+}

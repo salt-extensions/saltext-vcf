@@ -1,0 +1,81 @@
+api_version: saltext.vcf/v1
+kind: KBResolution
+metadata:
+  id: kb-317537
+  title: Configuring Network Time Protocol (NTP) on an ESXi host using the vSphere Client
+  status: verified
+  searchable: true
+  source_verified: true
+  owner: saltext-vcf
+kb:
+  provider: broadcom
+  id: '317537'
+  canonical_url: https://knowledge.broadcom.com/external/article/317537/configuring-network-time-protocol-ntp-on.html
+  legacy_urls:
+  - https://broadcomcms-software-agent.wolkenservicedesk.com/wolken/esd/knowledge-base-view/view-kb-article?articleNumber=317537
+search:
+  summary: Configure ESXi hosts with approved NTP servers and ensure that the NTP service is enabled and maintains synchronized host time.
+  symptoms:
+  - ESXi host time is not synchronized.
+  - Clock skew or time drift is detected.
+  - The NTP service is stopped or does not start with the host.
+  keywords:
+  - configure ntp on esxi
+  - esxi time synchronization
+  - ntp servers
+  - ntpd
+  - clock skew
+  - time drift
+  - vSphere Client
+  aliases:
+  - esxi ntp
+  - configure host time
+  - esxi clock skew
+applicability:
+  products:
+  - VMware vSphere ESXi
+  components:
+  - ESXi
+  versions:
+  - 7.x
+  - 8.x
+  - 9.x
+  target_kinds:
+  - host
+  - cluster
+  - fleet
+resolution:
+  type: configuration
+  summary: Apply the approved NTP server list and service settings to the targeted ESXi hosts using the reusable ntp Salt state.
+execution:
+  enabled: true
+  mode: state-apply
+  resource: ntp
+  state: vcf-infra.ntp.ntp
+  entrypoint: vcf-infra/ntp/ntp.sls
+  values_schema: solutions/schemas/ntp-values.schema.yaml
+  dry_run_supported: true
+  requires_confirmation: true
+  customer_values_path: '{environment}/{version}/ntp/values.yaml'
+  target_requirements:
+  - The target group must resolve only to intended ESXi minions.
+  - The target minions must be online in RaaS.
+  runtime:
+    function: state.apply
+    test_argument:
+      dry-run: true
+      apply: false
+    values_transport: execution-scoped-pillar
+    publish_customer_values_to_file_server: false
+expected_outcome:
+- Approved NTP servers are configured on each selected ESXi host.
+- The NTP service is enabled according to the desired values.
+- A repeated dry-run reports no additional changes when the hosts are compliant.
+risk:
+  level: medium
+  reasons:
+  - Incorrect NTP servers or blocked UDP port 123 can leave hosts unsynchronized.
+  safeguards:
+  - Run dry-run before apply.
+  - Confirm the target group and resolved Git commits.
+  - Use at least two reachable authoritative NTP servers where policy permits.

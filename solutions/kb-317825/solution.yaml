@@ -1,0 +1,60 @@
+api_version: saltext.vcf/v1
+kind: KBResolution
+metadata:
+  id: kb-317825
+  title: Clean up duplicate DNS records of vCenter
+  status: verified
+  searchable: true
+  source_verified: true
+  owner: saltext-vcf
+kb:
+  provider: broadcom
+  id: '317825'
+  canonical_url: https://knowledge.broadcom.com/external/article/317825/clean-up-duplicate-dns-records-of-vcente.html
+search:
+  summary: Duplicate DNS records created around vCenter Server High Availability configuration, patching, or failover can prevent access to vCenter.
+  symptoms:
+  - Access to vCenter is interrupted after a vCenter HA failover.
+  - Duplicate DNS records exist for the vCenter Server Appliance.
+  keywords:
+  - duplicate dns records
+  - vcenter high availability
+  - vcsa dns
+  - vcenter access blocked
+  - ddns
+  - failover
+  aliases:
+  - duplicate vcenter dns
+  - vcenter ha duplicate records
+applicability:
+  products:
+  - VMware vCenter Server
+  components:
+  - vCenter Server
+  - vCenter Server High Availability
+  versions:
+  - 6.7.x
+  notes:
+  - The Broadcom article describes the issue for vCenter Server 6.7.x.
+  - The article identifies vCenter Server 6.7 U3b as containing the product fix.
+resolution:
+  type: manual
+  summary: Follow the Broadcom KB guidance to remove duplicate DNS records and use the fixed vCenter release where applicable.
+  operational_notes:
+  - The documented workaround changes appliance files and processes and is not equivalent to applying the generic VCF DNS desired-state resource.
+  - A dedicated, reviewed, idempotent Salt state would be required before automated execution can be enabled.
+execution:
+  enabled: false
+  mode: manual-only
+  state: null
+  entrypoint: null
+  resource: null
+  values_schema: null
+  dry_run_supported: false
+  requires_confirmation: true
+  disabled_reason: No dedicated reviewed Salt state exists in this package for the appliance cleanup procedure. Salt Config CLI may show the KB and resolution details, but must not offer automated apply.
+risk:
+  level: high
+  reasons:
+  - The documented workaround changes vCenter appliance processes and files.
+  - Applying an unrelated generic DNS state would not implement the KB resolution.
