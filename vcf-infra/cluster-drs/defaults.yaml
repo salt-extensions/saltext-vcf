@@ -1,6 +1,3 @@
-cluster:
-  name: domain-c9
-
 drs:
   enabled: true
   default_vm_behavior: fullyAutomated

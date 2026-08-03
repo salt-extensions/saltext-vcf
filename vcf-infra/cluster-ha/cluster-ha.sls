@@ -1,8 +1,7 @@
 {% from "cluster-ha/map.jinja" import cfg with context %}
 
-vcf_cluster_ha:
+{{ cfg.cluster.name }}:
   vcf_vim_cluster_config.ha:
-    - cluster: {{ cfg.cluster.name }}
     - enabled: {{ cfg.ha.enabled }}
     - host_monitoring: {{ cfg.ha.host_monitoring }}
     - vm_monitoring: {{ cfg.ha.vm_monitoring }}

@@ -1,5 +1,5 @@
 cluster:
-  name: domain-c9
+  name: mgmt-anchor
 
 profile:
   key: profile.esx.health.ntp_health.servers
