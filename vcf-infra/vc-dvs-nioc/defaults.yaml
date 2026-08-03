@@ -1,2 +1,2 @@
-dvs:
-  nioc_enabled: true
+name: dvs-1
+nioc_enabled: true

@@ -1,1 +1,8 @@
-{}
+cluster:
+  name: mgmt-anchor
+
+host_group:
+  name: drs-host-group-01
+  host_moids:
+    - host-12
+    - host-26

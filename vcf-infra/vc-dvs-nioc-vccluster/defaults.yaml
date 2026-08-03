@@ -1,2 +1,2 @@
-cluster:
-  nioc_enabled: true
+name: mgmt-anchor
+nioc_enabled: true

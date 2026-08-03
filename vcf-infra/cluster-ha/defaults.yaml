@@ -1,3 +1,6 @@
+cluster:
+  name: domain-c9
+
 ha:
   enabled: true
   host_monitoring: enabled

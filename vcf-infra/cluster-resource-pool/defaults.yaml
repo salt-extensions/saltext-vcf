@@ -1,3 +1,6 @@
+cluster:
+  name: domain-c9
+
 shares:
   cpu:
     shares_level: high

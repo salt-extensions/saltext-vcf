@@ -1,4 +1,9 @@
+dvs:
+  name: dvs-1
+
 portgroup:
+  name: pg-app-01
+  vlan_id: 20
   num_ports: 8
   binding: earlyBinding
   promiscuous: false

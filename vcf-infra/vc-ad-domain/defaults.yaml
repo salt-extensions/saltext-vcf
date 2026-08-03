@@ -1,2 +1,3 @@
-ad_domain:
-  username: svc-vcenter@corp.example.com
+name: corp.example.com
+username: svc-vcenter@corp.example.com
+password: changeme

@@ -1,1 +1,8 @@
-{}
+cluster:
+  name: mgmt-anchor
+
+vm_group:
+  name: drs-vm-group-01
+  vm_moids:
+    - vm-57
+    - vm-58
