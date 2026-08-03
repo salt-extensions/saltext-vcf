@@ -2,15 +2,15 @@ $schema: https://json-schema.org/draft/2020-12/schema
 $id: https://saltext-vcf.example/schemas/ntp-values.schema.yaml
 title: VCF NTP customer values
 type: object
-additionalProperties: false
+additionalProperties: true
 required:
-- ntp
+  - ntp
 properties:
   ntp:
     type: object
-    additionalProperties: false
+    additionalProperties: true
     required:
-    - servers
+      - servers
     properties:
       servers:
         type: array
@@ -26,7 +26,7 @@ properties:
       service_policy:
         type: string
         enum:
-        - 'on'
-        - 'off'
-        - automatic
-        default: 'on'
+          - on
+          - off
+          - automatic
+        default: on

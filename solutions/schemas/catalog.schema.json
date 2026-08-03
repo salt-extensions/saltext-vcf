@@ -1,22 +1,103 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "required": [
-    "api_version",
-    "kind",
-    "metadata",
-    "entries"
-  ],
+  "$defs": {
+    "CatalogEntry": {
+      "additionalProperties": true,
+      "description": "Compact search index entry. Full solution content remains in solution.yaml.",
+      "properties": {
+        "solution_id": {
+          "title": "Solution Id",
+          "type": "string"
+        },
+        "kb_id": {
+          "title": "Kb Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "summary": {
+          "default": "",
+          "title": "Summary",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Components",
+          "type": "array"
+        },
+        "versions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Versions",
+          "type": "array"
+        },
+        "symptoms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Symptoms",
+          "type": "array"
+        },
+        "status": {
+          "default": "draft",
+          "title": "Status",
+          "type": "string"
+        },
+        "risk": {
+          "default": "medium",
+          "title": "Risk",
+          "type": "string"
+        },
+        "solution_path": {
+          "title": "Solution Path",
+          "type": "string"
+        },
+        "state": {
+          "title": "State",
+          "type": "string"
+        }
+      },
+      "required": [
+        "solution_id",
+        "kb_id",
+        "title",
+        "solution_path",
+        "state"
+      ],
+      "title": "CatalogEntry",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
   "properties": {
     "api_version": {
-      "const": "saltext.vcf/v1"
+      "default": "saltext.vcf/catalog/v1",
+      "title": "Api Version",
+      "type": "string"
     },
     "kind": {
-      "const": "KBCatalog"
+      "const": "KBSolutionCatalog",
+      "default": "KBSolutionCatalog",
+      "title": "Kind",
+      "type": "string"
     },
-    "entries": {
-      "type": "array",
-      "minItems": 1
+    "catalog_version": {
+      "default": "1.0.0",
+      "title": "Catalog Version",
+      "type": "string"
+    },
+    "solutions": {
+      "items": {
+        "$ref": "#/$defs/CatalogEntry"
+      },
+      "title": "Solutions",
+      "type": "array"
     }
-  }
+  },
+  "title": "CatalogIndex",
+  "type": "object"
 }

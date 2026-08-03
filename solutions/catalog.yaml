@@ -1,81 +1,60 @@
-api_version: saltext.vcf/v1
-kind: KBCatalog
-metadata:
-  name: vcf-kb-solutions
-  version: 1.0.0
-  last_updated: '2026-08-03'
-  owner: saltext-vcf
-  description: Static, version-controlled catalog used by Salt Config CLI to search Broadcom KB articles and resolve reviewed KB-to-Salt-state mappings.
-entries:
-- id: kb-304611
-  kb_id: '304611'
-  title: Broadcom KB 304611
-  summary: Searchable placeholder for Broadcom KB 304611. Article metadata and automation mapping require maintainer verification before execution.
-  status: needs-review
-  searchable: true
-  source_verified: false
-  products: []
-  components: []
-  versions: []
-  keywords:
-  - '304611'
-  - kb 304611
-  solution_path: solutions/kb-304611/solution.yaml
-  automation:
-    status: unavailable
-    execution_enabled: false
-    state: null
-- id: kb-317825
-  kb_id: '317825'
-  title: Clean up duplicate DNS records of vCenter
-  summary: Duplicate DNS records after vCenter Server High Availability configuration, patching, or failover can interrupt access to vCenter.
-  status: verified
-  searchable: true
-  source_verified: true
-  products:
-  - VMware vCenter Server
-  components:
-  - vCenter Server
-  - vCenter Server High Availability
-  versions:
-  - 6.7.x
-  keywords:
-  - duplicate dns records
-  - vcenter high availability
-  - vcsa dns
-  - vcenter access blocked
-  - ddns
-  - failover
-  solution_path: solutions/kb-317825/solution.yaml
-  automation:
-    status: manual-only
-    execution_enabled: false
-    state: null
-- id: kb-317537
-  kb_id: '317537'
-  title: Configuring Network Time Protocol (NTP) on an ESXi host using the vSphere Client
-  summary: Configure ESXi hosts to use approved NTP servers and maintain synchronized infrastructure time.
-  status: verified
-  searchable: true
-  source_verified: true
-  products:
-  - VMware vSphere ESXi
-  components:
-  - ESXi
-  versions:
-  - 7.x
-  - 8.x
-  - 9.x
-  keywords:
-  - configure ntp on esxi
-  - esxi time synchronization
-  - ntp servers
-  - ntpd
-  - clock skew
-  - time drift
-  - vSphere Client
-  solution_path: solutions/kb-317537/solution.yaml
-  automation:
-    status: available
-    execution_enabled: true
+api_version: saltext.vcf/catalog/v1
+kind: KBSolutionCatalog
+catalog_version: 1.0.1
+
+solutions:
+  - solution_id: kb-304611
+    kb_id: "304611"
+    title: Broadcom KB 304611 — mapping pending verification
+    summary: >-
+      Searchable draft entry for Broadcom KB 304611. The article metadata and
+      executable remediation mapping must be reviewed before production use.
+    components: []
+    versions: []
+    symptoms:
+      - Search by Broadcom KB ID 304611
+    status: draft
+    risk: critical
+    solution_path: kb-304611/solution.yaml
+    state: vcf-infra.review-required.review-required
+
+  - solution_id: kb-317825
+    kb_id: "317825"
+    title: Clean up duplicate DNS records of vCenter
+    summary: >-
+      Duplicate DNS records after vCenter Server High Availability
+      configuration, patching, or failover can interrupt access to vCenter.
+    components:
+      - vCenter Server
+      - vCenter Server High Availability
+    versions:
+      - 6.7.x
+    symptoms:
+      - Duplicate DNS records exist for the vCenter Server Appliance
+      - Access to vCenter is interrupted after a vCenter HA failover
+    status: draft
+    risk: high
+    solution_path: kb-317825/solution.yaml
+    state: vcf-infra.review-required.review-required
+
+  - solution_id: kb-317537
+    kb_id: "317537"
+    title: Configure Network Time Protocol (NTP) on an ESXi host
+    summary: >-
+      Configure ESXi hosts with approved NTP servers and enable the NTP service
+      by using the reusable VCF NTP Salt state.
+    components:
+      - ESXi
+    versions:
+      - 6.x
+      - 7.x
+      - 8.x
+      - 9.x
+    symptoms:
+      - ESXi host time is not synchronized
+      - Clock skew or time drift is detected
+      - NTP service is not running
+    status: verified
+    risk: medium
+    solution_path: kb-317537/solution.yaml
     state: vcf-infra.ntp.ntp

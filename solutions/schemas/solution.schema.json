@@ -1,22 +1,327 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "required": [
-    "api_version",
-    "kind",
-    "metadata",
-    "kb",
-    "search",
-    "applicability",
-    "execution",
-    "risk"
-  ],
+  "$defs": {
+    "Applicability": {
+      "additionalProperties": false,
+      "properties": {
+        "products": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Products",
+          "type": "array"
+        },
+        "components": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Components",
+          "type": "array"
+        },
+        "versions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Versions",
+          "type": "array"
+        },
+        "symptoms": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Symptoms",
+          "type": "array"
+        },
+        "error_patterns": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Error Patterns",
+          "type": "array"
+        },
+        "prerequisites": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Prerequisites",
+          "type": "array"
+        }
+      },
+      "title": "Applicability",
+      "type": "object"
+    },
+    "ExecutionMapping": {
+      "additionalProperties": false,
+      "description": "One statically mapped reusable Salt state for a KB resolution.\n\nCatalog authors normally need only ``state`` and ``values_schema``. SCC\nderives the resource folder and SLS filename from the dotted state. The\noptional overrides support non-conventional repositories without making the\ncommon catalog format harder to understand.",
+      "properties": {
+        "state": {
+          "title": "State",
+          "type": "string"
+        },
+        "resource": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resource"
+        },
+        "entrypoint": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entrypoint"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "values_schema": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Values Schema"
+        },
+        "values_required": {
+          "default": true,
+          "title": "Values Required",
+          "type": "boolean"
+        },
+        "dry_run_supported": {
+          "default": true,
+          "title": "Dry Run Supported",
+          "type": "boolean"
+        },
+        "reboot_required": {
+          "default": false,
+          "title": "Reboot Required",
+          "type": "boolean"
+        },
+        "service_restart_required": {
+          "default": false,
+          "title": "Service Restart Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "state"
+      ],
+      "title": "ExecutionMapping",
+      "type": "object"
+    },
+    "KBReference": {
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "broadcom",
+          "title": "Provider",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "last_verified": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Verified"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "title": "KBReference",
+      "type": "object"
+    },
+    "RiskDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "level": {
+          "default": "medium",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "title": "Level",
+          "type": "string"
+        },
+        "impact": {
+          "default": "",
+          "title": "Impact",
+          "type": "string"
+        },
+        "requires_confirmation": {
+          "default": true,
+          "title": "Requires Confirmation",
+          "type": "boolean"
+        },
+        "rollback_supported": {
+          "default": false,
+          "title": "Rollback Supported",
+          "type": "boolean"
+        },
+        "rollback_state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rollback State"
+        }
+      },
+      "title": "RiskDefinition",
+      "type": "object"
+    },
+    "SolutionMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "status": {
+          "default": "draft",
+          "enum": [
+            "draft",
+            "community",
+            "validated",
+            "verified",
+            "deprecated"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "maturity": {
+          "default": "experimental",
+          "enum": [
+            "experimental",
+            "beta",
+            "production",
+            "deprecated"
+          ],
+          "title": "Maturity",
+          "type": "string"
+        },
+        "maintainers": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Maintainers",
+          "type": "array"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title"
+      ],
+      "title": "SolutionMetadata",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Full static KB solution definition.",
   "properties": {
     "api_version": {
-      "const": "saltext.vcf/v1"
+      "default": "saltext.vcf/v1",
+      "title": "Api Version",
+      "type": "string"
     },
     "kind": {
-      "const": "KBResolution"
+      "const": "KBResolution",
+      "default": "KBResolution",
+      "title": "Kind",
+      "type": "string"
+    },
+    "metadata": {
+      "$ref": "#/$defs/SolutionMetadata"
+    },
+    "kb": {
+      "$ref": "#/$defs/KBReference"
+    },
+    "applicability": {
+      "$ref": "#/$defs/Applicability"
+    },
+    "execution": {
+      "$ref": "#/$defs/ExecutionMapping"
+    },
+    "risk": {
+      "$ref": "#/$defs/RiskDefinition"
     }
-  }
+  },
+  "required": [
+    "metadata",
+    "kb",
+    "execution"
+  ],
+  "title": "KBSolution",
+  "type": "object"
 }

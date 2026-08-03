@@ -1,40 +1,59 @@
 api_version: saltext.vcf/v1
 kind: KBResolution
+
 metadata:
   id: kb-304611
-  title: Broadcom KB 304611
-  status: needs-review
-  searchable: true
-  source_verified: false
-  owner: saltext-vcf
-  review:
-    required: true
-    reason: The article title, affected products, versions, and remediation content were not available from an authoritative public source during packaging. They must be reviewed before this entry is marked verified or executable.
+  title: Broadcom KB 304611 — mapping pending verification
+  description: >-
+    Searchable draft definition for KB 304611. The article title, affected
+    components, versions, and remediation have not been verified from an
+    authoritative source. Execution is deliberately mapped to a fail-closed
+    review gate so SCC can search and show the entry without performing a
+    remediation.
+  status: draft
+  maturity: experimental
+  maintainers:
+    - vcf-config-management
+  tags:
+    - kb-304611
+    - review-required
+    - search-only
+
 kb:
   provider: broadcom
-  id: '304611'
-  canonical_url: https://knowledge.broadcom.com/external/article/304611
-search:
-  summary: Search-only entry for KB 304611 until authoritative article metadata and a reviewed Salt-state mapping are supplied.
-  keywords:
-  - '304611'
-  - kb 304611
-  aliases: []
+  id: "304611"
+  title: Broadcom KB 304611
+  url: https://knowledge.broadcom.com/external/article/304611
+  last_verified: "2026-08-03"
+
 applicability:
   products: []
   components: []
   versions: []
+  symptoms:
+    - Search by Broadcom KB ID 304611
+  error_patterns: []
+  prerequisites:
+    - A maintainer must verify the Broadcom article metadata.
+    - A dedicated reusable Salt state must be reviewed before execution is enabled.
+
 execution:
-  enabled: false
-  mode: unavailable
-  state: null
-  entrypoint: null
-  resource: null
-  values_schema: null
-  dry_run_supported: false
-  requires_confirmation: true
-  disabled_reason: No reviewed KB-to-SLS mapping is available. Salt Config CLI must not offer plan, dry-run, or apply for this entry.
+  state: vcf-infra.review-required.review-required
+  resource: review-required
+  entrypoint: review-required.sls
+  description: >-
+    Fail-closed review gate. This state intentionally performs no remediation
+    and reports that the KB-to-SLS mapping is not approved.
+  values_required: false
+  dry_run_supported: true
+  reboot_required: false
+  service_restart_required: false
+
 risk:
-  level: unknown
-  notes:
-  - Do not enable execution until the KB content and mapped state are reviewed.
+  level: critical
+  impact: >-
+    Executing an unverified remediation could modify the wrong VCF component
+    or apply an unrelated configuration.
+  requires_confirmation: true
+  rollback_supported: false
+  rollback_state: null

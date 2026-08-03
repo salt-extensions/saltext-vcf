@@ -1,70 +1,69 @@
 api_version: saltext.vcf/v1
 kind: KBResolution
+
 metadata:
   id: kb-317825
   title: Clean up duplicate DNS records of vCenter
-  status: verified
-  searchable: true
-  source_verified: true
-  owner: saltext-vcf
+  description: >-
+    Broadcom documents duplicate vCenter Server Appliance DNS records after
+    vCenter HA configuration, patching, or failover. The documented workaround
+    changes appliance processes and files. A dedicated idempotent Salt state is
+    required before automated remediation can be approved.
+  status: draft
+  maturity: experimental
+  maintainers:
+    - vcf-config-management
+  tags:
+    - vcenter
+    - vcenter-ha
+    - duplicate-dns
+    - ddns
+    - review-required
+
 kb:
   provider: broadcom
-  id: '317825'
-  canonical_url: https://knowledge.broadcom.com/external/article/317825/clean-up-duplicate-dns-records-of-vcente.html
-search:
-  summary: Duplicate DNS records created around vCenter Server High Availability configuration, patching, or failover can prevent access to vCenter.
-  symptoms:
-  - Access to vCenter is interrupted after a vCenter HA failover.
-  - Duplicate DNS records exist for the vCenter Server Appliance.
-  keywords:
-  - duplicate dns records
-  - vcenter high availability
-  - vcsa dns
-  - vcenter access blocked
-  - ddns
-  - failover
-  aliases:
-  - duplicate vcenter dns
-  - vcenter ha duplicate records
+  id: "317825"
+  title: Clean up duplicate DNS records of vCenter
+  url: https://knowledge.broadcom.com/external/article/317825/clean-up-duplicate-dns-records-of-vcente.html
+  last_verified: "2026-08-03"
+
 applicability:
   products:
-  - VMware vCenter Server
+    - VMware vCenter Server
   components:
-  - vCenter Server
-  - vCenter Server High Availability
+    - vCenter Server
+    - vCenter Server High Availability
   versions:
-  - 6.7.x
-  notes:
-  - The Broadcom article describes the issue for vCenter Server 6.7.x.
-  - The article identifies vCenter Server 6.7 U3b as containing the product fix.
-resolution:
-  type: manual
-  summary: Follow the Broadcom KB guidance to remove duplicate DNS records and use the fixed vCenter release where applicable.
-  operational_notes:
-  - The documented workaround changes appliance files and processes and is not equivalent to applying the generic VCF DNS desired-state resource.
-  - A dedicated, reviewed, idempotent Salt state would be required before automated execution can be enabled.
+    - 6.7.x
+  symptoms:
+    - Duplicate DNS records exist for the vCenter Server Appliance
+    - Access to vCenter is interrupted after a vCenter HA failover
+  error_patterns:
+    - duplicate DNS records
+    - vCenter access blocked after failover
+  prerequisites:
+    - Review the Broadcom KB and confirm the affected vCenter version.
+    - Take a supported backup or snapshot according to operational policy.
+    - Implement and review a dedicated idempotent cleanup state before enabling automation.
+
 execution:
-  enabled: true
-  mode: state-apply
-  resource: ntp
-  state: vcf-infra.ntp.ntp
-  entrypoint: vcf-infra/ntp/ntp.sls
-  values_schema: solutions/schemas/ntp-values.schema.yaml
+  state: vcf-infra.review-required.review-required
+  resource: review-required
+  entrypoint: review-required.sls
+  description: >-
+    Fail-closed review gate. The generic VCF DNS desired-state resource is not
+    equivalent to the appliance-specific cleanup documented by this KB.
+  values_required: false
   dry_run_supported: true
-  requires_confirmation: true
-  customer_values_path: '{environment}/{version}/ntp/values.yaml'
-  target_requirements:
-  - The target group must resolve only to intended ESXi minions.
-  - The target minions must be online in RaaS.
-  runtime:
-    function: state.apply
-    test_argument:
-      dry-run: true
-      apply: false
-    values_transport: execution-scoped-pillar
-    publish_customer_values_to_file_server: false
+  reboot_required: false
+  service_restart_required: false
+
 risk:
   level: high
-  reasons:
-  - The documented workaround changes vCenter appliance processes and files.
-  - Applying an unrelated generic DNS state would not implement the KB resolution.
+  impact: >-
+    The documented workaround changes vCenter appliance processes and files.
+    An incorrect automated implementation could disrupt appliance management
+    services or vCenter availability.
+  requires_confirmation: true
+  rollback_supported: false
+  rollback_state: null
