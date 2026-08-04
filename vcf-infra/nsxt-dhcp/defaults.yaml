@@ -1,0 +1,16 @@
+# Exec-only bridge via `module.run` — no dedicated state exists yet for
+# vcf_nsx_dhcp. NOTE: no safe existence check is exposed at the execution-
+# module level (server_get/relay_get raise on 404 rather than returning
+# None — only the client layer has a get_or_none variant) — this is NOT
+# idempotent as written; it will error on a second run unless you add
+# your own guard.
+server:
+  id: dhcp-server-01
+  spec:
+    server_address: 172.16.20.2/24
+    lease_time: 86400
+
+relay:
+  id: dhcp-relay-01
+  server_addresses:
+    - 172.16.20.2

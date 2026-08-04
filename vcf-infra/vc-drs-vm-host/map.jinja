@@ -1,0 +1,3 @@
+{% import_yaml "vc-drs-vm-host/defaults.yaml" as defaults %}
+
+{% set cfg = salt['pillar.get']('vc-drs-vm-host', default=defaults, merge=True) %}

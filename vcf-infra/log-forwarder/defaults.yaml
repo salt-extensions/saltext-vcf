@@ -1,0 +1,5 @@
+syslog:
+  servers:
+    - hostname: loginsight.lab.local
+      port: 514
+      protocol: UDP

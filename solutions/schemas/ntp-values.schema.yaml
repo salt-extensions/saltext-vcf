@@ -1,0 +1,32 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://saltext-vcf.example/schemas/ntp-values.schema.yaml
+title: VCF NTP customer values
+type: object
+additionalProperties: true
+required:
+  - ntp
+properties:
+  ntp:
+    type: object
+    additionalProperties: true
+    required:
+      - servers
+    properties:
+      servers:
+        type: array
+        minItems: 1
+        uniqueItems: true
+        items:
+          type: string
+          minLength: 1
+        description: Approved NTP server IP addresses or FQDNs.
+      service_enabled:
+        type: boolean
+        default: true
+      service_policy:
+        type: string
+        enum:
+          - on
+          - off
+          - automatic
+        default: on

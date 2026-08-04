@@ -76,18 +76,26 @@ ______________
     sddc_vcenters
     sddc_vcf_services
     vc_patch
+    vccluster_resource_pool
+    vcenter_ad_domain
+    vcenter_advanced_option
     vcenter_appliance
+    vcenter_appliances
     vcenter_cluster
     vcenter_compute_policy
     vcenter_content_library
+    vcenter_custom_attribute
     vcenter_datacenter
     vcenter_datastore
+    vcenter_dvs_nioc
+    vcenter_dvs_nioc_vccluster
     vcenter_folder
     vcenter_host
     vcenter_kms
     vcenter_lcm_depot
     vcenter_network
     vcenter_resource_pool
+    vcenter_shell
     vcenter_sso
     vcenter_storage_policy
     vcenter_supervisor

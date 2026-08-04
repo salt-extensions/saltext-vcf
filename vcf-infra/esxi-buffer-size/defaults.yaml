@@ -1,0 +1,9 @@
+# NOTE: "loose match" per the Ansible inventory mapping — vcf_esxi_advanced
+# only manages generic ESXi advanced-config key/value settings. True NIC
+# ring-buffer sizing is normally an esxcli-level operation
+# (`esxcli network nic ring current set`), not an advanced-config option;
+# there's no dedicated client for that in saltext-vcf yet. This example
+# demonstrates the closest available mechanism.
+advanced:
+  setting: Net.TcpipHeapSize
+  value: 32

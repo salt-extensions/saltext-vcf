@@ -1,0 +1,10 @@
+# Exec-only bridge via `module.run` — no dedicated state exists yet for
+# vcf_vcenter_lcm_depot. NOTE: not idempotent — create_offline/create_online
+# don't take a caller-supplied id and there's no clean single-call existence
+# check by location; this always attempts creation. Covers both
+# "vcf_installer_depot_settings" and "vcf_installer_depot_binary" (same
+# underlying module, offline-depot scoped, per the doc's scope-mismatch note
+# vs. installer-scoped depots).
+depot:
+  offline:
+    file_locator: http://repo.example.com/vcf/lcm-bundle.zip

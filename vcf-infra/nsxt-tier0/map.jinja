@@ -1,0 +1,3 @@
+{% import_yaml "nsxt-tier0/defaults.yaml" as defaults %}
+
+{% set cfg = salt['pillar.get']('nsxt-tier0', default=defaults, merge=True) %}

@@ -1,0 +1,25 @@
+# NOTE: `spec` is passed straight through to SDDC Manager's domain-creation
+# API with no local validation by vcf_sddc_domain. This example spec is
+# illustrative only — it has NOT been verified against a live SDDC Manager,
+# and field names/nesting may not match your SDDC Manager's exact API
+# version. Confirm every field before using this for a real domain create.
+domain:
+  name: wld-01
+  spec:
+    vcenterSpec:
+      name: wld-01-vc
+      datacenterName: wld-01-dc
+    computeSpec:
+      clusterSpecs:
+        - name: wld-01-cluster01
+          hostSpecs:
+            - hostfqdn: esxi01.vcf.example.test
+          datastoreSpec:
+            vsanDatastoreSpec:
+              datastoreName: wld-01-ds01
+          networkSpec:
+            vdsSpecs:
+              - name: wld-01-vds01
+    nsxTSpec:
+      nsxManagerSpecs:
+        - name: wld-01-nsx01

@@ -1,0 +1,10 @@
+# Exec-only bridge via `module.run` — no dedicated state exists yet for
+# vcf_sddc_bundles. Covers "vcf_depot_settings", "vcf_depot_binary", and
+# "vcf_sddc_manager_bundle" (all loose matches to the same underlying
+# module per the doc). Bundle upload is inherently a one-shot action
+# (a specific version's files), not a "present" resource — not idempotent
+# and not really meant to be, matching real SDDC Manager bundle semantics.
+bundle:
+  bundle_file_path: /tmp/bundle.tar
+  manifest_file_path: /tmp/bundle.manifest.json
+  signature_file_path: /tmp/bundle.sig

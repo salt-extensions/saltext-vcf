@@ -1,0 +1,69 @@
+api_version: saltext.vcf/v1
+kind: KBResolution
+
+metadata:
+  id: kb-317825
+  title: Clean up duplicate DNS records of vCenter
+  description: >-
+    Broadcom documents duplicate vCenter Server Appliance DNS records after
+    vCenter HA configuration, patching, or failover. The documented workaround
+    changes appliance processes and files. A dedicated idempotent Salt state is
+    required before automated remediation can be approved.
+  status: draft
+  maturity: experimental
+  maintainers:
+    - vcf-config-management
+  tags:
+    - vcenter
+    - vcenter-ha
+    - duplicate-dns
+    - ddns
+    - review-required
+
+kb:
+  provider: broadcom
+  id: "317825"
+  title: Clean up duplicate DNS records of vCenter
+  url: https://knowledge.broadcom.com/external/article/317825/clean-up-duplicate-dns-records-of-vcente.html
+  last_verified: "2026-08-03"
+
+applicability:
+  products:
+    - VMware vCenter Server
+  components:
+    - vCenter Server
+    - vCenter Server High Availability
+  versions:
+    - 6.7.x
+  symptoms:
+    - Duplicate DNS records exist for the vCenter Server Appliance
+    - Access to vCenter is interrupted after a vCenter HA failover
+  error_patterns:
+    - duplicate DNS records
+    - vCenter access blocked after failover
+  prerequisites:
+    - Review the Broadcom KB and confirm the affected vCenter version.
+    - Take a supported backup or snapshot according to operational policy.
+    - Implement and review a dedicated idempotent cleanup state before enabling automation.
+
+execution:
+  state: vcf-infra.review-required.review-required
+  resource: review-required
+  entrypoint: review-required.sls
+  description: >-
+    Fail-closed review gate. The generic VCF DNS desired-state resource is not
+    equivalent to the appliance-specific cleanup documented by this KB.
+  values_required: false
+  dry_run_supported: true
+  reboot_required: false
+  service_restart_required: false
+
+risk:
+  level: high
+  impact: >-
+    The documented workaround changes vCenter appliance processes and files.
+    An incorrect automated implementation could disrupt appliance management
+    services or vCenter availability.
+  requires_confirmation: true
+  rollback_supported: false
+  rollback_state: null

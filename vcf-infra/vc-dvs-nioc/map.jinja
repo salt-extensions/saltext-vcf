@@ -1,0 +1,3 @@
+{% import_yaml "vc-dvs-nioc/defaults.yaml" as defaults %}
+
+{% set cfg = salt['pillar.get']('vc-dvs-nioc', default=defaults, merge=True) %}

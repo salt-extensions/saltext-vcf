@@ -33,9 +33,18 @@ _____________
     vcf_nsx_tier1
     vcf_sddc_host
     vcf_vc_patch
+    vcf_vccluster_resource_pool
+    vcf_vcenter_ad_domain
+    vcf_vcenter_advanced_option
     vcf_vcenter_appliance
+    vcf_vcenter_appliances
     vcf_vcenter_cluster
+    vcf_vcenter_content_library
+    vcf_vcenter_custom_attribute
+    vcf_vcenter_dvs_nioc
+    vcf_vcenter_dvs_nioc_vccluster
     vcf_vcenter_host
+    vcf_vcenter_shell
     vcf_vcenter_supervisor_service
     vcf_vcenter_vm_class
     vcf_vcf_services

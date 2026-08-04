@@ -1,0 +1,4 @@
+{% import_yaml "vcenter-sso-group/defaults.yaml" as defaults %}
+
+{% set cfg = salt['pillar.get']('vcenter-sso-group', default=defaults, merge=True) %}
+{% set group_id = cfg.group.name ~ '@' ~ cfg.group.domain %}

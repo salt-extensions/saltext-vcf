@@ -1,0 +1,8 @@
+# Covers both "nsxt_role" and "nsxt_permission" Ansible items — NSX-T RBAC
+# doesn't separate role definition from permission assignment the way
+# vCenter does; both are expressed as one role binding to a principal.
+binding:
+  name: svc-automation@vsphere.local
+  type: remote_user
+  roles:
+    - role: auditor

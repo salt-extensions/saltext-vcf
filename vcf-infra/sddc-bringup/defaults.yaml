@@ -1,0 +1,30 @@
+# NOTE: `spec` is passed straight through to the VCF Installer bringup API
+# with no local validation by vcf_installer_bringup. This example spec is
+# illustrative only, built from general VCF bringup-payload shape — it has
+# NOT been verified against a live VCF Installer, and field names/nesting
+# may not match your Installer's exact API version. Confirm every field
+# before using this for a real bringup.
+bringup:
+  spec:
+    sddcId: sddc-mgmt-01
+    ceipEnabled: false
+    dvSwitchVersion: "8.0.0"
+    skipEsxThumbprintValidation: true
+    managementPoolName: mgmt-pool01
+    dnsSpec:
+      domain: vcf.example.test
+      nameServer: 25.0.0.40
+      secondaryNameServer: 25.0.0.41
+    ntpServers:
+      - 25.0.0.10
+    hostSpecs:
+      - hostname: esxi01.vcf.example.test
+        credentials:
+          username: root
+        vSwitch: vSwitch0
+    sddcManagerSpec:
+      hostname: sddc-manager
+      rootUserCredentials:
+        username: root
+      secondUserCredentials:
+        username: vcf
