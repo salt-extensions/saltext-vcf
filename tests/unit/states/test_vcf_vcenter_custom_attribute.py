@@ -33,7 +33,9 @@ def test_present_creates(monkeypatch):
         or {"key": 5, "name": name, "managed_object_type": managed_object_type},
     )
     ret = st.present("Owner", managed_object_type="VirtualMachine")
-    assert ret["changes"] == {"new": {"key": 5, "name": "Owner", "managed_object_type": "VirtualMachine"}}
+    assert ret["changes"] == {
+        "new": {"key": 5, "name": "Owner", "managed_object_type": "VirtualMachine"}
+    }
     assert calls == [("Owner", "VirtualMachine")]
 
 

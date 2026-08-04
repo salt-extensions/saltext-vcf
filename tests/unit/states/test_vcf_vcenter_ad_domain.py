@@ -65,7 +65,9 @@ def test_ad_absent_leaves(monkeypatch):
             "domain_name": domain_name,
         },
     )
-    monkeypatch.setattr(c, "leave", lambda opts, provider_id, profile=None: calls.append(provider_id))
+    monkeypatch.setattr(
+        c, "leave", lambda opts, provider_id, profile=None: calls.append(provider_id)
+    )
     ret = st.ad_absent("corp.example")
     assert ret["changes"] == {"deleted": "corp.example"}
     assert calls == ["p-1"]

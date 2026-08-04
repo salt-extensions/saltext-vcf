@@ -24,9 +24,7 @@ def _opt(key, value):
 
 def test_advanced_get_single_key(opts, option_mgr):
     option_mgr.QueryOptions.return_value = [_opt("config.vpxd.stats.maxQueryMetrics", 64)]
-    assert (
-        vcenter_advanced_option.advanced_get(opts, key="config.vpxd.stats.maxQueryMetrics") == 64
-    )
+    assert vcenter_advanced_option.advanced_get(opts, key="config.vpxd.stats.maxQueryMetrics") == 64
 
 
 def test_advanced_get_all(opts, option_mgr):

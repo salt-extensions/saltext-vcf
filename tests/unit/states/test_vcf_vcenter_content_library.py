@@ -15,7 +15,9 @@ STORAGE_BACKINGS = [{"type": "DATASTORE", "datastore_id": "datastore-1"}]
 
 
 def test_present_already_exists(monkeypatch):
-    monkeypatch.setattr(c, "find_libraries", lambda opts, name=None, type=None, profile=None: ["lib-1"])
+    monkeypatch.setattr(
+        c, "find_libraries", lambda opts, name=None, type=None, profile=None: ["lib-1"]
+    )
     monkeypatch.setattr(
         c, "get_or_none", lambda opts, library_id, profile=None: {"id": library_id, "name": "Isos"}
     )
@@ -54,18 +56,24 @@ def test_absent_already_absent(monkeypatch):
 
 def test_absent_deletes(monkeypatch):
     calls = []
-    monkeypatch.setattr(c, "find_libraries", lambda opts, name=None, type=None, profile=None: ["lib-1"])
+    monkeypatch.setattr(
+        c, "find_libraries", lambda opts, name=None, type=None, profile=None: ["lib-1"]
+    )
     monkeypatch.setattr(
         c, "get_or_none", lambda opts, library_id, profile=None: {"id": library_id, "name": "Isos"}
     )
-    monkeypatch.setattr(c, "delete_local", lambda opts, library_id, profile=None: calls.append(library_id))
+    monkeypatch.setattr(
+        c, "delete_local", lambda opts, library_id, profile=None: calls.append(library_id)
+    )
     ret = st.absent("Isos")
     assert ret["changes"] == {"deleted": "Isos"}
     assert calls == ["lib-1"]
 
 
 def test_absent_test_mode(monkeypatch):
-    monkeypatch.setattr(c, "find_libraries", lambda opts, name=None, type=None, profile=None: ["lib-1"])
+    monkeypatch.setattr(
+        c, "find_libraries", lambda opts, name=None, type=None, profile=None: ["lib-1"]
+    )
     monkeypatch.setattr(
         c, "get_or_none", lambda opts, library_id, profile=None: {"id": library_id, "name": "Isos"}
     )

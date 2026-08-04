@@ -30,9 +30,7 @@ def cluster_dvs_list(opts, cluster, profile=None):
     cl = _cluster(opts, cluster, profile=profile)
     host_moids = {h._moId for h in (cl.host or [])}  # noqa: SLF001
     return [
-        dvs["moid"]
-        for dvs in dvs_c.list_(opts, profile=profile)
-        if host_moids & set(dvs["hosts"])
+        dvs["moid"] for dvs in dvs_c.list_(opts, profile=profile) if host_moids & set(dvs["hosts"])
     ]
 
 
