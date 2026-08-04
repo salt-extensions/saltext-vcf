@@ -1,0 +1,12 @@
+# Exec-only bridge via `module.run` — no dedicated state exists yet for
+# vcf_vcenter_kms. Loose match: NKP (Native Key Provider) is conceptually
+# adjacent to KMS but unconfirmed as the same underlying vCenter object.
+# NOTE: not idempotent — server-generated id, no clean existence check.
+kms:
+  provider_spec:
+    name: corp-kms-provider
+    kms_info:
+      name: corp-kms-server
+      server:
+        address: kms.corp.example.test
+        port: 5696

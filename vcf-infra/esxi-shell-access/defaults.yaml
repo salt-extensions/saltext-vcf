@@ -1,0 +1,8 @@
+# Exec-only bridge via `module.run` — no dedicated state exists yet for
+# vcf_vim_host_security. Uses lockdown_set for the closest available
+# match to "shell access" control. NOTE: not idempotent as written —
+# lockdown_get(host) exists to compare current mode, but that comparison
+# logic isn't wired up here; add your own `unless`/`onlyif` before real use.
+host:
+  name: esxi01.vcf.example.test
+  lockdown_mode: lockdownDisabled

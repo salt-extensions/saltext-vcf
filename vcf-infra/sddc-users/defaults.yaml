@@ -1,0 +1,16 @@
+# Exec-only bridge via `module.run` — no dedicated state exists yet for
+# vcf_sddc_system. Covers both "vcf_identity_source" and "vcf_user" (both
+# loosely map to the same SDDC Manager users API — bulk-add is the closest
+# available capability to either concept). `user_specs` follows the
+# UserCreationSpec shape from the SDDC Manager API — illustrative only,
+# not verified against a live SDDC Manager.
+# NOTE: not idempotent — no caller-supplied id, no clean existence check
+# before bulk-adding.
+users:
+  user_specs:
+    - name: svc-automation
+      type: SERVICE
+      role:
+        name: ADMIN
+      domain:
+        name: SDDC_MANAGER_LOCAL

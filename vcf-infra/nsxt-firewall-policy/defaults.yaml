@@ -1,0 +1,24 @@
+# `**spec` on both states is a raw pass-through to the NSX Policy API PUT body
+# (no local validation). Fields below follow the standard NSX-T Policy API
+# shape (SecurityPolicy / Rule) but haven't been exercised against a live
+# NSX Manager — verify field names against your NSX-T version before real use.
+domain: default
+
+policy:
+  name: dfw-policy-01
+  spec:
+    category: Application
+    sequence_number: 10
+
+rule:
+  name: allow-mgmt-ssh
+  spec:
+    action: ALLOW
+    source_groups:
+      - ANY
+    destination_groups:
+      - ANY
+    services:
+      - /infra/services/SSH
+    scope:
+      - ANY

@@ -1,0 +1,6 @@
+# Narrow slice — vcf_nsx_tier1 only toggles multicast on an existing
+# Tier-1 gateway's locale service.
+tier1:
+  name: tier1-gw01
+  locale_service: default
+  multicast_enabled: false

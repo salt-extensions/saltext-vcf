@@ -1,0 +1,10 @@
+cluster:
+  id: domain-c9
+
+rule:
+  name: keep-app-vms-together
+  vm_moids:
+    - vm-101
+    - vm-102
+  enabled: true
+  mandatory: false

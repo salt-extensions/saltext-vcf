@@ -1,0 +1,11 @@
+# `**spec` is a raw pass-through to the NSX Policy API segment PUT body.
+# Fields below follow the standard NSX-T segment shape but haven't been
+# exercised against a live NSX Manager — verify before real use. Also
+# covers "vcf_avns" loosely (AVNs are NSX overlay segments for VCF
+# management components).
+segment:
+  name: seg-mgmt-01
+  spec:
+    transport_zone_path: /infra/sites/default/enforcement-points/default/transport-zones/overlay-tz
+    subnets:
+      - gateway_address: 172.16.10.1/24

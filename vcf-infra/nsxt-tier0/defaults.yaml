@@ -1,0 +1,9 @@
+# Narrow slice of Tier-0 capability — vcf_nsx_tier0 only toggles BGP/OSPF/
+# multicast on an existing gateway's locale service; it does not create a
+# Tier-0 gateway or configure interfaces (no such function exists yet).
+tier0:
+  name: tier0-gw01
+  locale_service: default
+  bgp_enabled: true
+  ospf_enabled: false
+  multicast_enabled: false

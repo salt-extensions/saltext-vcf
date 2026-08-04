@@ -1,0 +1,8 @@
+# Exec-only bridge via `module.run` — no dedicated state exists yet for
+# vcf_sddc_personalities. Guarded with `unless` against `list_` filtered
+# by name, so this is safe to re-run.
+personality:
+  name: mgmt-domain-personality-01
+  spec:
+    personality_name: mgmt-domain-personality-01
+    description: Management domain baseline personality

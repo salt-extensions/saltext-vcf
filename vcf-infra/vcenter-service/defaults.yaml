@@ -1,0 +1,7 @@
+# Exec-only bridge via `module.run` — no dedicated state exists yet for
+# vcf_vcenter_appliance's service lifecycle functions. NOTE: Salt doesn't
+# track this as idempotent (no before/after diff reported), though
+# starting an already-running vCenter appliance service is safe to repeat
+# server-side.
+service:
+  name: vmware-vpxd
