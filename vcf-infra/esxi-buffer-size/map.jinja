@@ -1,0 +1,3 @@
+{% import_yaml "esxi-buffer-size/defaults.yaml" as defaults %}
+
+{% set cfg = salt['pillar.get']('esxi-buffer-size', default=defaults, merge=True) %}

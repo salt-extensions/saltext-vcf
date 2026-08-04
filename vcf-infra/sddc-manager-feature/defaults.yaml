@@ -1,0 +1,9 @@
+# NOTE: this Ansible item's name ("vcf_sddc_manager_feature") implies
+# SDDC Manager feature-flag management, but saltext-vcf's vcf_sddc_manager
+# state only has `ready`/`deployed` — a reachability/health check, not
+# feature-flag toggling. There is no feature-flag capability in saltext-vcf
+# yet; this example only demonstrates the health check that does exist.
+# Treat this resource as a placeholder until real feature-flag support is
+# added to saltext-vcf.
+sddc_manager:
+  name: sddc-manager

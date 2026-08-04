@@ -1,0 +1,5 @@
+domain:
+  name: domain-c9-retired
+
+host:
+  fqdn: esxi-retired.vcf.example.test

@@ -1,0 +1,34 @@
+ntp:
+  servers:
+    - 0.pool.ntp.org
+    - 1.pool.ntp.org
+  enabled: true
+
+advanced:
+  setting: Syslog.global.logDir
+  value: /scratch/log
+
+syslog:
+  servers:
+    - tcp://loginsight.lab.local:514
+  log_level: info
+
+service:
+  name: TSM-SSH
+  policy: automatic
+
+firewall:
+  rule: sshServer
+  enabled: true
+  allowed_ips: []
+  all_ip: true
+
+dns:
+  host: esxi01.vcf.example.test
+  dhcp: false
+  hostname: esxi01
+  domain_name: vcf.example.test
+  servers:
+    - 25.0.0.40
+  search_domains:
+    - vcf.example.test

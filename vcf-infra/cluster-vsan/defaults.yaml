@@ -1,0 +1,10 @@
+# Covers vcf_vsan_cluster.configured (cluster-level vSAN settings only —
+# not per-datastore naming/policy, which vsan_cluster's client doesn't expose).
+cluster:
+  id: domain-c9
+
+vsan:
+  enabled: true
+  dedup_compression_enabled: true
+  encryption_enabled: false
+  auto_claim_storage: true
