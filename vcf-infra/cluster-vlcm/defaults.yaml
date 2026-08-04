@@ -1,0 +1,15 @@
+cluster:
+  id: domain-c9
+
+depot:
+  type: offline
+  location: http://repo.example.com/VMware-ESXi-9.2.0.0.25504872-depot.zip
+
+image:
+  spec:
+    base_image:
+      version: "9.2.0.0.25504872"
+
+policy:
+  spec:
+    enable_quick_boot: true

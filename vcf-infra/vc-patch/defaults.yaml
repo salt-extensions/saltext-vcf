@@ -1,0 +1,6 @@
+repository:
+  url: http://repo.example.com/vcsa/
+  auto_stage: false
+  certificate_check: true
+
+version: "9.0.1.0.12345"
