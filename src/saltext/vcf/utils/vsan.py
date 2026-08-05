@@ -104,6 +104,13 @@ def object_system(opts, profile=None):
     )
 
 
+def file_service_system(opts, profile=None):
+    """vim.cluster.VsanVcFileServiceSystem — vSAN File Service (FSVM OVF, domains)."""
+    return vim.cluster.VsanVcFileServiceSystem(
+        "vsan-cluster-file-service-system", get_stub(opts, profile=profile)
+    )
+
+
 # ---------------------------------------------------------------------------
 # Cluster lookup convenience
 # ---------------------------------------------------------------------------

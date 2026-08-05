@@ -28,6 +28,8 @@ import atexit
 import logging
 import ssl
 import time
+import urllib.request
+from urllib.parse import urlsplit
 
 from pyVim.connect import Disconnect
 from pyVim.connect import SmartConnect
@@ -82,6 +84,10 @@ def get_service_instance(opts, profile=None):
     }
     if port is not None:
         smart_kwargs["port"] = int(port)
+    proxy_host, proxy_port = _proxy_for_host(host)
+    if proxy_host:
+        smart_kwargs["httpProxyHost"] = proxy_host
+        smart_kwargs["httpProxyPort"] = proxy_port
     si = SmartConnect(**smart_kwargs)
     _SI_CACHE[cache_key] = si
     atexit.register(_safe_disconnect, si)
@@ -96,6 +102,27 @@ def invalidate_service_instance(opts, profile=None):
     si = _SI_CACHE.pop(cache_key, None)
     if si is not None:
         _safe_disconnect(si)
+
+
+def _proxy_for_host(host):
+    """Return ``(proxy_host, proxy_port)`` for an HTTPS connection to *host*.
+
+    ``requests`` (used by the REST client in this same module's sibling)
+    honors ``HTTPS_PROXY``/``NO_PROXY`` automatically via ``urllib3``.
+    ``pyVim.connect.SmartConnect`` does not — it only proxies when given
+    explicit ``httpProxyHost``/``httpProxyPort`` kwargs. On appliances that
+    front every service behind a local envoy/system-proxy (VCF 9.x), the
+    vCenter hostname resolves to loopback and raw SOAP connections get
+    refused unless routed through that proxy, same as REST already is.
+    Falls back to ``(None, None)`` — a direct connection — everywhere else.
+    """
+    if urllib.request.proxy_bypass(host):
+        return None, None
+    proxy_url = urllib.request.getproxies().get("https")
+    if not proxy_url:
+        return None, None
+    parsed = urlsplit(proxy_url)
+    return parsed.hostname, parsed.port
 
 
 def _connection_target(cfg):

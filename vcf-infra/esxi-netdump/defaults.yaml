@@ -1,0 +1,5 @@
+netdump:
+  interface_name: vmk0
+  server_ip: 10.0.0.5
+  server_port: 6500
+  enabled: True

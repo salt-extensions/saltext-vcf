@@ -100,6 +100,29 @@ def invalidate_service_instance(opts, profile=None):
         _safe_disconnect(si)
 
 
+def get_ssh_config(opts, profile=None):
+    """Extract ESXi SSH connection config from Salt opts/pillar.
+
+    Reads the ``ssh`` sub-block of ``saltext.vcf.esxi``; used by controls
+    that have no vim25 equivalent and must run ``esxcli`` directly on the
+    host (e.g. network coredump/netdump — see :mod:`clients.esxi_netdump`).
+    The SSH ``host`` defaults to the SOAP/REST ``host`` when not set
+    separately. Returns a dict with keys: host, username, password, port.
+    """
+    pillar = opts.get("pillar", {})
+    root = pillar.get("saltext.vcf", {}) or opts.get("saltext.vcf", {})
+    cfg = root.get("esxi", {})
+    if profile:
+        cfg = root.get("profiles", {}).get(profile, {}).get("esxi", cfg)
+    ssh = cfg.get("ssh", {}) or {}
+    return {
+        "host": ssh.get("host") or cfg.get("host") or cfg.get("hostname"),
+        "username": ssh.get("username") or ssh.get("user") or cfg.get("username") or "root",
+        "password": ssh.get("password") or cfg.get("password"),
+        "port": ssh.get("port", 22),
+    }
+
+
 def get_host_system(opts, profile=None):
     """Return the ``vim.HostSystem`` for a standalone ESXi host.
 

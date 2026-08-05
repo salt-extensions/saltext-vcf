@@ -1,0 +1,14 @@
+settings:
+  logging_options:
+    level: info                     # none|error|warning|info|verbose|trivia
+  mail:
+    server: smtp.example.test
+    sender: vcenter@example.test
+  timeout_settings:
+    normal_seconds: 30
+    long_seconds: 120
+  snmp_receivers:
+    - enabled: True
+      name: snmp-receiver-1.example.test
+      port: 162
+      community: public

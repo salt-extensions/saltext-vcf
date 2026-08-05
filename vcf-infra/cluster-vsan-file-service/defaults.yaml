@@ -1,0 +1,15 @@
+cluster:
+  name: SDDC-Cluster1
+
+file_service:
+  network_name: SDDC-DPortGroup-VM-Mgmt
+  domain_name: fileshare
+  subnet_mask: 255.255.255.0
+  gateway_address: 10.0.0.250
+  dns_suffixes:
+    - vrack.vsphere.local
+  dns_address:
+    - 10.0.0.250
+  ip_to_fqdn:
+    10.0.0.170: file0.vrack.vsphere.local
+    10.0.0.171: file1.vrack.vsphere.local

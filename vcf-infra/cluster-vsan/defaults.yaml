@@ -1,5 +1,6 @@
-# Covers vcf_vsan_cluster.configured (cluster-level vSAN settings only —
-# not per-datastore naming/policy, which vsan_cluster's client doesn't expose).
+# Covers vcf_vsan_cluster.configured (cluster-level vSAN settings) plus the
+# per-datastore default storage policy assignment (PBM), closing out the
+# vccluster_vsan_datastore Ansible role's full scope.
 cluster:
   id: domain-c9
 
@@ -8,3 +9,7 @@ vsan:
   dedup_compression_enabled: true
   encryption_enabled: false
   auto_claim_storage: true
+
+datastore:
+  name: vsanDatastore
+  storage_policy: raid0-vm-policy

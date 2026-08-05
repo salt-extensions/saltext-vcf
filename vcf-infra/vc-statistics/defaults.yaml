@@ -1,0 +1,21 @@
+statistics:
+  past_day:
+    interval_minutes: 5
+    save_days: 1
+    level: 1
+    enabled: True
+  past_week:
+    interval_minutes: 30
+    save_days: 7
+    level: 1
+    enabled: True
+  past_month:
+    interval_minutes: 120
+    save_days: 30
+    level: 1
+    enabled: True
+  past_year:
+    interval_minutes: 1440
+    save_days: 365
+    level: 1
+    enabled: True

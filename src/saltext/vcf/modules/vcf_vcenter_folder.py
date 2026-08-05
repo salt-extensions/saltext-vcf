@@ -46,3 +46,42 @@ def list_by_type(folder_type, profile=None):
 
     """
     return c.list_by_type(__opts__, folder_type, profile=profile)
+
+
+def find_by_name(name, profile=None):
+    """Find by name.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcenter_folder.find_by_name <name>
+
+    """
+    return c.find_by_name(__opts__, name, profile=profile)
+
+
+def create(name, folder_type, parent=None, datacenter=None, profile=None):
+    """Create.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcenter_folder.create <name> <folder_type>
+
+    """
+    return c.create(__opts__, name, folder_type, parent=parent, datacenter=datacenter, profile=profile)
+
+
+def delete(folder_id, profile=None):
+    """Delete.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcenter_folder.delete <folder_id>
+
+    """
+    return c.delete(__opts__, folder_id, profile=profile)

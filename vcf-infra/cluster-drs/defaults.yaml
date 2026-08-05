@@ -1,3 +1,5 @@
+cluster:
+  name: mgmt-anchor
 drs:
   enabled: true
   default_vm_behavior: fullyAutomated
