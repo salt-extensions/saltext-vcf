@@ -1,0 +1,100 @@
+api_version: saltext.vcf/v1
+kind: KBResolution
+
+metadata:
+  id: kb-369707
+  title: >-
+    ESXi host may grant unintended full administrative access to Active
+    Directory group members
+  description: >-
+    When an ESXi host is joined to Active Directory, all members of the
+    group named "ESX Admins" (by default) are automatically granted full
+    administrative access to the host. Fixed natively in ESXi 8.0 U3; this
+    resolution applies the documented workaround for earlier releases by
+    disabling the automatic group grant and shortening the permission
+    re-validation interval, using the existing generic
+    vcf_esxi_advanced.setting state. The article title/URL were sourced
+    from user-provided article text, not an independently fetched page (the
+    Wolken KB portal renders content client-side behind SSO) -- a
+    maintainer with portal access should confirm the official metadata
+    before flipping this entry to verified/production.
+  status: draft
+  maturity: experimental
+  maintainers:
+    - vcf-config-management
+  tags:
+    - esxi
+    - active-directory
+    - security-hardening
+    - esx-admins-group
+    - review-required
+
+kb:
+  provider: broadcom
+  id: "369707"
+  title: >-
+    ESXi host may grant unintended full administrative access to Active
+    Directory group members
+  url: https://broadcomcms-software-agent.wolkenservicedesk.com/wolken/esd/knowledge-base-view/view-kb-article?articleNumber=369707
+  last_verified: null
+
+applicability:
+  products:
+    - VMware ESXi
+  components:
+    - ESXi
+  versions:
+    - 7.x
+    - 8.0
+    - 8.0 U1
+    - 8.0 U2
+  symptoms:
+    - Active Directory "ESX Admins" group members receive unintended full administrative access to the ESXi host
+    - Host is joined to Active Directory with Config.HostAgent.plugins.hostsvc.esxAdminsGroupAutoAdd enabled
+  error_patterns: []
+  prerequisites:
+    - >-
+      This state targets standalone/direct-mode ESXi hosts only
+      (saltext.vcf:esxi pillar) -- vcf_esxi_advanced.py's own client
+      docstring notes direct host REST/SOAP access is not the supported
+      path once a host is vCenter-managed. For vCenter-managed hosts, check
+      whether the equivalent setting is exposed via the vSphere 9
+      Configuration Profile API first (salt-call
+      vcf_cluster_config.schema_get <cluster>) before relying on this
+      state.
+    - Fixed natively in ESXi 8.0 U3 and later -- this workaround is only needed on earlier releases.
+    - >-
+      If the host was already joined to Active Directory before this
+      state is applied, separately remove the stale Admin permission entry
+      for the AD group (default "ESX Admins") -- this state does not
+      perform that removal. The KB's own remediation is the esxcli command
+      `esxcli system permission unset -i 'yourdomain\esx^admins' --group`;
+      no equivalent Salt state exists yet (it needs the *host-local*
+      AuthorizationManager, not vCenter's, which no client in this repo
+      currently exposes).
+    - A maintainer should confirm the official KB title/URL from an authoritative Broadcom source before this entry is marked verified.
+
+execution:
+  state: vcf-infra.esxi-admin-group-hardening.esxi-admin-group-hardening
+  resource: esxi-admin-group-hardening
+  entrypoint: esxi-admin-group-hardening.sls
+  description: >-
+    Disable automatic Admin-role grant for the Active Directory "ESX
+    Admins" group and shorten the permission re-validation interval on the
+    target ESXi host.
+  values_required: false
+  dry_run_supported: true
+  reboot_required: false
+  service_restart_required: false
+
+risk:
+  level: high
+  impact: >-
+    Incorrectly changing these settings could affect how Active-Directory-
+    based administrative access to the ESXi host is granted going forward.
+    This state only covers standalone/direct-mode ESXi hosts (see
+    prerequisites) and does not perform the KB's separate stale-permission
+    removal step, which still requires a manual esxcli/Host Client action.
+  requires_confirmation: true
+  rollback_supported: true
+  rollback_state: vcf-infra.esxi-admin-group-hardening.esxi-admin-group-hardening
