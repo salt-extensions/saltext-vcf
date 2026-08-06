@@ -82,7 +82,6 @@ execution:
     Disable automatic Admin-role grant for the Active Directory "ESX
     Admins" group and shorten the permission re-validation interval on the
     target ESXi host.
-  values_schema: solutions/schemas/esxi-admin-group-hardening-values.schema.yaml
   values_required: false
   dry_run_supported: true
   reboot_required: false
