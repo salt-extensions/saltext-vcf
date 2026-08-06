@@ -58,3 +58,25 @@ solutions:
     risk: medium
     solution_path: kb-317537/solution.yaml
     state: vcf-infra.ntp.ntp
+
+  - solution_id: kb-316384
+    kb_id: "316384"
+    title: Remove unauthorized/unused USB controllers from virtual machines
+    summary: >-
+      Audit every VM for USB 2.0/xHCI USB controllers and remove them from
+      connected VMs, following the KB's reference PowerCLI audit-and-remove
+      script.
+    components:
+      - Virtual Machine
+    versions:
+      - 6.x
+      - 7.x
+      - 8.x
+      - 9.x
+    symptoms:
+      - A VM has a USB controller that should not be present
+      - Unauthorized USB peripheral passthrough is a concern for the target VM
+    status: draft
+    risk: high
+    solution_path: kb-316384/solution.yaml
+    state: vcf-infra.usb-controller-removal.usb-controller-removal
