@@ -115,3 +115,61 @@ def serial_present(
     ret["changes"] = {"added": uri or file_path}
     ret["comment"] = f"serial port added to {vm}"
     return ret
+
+
+def usb_controllers_absent(name, connected_only=True, profile=None):
+    """Ensure no VM in the inventory has a USB controller device (Broadcom KB 316384).
+
+    Fleet-wide, not single-VM scoped: scans every VM, matching the KB's
+    reference PowerCLI script's ``Get-VM | ? {... -match "USB"}`` sweep,
+    then removes any USB controller found. Under ``test=True`` this only
+    reports which VMs/devices would be touched — no reconfiguration is
+    issued.
+
+    When *connected_only* is true (default, matches the reference
+    script), VMs that aren't in the ``connected`` runtime state are
+    reported but not touched — a disconnected/orphaned VM's hardware
+    can't be reconfigured anyway.
+    """
+    ret = _ret(name)
+    found = c.list_vms_with_usb_controllers(__opts__, profile=profile)
+    if connected_only:
+        targets = [v for v in found if v["connected"]]
+        skipped = [v for v in found if not v["connected"]]
+    else:
+        targets, skipped = found, []
+
+    if not targets:
+        comment = "no VMs with a USB controller found"
+        if skipped:
+            comment += f" ({len(skipped)} disconnected VM(s) with a USB controller were skipped)"
+        ret["comment"] = comment
+        return ret
+
+    vm_names = [v["vm"] for v in targets]
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"USB controller(s) would be removed from: {', '.join(vm_names)}"
+        ret["changes"] = {"would_remove": {v["vm"]: v["devices"] for v in targets}}
+        return ret
+
+    removed = {}
+    errors = {}
+    for v in targets:
+        try:
+            removed[v["vm"]] = c.usb_controllers_remove(__opts__, v["moid"], profile=profile)
+        except Exception as exc:  # pylint: disable=broad-except
+            errors[v["vm"]] = str(exc)
+
+    ret["changes"] = {"removed": removed}
+    if errors:
+        ret["result"] = False
+        ret["changes"]["errors"] = errors
+        ret["comment"] = (
+            f"removed USB controller(s) from {len(removed)} VM(s); failed on {len(errors)}"
+        )
+    else:
+        ret["comment"] = (
+            f"removed USB controller(s) from {len(removed)} VM(s): {', '.join(vm_names)}"
+        )
+    return ret

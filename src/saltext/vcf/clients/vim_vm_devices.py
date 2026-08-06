@@ -1,4 +1,4 @@
-"""Niche VM virtual-device CRUD: vTPM, vGPU, serial port, video card.
+"""Niche VM virtual-device CRUD: vTPM, vGPU, serial port, video card, USB controllers.
 
 Uses the same device-spec idiom as :mod:`vim_vm_disk` and :mod:`vim_vm_nic`:
 build a ``vim.vm.device.Virtual*`` device, wrap in a
@@ -9,6 +9,7 @@ build a ``vim.vm.device.Virtual*`` device, wrap in a
 from pyVmomi import vim
 
 from saltext.vcf.clients.vim_vm import _vm
+from saltext.vcf.utils import vim as soap
 
 
 def _reconfig(vm, device_spec):
@@ -205,3 +206,78 @@ def serial_remove(opts, vm_id_or_name, key=None, profile=None):
         if key is None or int(d.key) == int(key):
             return _reconfig(vm, vim.vm.device.VirtualDeviceSpec(operation="remove", device=d))
     raise LookupError(f"no matching serial port on VM {vm_id_or_name!r}")
+
+
+# ---------------------------------------------------------------------------
+# USB controllers (Broadcom KB 316384: unauthorized USB peripheral passthrough)
+# ---------------------------------------------------------------------------
+
+# Covers both the USB 2.0 controller (EHCI+UHCI) and the USB 3.x xHCI
+# controller — a VM can have either or both. Matched by device type rather
+# than the KB's reference PowerCLI script's ``DeviceInfo.Label -match
+# "USB"`` string match, which is more fragile (UI label text, not a
+# stable API contract).
+_USB_CONTROLLER_TYPES = (
+    vim.vm.device.VirtualUSBController,
+    vim.vm.device.VirtualUSBXHCIController,
+)
+
+
+def usb_controllers_list(opts, vm_id_or_name, profile=None):
+    """List USB controller devices (USB 2.0 and/or USB 3.x xHCI) on *vm*."""
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    return [_device_summary(d) for d in _devices(vm, _USB_CONTROLLER_TYPES)]
+
+
+def usb_controllers_remove(opts, vm_id_or_name, profile=None):
+    """Remove every USB controller device from *vm*. Returns the removed device summaries.
+
+    Batches all removals into one ``ReconfigVM_Task`` call — the KB's
+    reference PowerCLI script issues a separate task per device with a
+    sleep in between, but a VM has at most one USB 2.0 and one USB 3.x
+    controller, so batching is both faster and atomic.
+    """
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    targets = _devices(vm, _USB_CONTROLLER_TYPES)
+    if not targets:
+        return []
+    spec = vim.vm.ConfigSpec(
+        deviceChange=[
+            vim.vm.device.VirtualDeviceSpec(operation="remove", device=d) for d in targets
+        ]
+    )
+    vm.ReconfigVM_Task(spec=spec)
+    return [_device_summary(d) for d in targets]
+
+
+def list_vms_with_usb_controllers(opts, profile=None):
+    """Return every VM in the inventory that has a USB controller device.
+
+    Mirrors the KB-316384 PowerCLI audit sweep (``Get-VM | ? {...}``), but
+    across the whole inventory in one call rather than one VM at a time.
+    Each entry is ``{"vm", "moid", "connected", "devices"}``; *connected*
+    matches ``VirtualMachine.runtime.connectionState == "connected"``, the
+    same check the reference script makes before attempting a removal.
+    """
+    content = soap.content(opts, profile=profile)
+    container = content.viewManager.CreateContainerView(
+        content.rootFolder, [vim.VirtualMachine], True
+    )
+    try:
+        out = []
+        for vm in container.view:
+            if not vm.config:
+                continue
+            devices = _devices(vm, _USB_CONTROLLER_TYPES)
+            if devices:
+                out.append(
+                    {
+                        "vm": vm.name,
+                        "moid": vm._moId,  # noqa: SLF001
+                        "connected": vm.runtime.connectionState == "connected",
+                        "devices": [_device_summary(d) for d in devices],
+                    }
+                )
+        return out
+    finally:
+        container.Destroy()
