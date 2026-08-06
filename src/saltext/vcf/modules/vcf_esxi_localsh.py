@@ -22,14 +22,14 @@ def get(profile=None):
     return c.get(__opts__, profile=profile)
 
 
-def apply(content, execute=True, profile=None):
+def apply(features, execute=True, profile=None):
     """Apply.
 
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' vcf_esxi_localsh.apply "#!/bin/sh\\nexit 0"
+        salt '*' vcf_esxi_localsh.apply '{"disable_usb": "/etc/init.d/usbarbitrator stop"}'
 
     """
-    return c.apply(__opts__, content, execute=execute, profile=profile)
+    return c.apply(__opts__, features, execute=execute, profile=profile)

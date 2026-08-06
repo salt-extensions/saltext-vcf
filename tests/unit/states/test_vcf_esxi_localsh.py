@@ -26,11 +26,11 @@ def test_updates_when_different(monkeypatch):
     monkeypatch.setattr(
         c,
         "apply",
-        lambda opts, content, execute=True, profile=None: calls.append((content, execute)),
+        lambda opts, features, execute=True, profile=None: calls.append((features, execute)),
     )
     ret = st.managed("local.sh", FEATURES)
     assert ret["changes"]["new"] == c.render(FEATURES)
-    assert calls == [(c.render(FEATURES), True)]
+    assert calls == [(FEATURES, True)]
 
 
 def test_test_mode(monkeypatch):
@@ -38,3 +38,15 @@ def test_test_mode(monkeypatch):
     monkeypatch.setattr(st, "__opts__", {"test": True}, raising=False)
     ret = st.managed("local.sh", FEATURES)
     assert ret["result"] is None
+
+
+def test_empty_features_is_noop(monkeypatch):
+    """Matches the Ansible role's own
+    ``when: esxi_localsh_features is defined and != ""`` guard -- nothing
+    is written or run when there's nothing to configure.
+    """
+    monkeypatch.setattr(c, "get", lambda opts, profile=None: pytest.fail("should not check current"))
+    monkeypatch.setattr(c, "apply", lambda *a, **kw: pytest.fail("should not apply"))
+    ret = st.managed("local.sh", {})
+    assert ret["changes"] == {}
+    assert ret["result"] is True

@@ -34,8 +34,24 @@ def get_or_none(opts, key, profile=None):
 
 
 def set_value(opts, key, value, profile=None):
+    """Set an ESXi advanced setting.
+
+    Reuses the ``OptionValue`` object returned by ``QueryOptions`` (mutating
+    its ``.value``) rather than constructing a fresh one from a bare Python
+    value — some settings are typed ``xsd:long`` server-side, and a
+    freshly-built ``OptionValue`` from a plain Python ``int`` serializes as
+    ``xsd:int``, which the host rejects with
+    ``vmodl.fault.InvalidArgument(invalidProperty='value')``. See
+    :func:`saltext.vcf.clients.vcenter_advanced_option.advanced_set` for the
+    vCenter-side counterpart of this same fix.
+    """
     host = esxi.get_host_system(opts, profile=profile)
-    host.configManager.advancedOption.UpdateValues(
-        changedValue=[vim.option.OptionValue(key=key, value=value)]
-    )
+    mgr = host.configManager.advancedOption
+    existing = mgr.QueryOptions(name=key)
+    if existing:
+        opt = existing[0]
+        opt.value = value
+    else:
+        opt = vim.option.OptionValue(key=key, value=value)
+    mgr.UpdateValues(changedValue=[opt])
     return {"key": key, "value": value}

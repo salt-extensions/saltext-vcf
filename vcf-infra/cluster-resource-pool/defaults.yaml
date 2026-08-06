@@ -1,6 +1,9 @@
 cluster:
   name: domain-c9
 
+pool:
+  name: Production
+
 shares:
   cpu:
     shares_level: high

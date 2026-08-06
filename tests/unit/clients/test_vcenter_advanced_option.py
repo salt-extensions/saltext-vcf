@@ -51,8 +51,29 @@ def test_advanced_get_invalid_name_fault_returns_none(opts, option_mgr):
     assert result is None
 
 
-def test_advanced_set(opts, option_mgr):
+def test_advanced_set_mutates_existing_typed_object(opts, option_mgr):
+    """Must reuse (mutate) the object QueryOptions returns, not build a fresh
+    one — a freshly-built ``OptionValue`` from a bare Python ``int`` can
+    serialize with the wrong XSD type (e.g. ``xsd:int`` vs the server's
+    ``xsd:long``) and get rejected with
+    ``vmodl.fault.InvalidArgument(invalidProperty='value')``, as happens for
+    real for ``config.vpxd.stats.maxQueryMetrics``.
+    """
+    existing_opt = _opt("config.vpxd.stats.maxQueryMetrics", 32)
+    option_mgr.QueryOptions.return_value = [existing_opt]
+
     vcenter_advanced_option.advanced_set(opts, "config.vpxd.stats.maxQueryMetrics", 64)
+
     changed = option_mgr.UpdateOptions.call_args.kwargs["changedValue"]
-    assert changed[0].key == "config.vpxd.stats.maxQueryMetrics"
+    assert changed[0] is existing_opt
+    assert changed[0].value == 64
+
+
+def test_advanced_set_never_set_before_falls_back_to_fresh_object(opts, option_mgr):
+    option_mgr.QueryOptions.side_effect = vim.fault.InvalidName(name="brand.new.key")
+
+    vcenter_advanced_option.advanced_set(opts, "brand.new.key", 64)
+
+    changed = option_mgr.UpdateOptions.call_args.kwargs["changedValue"]
+    assert changed[0].key == "brand.new.key"
     assert changed[0].value == 64

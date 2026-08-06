@@ -23,8 +23,15 @@ _PERSISTED_MODE = "0457"  # u=r,g=rx,o=rwx, matching the Ansible role verbatim
 _EXEC_MODE = "0557"  # u=rx,g=rx,o=rwx
 
 
-def render(features):
-    """Render ``local.sh`` content from a ``{label: shell_command}`` dict."""
+def render(features, include_exit_stub=True):
+    """Render ``local.sh`` content from a ``{label: shell_command}`` dict.
+
+    *include_exit_stub* mirrors the Ansible template's
+    ``esxi_localsh_localsh_exec`` conditional: the persisted ``local.sh``
+    always ends with ``exit 0``, but the one-shot exec variant omits it so
+    the script's own exit status reflects whether the embedded commands
+    actually succeeded -- :func:`apply` relies on that to detect failures.
+    """
     lines = [
         "#!/bin/sh ++group=host/vim/vmvisor/boot",
         "",
@@ -33,8 +40,9 @@ def render(features):
     ]
     lines.extend(str(command) for command in features.values())
     lines.append("")
-    lines.append("exit 0")
-    lines.append("")
+    if include_exit_stub:
+        lines.append("exit 0")
+        lines.append("")
     return "\n".join(lines)
 
 
@@ -45,17 +53,22 @@ def get(opts, profile=None):
     return out if rc == 0 and out else None
 
 
-def apply(opts, content, execute=True, profile=None):
-    """Write *content* to the persisted ``local.sh`` and, unless *execute* is
-    ``False``, also write it to the exec path and run it immediately —
+def apply(opts, features, execute=True, profile=None):
+    """Write *features* to the persisted ``local.sh`` and, unless *execute*
+    is ``False``, also write the exec variant and run it immediately —
     mirroring the Ansible role's "generate, then apply now" behavior rather
     than waiting for the next reboot.
+
+    The exec variant omits the persisted file's trailing ``exit 0`` (see
+    :func:`render`) so its real exit status -- the last embedded command's
+    -- is what gets checked, matching the Ansible role's own
+    ``failed_when: rc != 0``.
     """
     ssh_cfg = esxi.get_ssh_config(opts, profile=profile)
-    _write_file(ssh_cfg, REMOTE_PATH, content, _PERSISTED_MODE)
+    _write_file(ssh_cfg, REMOTE_PATH, render(features, include_exit_stub=True), _PERSISTED_MODE)
     if not execute:
         return None
-    _write_file(ssh_cfg, EXEC_PATH, content, _EXEC_MODE)
+    _write_file(ssh_cfg, EXEC_PATH, render(features, include_exit_stub=False), _EXEC_MODE)
     rc, out, err = ssh_util.run(ssh_cfg, EXEC_PATH)
     if rc != 0:
         raise RuntimeError(f"{EXEC_PATH} failed on {ssh_cfg.get('host')}: {err.strip()}")

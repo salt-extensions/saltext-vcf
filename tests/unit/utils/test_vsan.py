@@ -40,6 +40,29 @@ def test_get_stub_reuses_session_cookie(opts):
     assert kwargs["path"] == "/vsanHealth"
 
 
+def test_get_stub_routes_through_proxy_when_present(opts):
+    """VCF 9.x appliances front every service behind a local envoy/system
+    proxy -- the vim.py /sdk connection already routes through it via
+    ``_proxy_for_host``. This stub is built independently of that
+    connection, so it needs the exact same treatment or it gets
+    ``ConnectionRefusedError`` even though the main vim connection works.
+    """
+    fake_si = MagicMock()
+    fake_si._stub.cookie = "cookie-1"  # noqa: SLF001
+    with patch(
+        "saltext.vcf.utils.vsan.vim_utils.get_service_instance",
+        return_value=fake_si,
+    ), patch(
+        "saltext.vcf.utils.vsan.vim_utils._proxy_for_host",
+        return_value=("127.0.0.1", 1234),
+    ), patch("saltext.vcf.utils.vsan.SoapStubAdapter") as adapter:
+        adapter.return_value = MagicMock()
+        vsan.get_stub(opts)
+    kwargs = adapter.call_args.kwargs
+    assert kwargs["httpProxyHost"] == "127.0.0.1"
+    assert kwargs["httpProxyPort"] == 1234
+
+
 def test_invalidate_clears_cache(opts):
     fake_si = MagicMock()
     fake_si._stub.cookie = "c"  # noqa: SLF001

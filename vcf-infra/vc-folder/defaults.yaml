@@ -2,4 +2,4 @@ folder:
   name: Edge Services
   type: VIRTUAL_MACHINE
   parent: null
-  datacenter: SDDC-Datacenter
+  datacenter: mgmt-datacenter

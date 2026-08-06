@@ -52,6 +52,16 @@ def get(opts, cluster, profile=None):
         else:
             out["data_in_transit_encryption_enabled"] = False
         out["esa_enabled"] = bool(getattr(extended, "vsanEsaEnabled", False))
+        if out["esa_enabled"]:
+            # ESA has no per-cluster auto-claim toggle at all -- it always
+            # claims every local disk automatically (that's the whole
+            # point of ESA's disk-group-free model). The legacy
+            # defaultConfig.autoClaimStorage field above is OSA-era and
+            # not populated on an ESA cluster, so report the actual
+            # (permanent) behavior instead of a stale/inapplicable False --
+            # otherwise callers see spurious drift against a setting
+            # vCenter will never let them change either way.
+            out["auto_claim_storage"] = True
     return out
 
 
@@ -79,8 +89,20 @@ def reconfigure(
         if enabled is not None:
             vsan_spec.enabled = bool(enabled)
         if auto_claim_storage is not None:
-            vsan_spec.defaultConfig = vim.vsan.cluster.ConfigInfo.HostDefaultInfo()
-            vsan_spec.defaultConfig.autoClaimStorage = bool(auto_claim_storage)
+            if _is_esa(obj, cs):
+                if not auto_claim_storage:
+                    raise ValueError(
+                        f"cluster {cluster!r} is vSAN ESA -- there is no per-cluster "
+                        "auto-claim toggle to disable (ESA always claims every local "
+                        "disk automatically; that's only an OSA-era setting)"
+                    )
+                # auto_claim_storage=True already matches ESA's permanent
+                # behavior -- nothing to send. vCenter's own precheck
+                # rejects HostDefaultInfo entirely on an ESA cluster
+                # (com.vmware.vsan.clusterconfigprecheck.reason.notsupportedconfigsforvsanesa).
+            else:
+                vsan_spec.defaultConfig = vim.vsan.cluster.ConfigInfo.HostDefaultInfo()
+                vsan_spec.defaultConfig.autoClaimStorage = bool(auto_claim_storage)
         spec.vsanClusterConfig = vsan_spec
     if dedup_compression_enabled is not None:
         de = vim.vsan.DataEfficiencyConfig()
@@ -94,6 +116,14 @@ def reconfigure(
 
     task = cs.VsanClusterReconfig(cluster=obj, vsanReconfigSpec=spec)
     return task._moId  # noqa: SLF001
+
+
+def _is_esa(cluster_obj, cs):
+    try:
+        extended = cs.VsanClusterGetConfig(cluster=cluster_obj)
+    except vim.fault.VimFault:
+        return False
+    return bool(getattr(extended, "vsanEsaEnabled", False))
 
 
 def runtime_info(opts, cluster, profile=None):
