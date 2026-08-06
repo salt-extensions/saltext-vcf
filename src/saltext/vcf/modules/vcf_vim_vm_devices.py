@@ -181,3 +181,42 @@ def serial_remove(vm, key=None, profile=None):
         salt '*' vcf_vim_vm_devices.serial_remove <vm>
     """
     return c.serial_remove(__opts__, vm, key=key, profile=profile)
+
+
+# USB controllers -------------------------------------------------------------
+
+
+def usb_controllers_list(vm, profile=None):
+    """List USB controller devices on *vm*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm_devices.usb_controllers_list <vm>
+    """
+    return c.usb_controllers_list(__opts__, vm, profile=profile)
+
+
+def usb_controllers_remove(vm, profile=None):
+    """Remove all USB controller devices from *vm*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm_devices.usb_controllers_remove <vm>
+    """
+    return c.usb_controllers_remove(__opts__, vm, profile=profile)
+
+
+def list_vms_with_usb_controllers(profile=None):
+    """List every VM in the inventory that has a USB controller device.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm_devices.list_vms_with_usb_controllers
+    """
+    return c.list_vms_with_usb_controllers(__opts__, profile=profile)

@@ -1,0 +1,85 @@
+api_version: saltext.vcf/v1
+kind: KBResolution
+
+metadata:
+  id: kb-316384
+  title: Remove unauthorized/unused USB controllers from virtual machines
+  description: >-
+    Reference PowerCLI script for KB-316384 finds every VM whose hardware
+    device list contains a device labeled "USB" (i.e. has a USB 2.0 EHCI+UHCI
+    controller and/or a USB 3.x xHCI controller) and removes it via
+    ReconfigVM, skipping VMs that are not in the "connected" runtime state.
+    This resolution ports that same audit-and-remove behavior to a Salt
+    state (vcf_vim_vm_devices.usb_controllers_absent) using the existing
+    pyVmomi-based client layer, matching by device type rather than the
+    script's DeviceInfo.Label string match. The exact official KB
+    title/URL text was not carried forward from the source conversation and
+    has not been independently re-verified against the Wolken KB portal
+    (client-side rendered behind SSO) -- a maintainer should confirm both
+    before flipping this entry to verified/production.
+  status: draft
+  maturity: experimental
+  maintainers:
+    - vcf-config-management
+  tags:
+    - vm-hardware
+    - usb
+    - security-hardening
+    - review-required
+
+kb:
+  provider: broadcom
+  id: "316384"
+  title: Remove unauthorized/unused USB controllers from virtual machines
+  url: null
+  last_verified: null
+
+applicability:
+  products:
+    - VMware vSphere
+  components:
+    - Virtual Machine
+  versions:
+    - 6.x
+    - 7.x
+    - 8.x
+    - 9.x
+  symptoms:
+    - A VM has a USB controller (USB 2.0 and/or USB 3.x xHCI) that should not be present
+    - Unauthorized USB peripheral passthrough is a concern for the target VM
+  error_patterns: []
+  prerequisites:
+    - >-
+      Fleet-wide, not single-VM scoped: this state scans every VM visible
+      to the configured vCenter/ESXi connection, matching the KB's
+      reference PowerCLI script's inventory-wide sweep.
+    - >-
+      Disconnected/orphaned VMs are reported but not touched by default
+      (connected_only: true) since their hardware cannot be reconfigured --
+      set connected_only: false only if you have confirmed those VMs can
+      accept a ReconfigVM call.
+    - Run with test=True first to review the list of affected VMs before applying with test=False.
+
+execution:
+  state: vcf-infra.usb-controller-removal.usb-controller-removal
+  resource: usb-controller-removal
+  entrypoint: usb-controller-removal.sls
+  description: >-
+    Audit every VM for USB 2.0/xHCI USB controllers and remove them from
+    connected VMs.
+  values_required: false
+  dry_run_supported: true
+  reboot_required: false
+  service_restart_required: false
+
+risk:
+  level: high
+  impact: >-
+    Removing a USB controller disconnects any USB device currently
+    passed through to the VM (e.g. USB-attached license dongles,
+    smartcard readers, or storage) and cannot be selectively scoped to a
+    single device if a VM legitimately needs USB passthrough -- review the
+    test=True VM list carefully before applying with test=False.
+  requires_confirmation: true
+  rollback_supported: false
+  rollback_state: null
