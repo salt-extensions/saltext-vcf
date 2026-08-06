@@ -1,0 +1,3 @@
+{% import_yaml "esxi-admin-group-hardening/defaults.yaml" as defaults %}
+
+{% set cfg = salt['pillar.get']('esxi-admin-group-hardening', default=defaults, merge=True) %}

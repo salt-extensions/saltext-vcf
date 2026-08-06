@@ -58,3 +58,22 @@ solutions:
     risk: medium
     solution_path: kb-317537/solution.yaml
     state: vcf-infra.ntp.ntp
+
+  - solution_id: kb-369707
+    kb_id: "369707"
+    title: ESXi host may grant unintended full administrative access to Active Directory group members
+    summary: >-
+      Disable automatic Admin-role grant for the AD "ESX Admins" group and
+      shorten the permission re-validation interval on standalone ESXi
+      hosts, per the Broadcom KB workaround (fixed natively in ESXi 8.0 U3).
+    components:
+      - ESXi
+    versions:
+      - 7.x
+      - 8.0
+    symptoms:
+      - AD "ESX Admins" group members receive unintended full administrative access
+    status: draft
+    risk: high
+    solution_path: kb-369707/solution.yaml
+    state: vcf-infra.esxi-admin-group-hardening.esxi-admin-group-hardening

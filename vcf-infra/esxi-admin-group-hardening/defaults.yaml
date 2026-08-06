@@ -1,0 +1,4 @@
+settings:
+  esx_admins_group_auto_add: false
+  auth_validate_interval: 90
+  esx_admins_group: ""

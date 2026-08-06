@@ -1,0 +1,32 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+$id: https://saltext-vcf.example/schemas/esxi-admin-group-hardening-values.schema.yaml
+title: ESXi ESX Admins group hardening values
+type: object
+additionalProperties: true
+properties:
+  settings:
+    type: object
+    additionalProperties: true
+    properties:
+      esx_admins_group_auto_add:
+        type: boolean
+        default: false
+        description: >-
+          Config.HostAgent.plugins.hostsvc.esxAdminsGroupAutoAdd. Set to
+          false to stop the host from automatically granting Admin access
+          to the configured AD group on join.
+      auth_validate_interval:
+        type: integer
+        minimum: 0
+        default: 90
+        description: >-
+          Config.HostAgent.plugins.vimsvc.authValidateInterval, in minutes.
+          Broadcom's workaround lowers this from the 1440-minute default to
+          90 so permission changes are re-validated sooner.
+      esx_admins_group:
+        type: string
+        default: ""
+        description: >-
+          Config.HostAgent.plugins.hostsvc.esxAdminsGroup. Empty string
+          disables the auto-add group name entirely (default is
+          "ESX Admins").
