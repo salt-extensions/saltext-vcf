@@ -131,7 +131,13 @@ def test_wait_for_upgrade_timeout(opts, vcfa_authed, monkeypatch):
         json={"id": "u-1", "state": "RUNNING"},
         status=200,
     )
-    times = iter([0.0, 100.0])
+
+    def _times():
+        yield 0.0
+        while True:
+            yield 100.0
+
+    times = _times()
     monkeypatch.setattr(lc.time, "monotonic", lambda: next(times))
     monkeypatch.setattr(lc.time, "sleep", lambda s: None)
     with pytest.raises(TimeoutError):
