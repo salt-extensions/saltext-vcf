@@ -70,7 +70,7 @@ def interval_set(
     if current is None:
         raise LookupError(f"interval {name!r} (key={key}) not found on this vCenter")
 
-    updated = vim.PerformanceManager.IntervalInfo(
+    updated = vim.HistoricalInterval(
         key=key,
         name=current.name,
         samplingPeriod=(

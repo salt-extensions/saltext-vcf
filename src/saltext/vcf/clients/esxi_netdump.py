@@ -56,7 +56,6 @@ def set_network(opts, interface_name, server_ip, server_port, profile=None):
         raise RuntimeError(
             f"esxcli system coredump network set failed on {ssh_cfg.get('host')}: {err.strip()}"
         )
-    return get(opts, profile=profile)
 
 
 def set_enabled(opts, enabled, profile=None):
@@ -68,4 +67,3 @@ def set_enabled(opts, enabled, profile=None):
         raise RuntimeError(
             f"esxcli system coredump network set --enable failed on {ssh_cfg.get('host')}: {err.strip()}"
         )
-    return get(opts, profile=profile)

@@ -66,7 +66,7 @@ def get_by_name(opts, name, profile=None):
     if p is None:
         return None
     return {
-        "id": p.profileId.uniqueId,
+        "id": p.profileId,
         "name": p.name,
         "description": p.description,
         "constraints": _from_subprofiles(p),

@@ -4,12 +4,13 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 import pytest
+from pyVmomi import vim
 
 from saltext.vcf.clients import vsan_file_service as c
 
 
 def _cluster_with_network(net_name):
-    net = MagicMock()
+    net = MagicMock(spec=vim.Network)
     net.name = net_name
     host = MagicMock()
     host.network = [net]

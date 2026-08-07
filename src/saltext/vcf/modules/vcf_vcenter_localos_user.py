@@ -42,7 +42,7 @@ def create(username, password, roles, profile=None, **spec):
 
     .. code-block:: bash
 
-        salt '*' vcf_vcenter_localos_user.create bob '["operator"]' password=secret
+        salt '*' vcf_vcenter_localos_user.create bob secret '["operator"]'
 
     """
     return c.create(__opts__, username, password, roles, profile=profile, **spec)
