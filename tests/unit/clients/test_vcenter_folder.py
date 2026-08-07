@@ -46,9 +46,7 @@ def test_create_under_datacenter_root(opts):
 
     dc_content = _content_with_folders([dc])
     with patch("saltext.vcf.clients.vcenter_folder.soap.content", return_value=dc_content):
-        result = c.create(
-            opts, "Network Services", "VIRTUAL_MACHINE", datacenter="SDDC-Datacenter"
-        )
+        result = c.create(opts, "Network Services", "VIRTUAL_MACHINE", datacenter="SDDC-Datacenter")
     assert result == "group-v2"
     dc.vmFolder.CreateFolder.assert_called_once_with(name="Network Services")
 
@@ -78,9 +76,10 @@ def test_delete_calls_destroy(opts):
     folder.Destroy_Task.return_value = task
 
     content = _content_with_folders([folder])
-    with patch("saltext.vcf.clients.vcenter_folder.soap.content", return_value=content), patch(
-        "saltext.vcf.clients.vcenter_folder.soap.wait_for_task"
-    ) as wait_mock:
+    with (
+        patch("saltext.vcf.clients.vcenter_folder.soap.content", return_value=content),
+        patch("saltext.vcf.clients.vcenter_folder.soap.wait_for_task") as wait_mock,
+    ):
         c.delete(opts, "group-v1")
     folder.Destroy_Task.assert_called_once()
     wait_mock.assert_called_once_with(task)

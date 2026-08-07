@@ -49,9 +49,10 @@ def test_delete_calls_destroy(opts):
     rp = cluster.resourcePool.resourcePool[0]
     task = MagicMock()
     rp.Destroy_Task.return_value = task
-    with patch("saltext.vcf.clients.vccluster_resource_pool._cluster", return_value=cluster), patch(
-        "saltext.vcf.clients.vccluster_resource_pool.soap.wait_for_task"
-    ) as wait_mock:
+    with (
+        patch("saltext.vcf.clients.vccluster_resource_pool._cluster", return_value=cluster),
+        patch("saltext.vcf.clients.vccluster_resource_pool.soap.wait_for_task") as wait_mock,
+    ):
         c.delete(opts, "domain-c9", "Production")
     rp.Destroy_Task.assert_called_once()
     wait_mock.assert_called_once_with(task)
@@ -73,9 +74,10 @@ def test_get_shares_missing_raises(opts):
 
 def test_set_shares_delegates_to_vim_resource_pool(opts):
     cluster = _cluster_with_pools("Production")
-    with patch("saltext.vcf.clients.vccluster_resource_pool._cluster", return_value=cluster), patch(
-        "saltext.vcf.clients.vccluster_resource_pool.rp_c.set_shares"
-    ) as set_shares_mock:
+    with (
+        patch("saltext.vcf.clients.vccluster_resource_pool._cluster", return_value=cluster),
+        patch("saltext.vcf.clients.vccluster_resource_pool.rp_c.set_shares") as set_shares_mock,
+    ):
         c.set_shares(opts, "domain-c9", "Production", cpu={"shares_level": "high"})
     set_shares_mock.assert_called_once()
     assert set_shares_mock.call_args.args[1] == "rp-Production"

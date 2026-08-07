@@ -45,7 +45,9 @@ def test_empty_features_is_noop(monkeypatch):
     ``when: esxi_localsh_features is defined and != ""`` guard -- nothing
     is written or run when there's nothing to configure.
     """
-    monkeypatch.setattr(c, "get", lambda opts, profile=None: pytest.fail("should not check current"))
+    monkeypatch.setattr(
+        c, "get", lambda opts, profile=None: pytest.fail("should not check current")
+    )
     monkeypatch.setattr(c, "apply", lambda *a, **kw: pytest.fail("should not apply"))
     ret = st.managed("local.sh", {})
     assert ret["changes"] == {}

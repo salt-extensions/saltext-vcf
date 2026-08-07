@@ -21,7 +21,9 @@ def _profile(profile_id, name, description, constraints_obj):
 
 def _pm(profiles, query_ids=None):
     pm = MagicMock()
-    pm.PbmQueryProfile.return_value = query_ids if query_ids is not None else [p.profileId for p in profiles]
+    pm.PbmQueryProfile.return_value = (
+        query_ids if query_ids is not None else [p.profileId for p in profiles]
+    )
     pm.PbmRetrieveContent.return_value = profiles
     return pm
 

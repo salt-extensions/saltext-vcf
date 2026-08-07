@@ -35,7 +35,9 @@ def interval_get(name, profile=None):
     return c.interval_get(__opts__, name, profile=profile)
 
 
-def interval_set(name, enabled=None, interval_minutes=None, save_days=None, level=None, profile=None):
+def interval_set(
+    name, enabled=None, interval_minutes=None, save_days=None, level=None, profile=None
+):
     """Interval set.
 
     CLI Example:

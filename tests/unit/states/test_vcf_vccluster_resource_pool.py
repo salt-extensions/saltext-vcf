@@ -70,7 +70,9 @@ def test_cpu_drift_applied_when_already_present(monkeypatch):
     monkeypatch.setattr(c, "get_or_none", lambda o, cluster, name, profile=None: "rp-1")
     monkeypatch.setattr(c, "get_shares", lambda o, cluster, name, profile=None: _shares())
     monkeypatch.setattr(
-        c, "set_shares", lambda o, cluster, name, cpu=None, memory=None, profile=None: calls.append(cpu)
+        c,
+        "set_shares",
+        lambda o, cluster, name, cpu=None, memory=None, profile=None: calls.append(cpu),
     )
     ret = st.present("Production", "cluster-1", cpu={"shares_level": "high"})
     assert ret["changes"]["cpu"]["shares_level"] == ("normal", "high")

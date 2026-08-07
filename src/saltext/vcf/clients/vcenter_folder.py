@@ -68,7 +68,9 @@ def create(opts, name, folder_type, parent=None, datacenter=None, profile=None):
     folder found by name; otherwise it's created at *datacenter*'s
     *folder_type* root.
     """
-    parent_obj = _resolve_parent(opts, folder_type, parent=parent, datacenter=datacenter, profile=profile)
+    parent_obj = _resolve_parent(
+        opts, folder_type, parent=parent, datacenter=datacenter, profile=profile
+    )
     new_folder = parent_obj.CreateFolder(name=name)
     return new_folder._moId  # noqa: SLF001
 

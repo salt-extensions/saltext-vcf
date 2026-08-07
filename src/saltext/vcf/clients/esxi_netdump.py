@@ -27,7 +27,9 @@ def _parse_get_output(text):
         "enabled": values.get("Enabled", "").lower() == "true",
         "interface_name": values.get("Host VNic") or None,
         "server_ip": values.get("Network Server IP") or None,
-        "server_port": int(values["Network Server Port"]) if values.get("Network Server Port") else None,
+        "server_port": (
+            int(values["Network Server Port"]) if values.get("Network Server Port") else None
+        ),
     }
 
 
@@ -36,7 +38,9 @@ def get(opts, profile=None):
     ssh_cfg = esxi.get_ssh_config(opts, profile=profile)
     rc, out, err = ssh_util.run(ssh_cfg, _GET_CMD)
     if rc != 0:
-        raise RuntimeError(f"esxcli system coredump network get failed on {ssh_cfg.get('host')}: {err.strip()}")
+        raise RuntimeError(
+            f"esxcli system coredump network get failed on {ssh_cfg.get('host')}: {err.strip()}"
+        )
     return _parse_get_output(out)
 
 
@@ -49,7 +53,9 @@ def set_network(opts, interface_name, server_ip, server_port, profile=None):
     )
     rc, _out, err = ssh_util.run(ssh_cfg, cmd)
     if rc != 0:
-        raise RuntimeError(f"esxcli system coredump network set failed on {ssh_cfg.get('host')}: {err.strip()}")
+        raise RuntimeError(
+            f"esxcli system coredump network set failed on {ssh_cfg.get('host')}: {err.strip()}"
+        )
     return get(opts, profile=profile)
 
 
@@ -59,5 +65,7 @@ def set_enabled(opts, enabled, profile=None):
     value = "true" if enabled else "false"
     rc, _out, err = ssh_util.run(ssh_cfg, f"esxcli system coredump network set --enable={value}")
     if rc != 0:
-        raise RuntimeError(f"esxcli system coredump network set --enable failed on {ssh_cfg.get('host')}: {err.strip()}")
+        raise RuntimeError(
+            f"esxcli system coredump network set --enable failed on {ssh_cfg.get('host')}: {err.strip()}"
+        )
     return get(opts, profile=profile)

@@ -71,7 +71,9 @@ def create(name, folder_type, parent=None, datacenter=None, profile=None):
         salt '*' vcf_vcenter_folder.create <name> <folder_type>
 
     """
-    return c.create(__opts__, name, folder_type, parent=parent, datacenter=datacenter, profile=profile)
+    return c.create(
+        __opts__, name, folder_type, parent=parent, datacenter=datacenter, profile=profile
+    )
 
 
 def delete(folder_id, profile=None):

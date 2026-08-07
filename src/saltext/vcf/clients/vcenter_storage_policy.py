@@ -82,10 +82,11 @@ def create(opts, name, constraints, description=None, profile=None):
     ruleset are AND-ed. See :func:`_to_subprofiles`.
     """
     pm = pbm_utils.profile_manager(opts, profile=profile)
+    resource_type = pbm.profile.ResourceTypeEnum.STORAGE  # pylint: disable=no-member
     spec = pbm.profile.CapabilityBasedProfileCreateSpec(
         name=name,
         description=description,
-        resourceType=pbm.profile.ResourceType(resourceType=pbm.profile.ResourceTypeEnum.STORAGE),
+        resourceType=pbm.profile.ResourceType(resourceType=resource_type),
         constraints=pbm.profile.SubProfileCapabilityConstraints(
             subProfiles=_to_subprofiles(constraints)
         ),
@@ -128,7 +129,9 @@ def default_policy_get(opts, datastore, profile=None):
     *datastore* (by name), via PBM ``PbmQueryDefaultRequirementProfile``.
     """
     pm = pbm_utils.profile_manager(opts, profile=profile)
-    hub = pbm.placement.PlacementHub(hubType="Datastore", hubId=_find_datastore_id(opts, datastore, profile=profile))
+    hub = pbm.placement.PlacementHub(
+        hubType="Datastore", hubId=_find_datastore_id(opts, datastore, profile=profile)
+    )
     spec = pm.PbmQueryDefaultRequirementProfile(hub=hub)
     return spec.uniqueId if spec else None
 
@@ -141,7 +144,9 @@ def default_policy_set(opts, datastore, policy_name, profile=None):
     p = _find_profile(pm, policy_name)
     if p is None:
         raise LookupError(f"storage policy {policy_name!r} not found")
-    hub = pbm.placement.PlacementHub(hubType="Datastore", hubId=_find_datastore_id(opts, datastore, profile=profile))
+    hub = pbm.placement.PlacementHub(
+        hubType="Datastore", hubId=_find_datastore_id(opts, datastore, profile=profile)
+    )
     pm.PbmAssignDefaultRequirementProfile(profile=p.profileId, datastores=[hub])
 
 
@@ -159,8 +164,9 @@ def _find_datastore_id(opts, name, profile=None):
 
 
 def _find_profile(pm, name):
+    resource_type = pbm.profile.ResourceTypeEnum.STORAGE  # pylint: disable=no-member
     ids = pm.PbmQueryProfile(
-        resourceType=pbm.profile.ResourceType(resourceType=pbm.profile.ResourceTypeEnum.STORAGE),
+        resourceType=pbm.profile.ResourceType(resourceType=resource_type),
         profileCategory=pbm.profile.CapabilityBasedProfile.ProfileCategoryEnum.REQUIREMENT,
     )
     if not ids:
@@ -202,7 +208,7 @@ def _to_subprofiles(rulesets):
                 operator = None
                 if category.startswith("!"):
                     category = category[1:]
-                    operator = pbm.capability.Operator.NOT
+                    operator = pbm.capability.Operator.NOT  # pylint: disable=no-member
                 rules.append(
                     pbm.capability.CapabilityInstance(
                         id=pbm.capability.CapabilityMetadata.UniqueId(
@@ -241,7 +247,7 @@ def _from_subprofiles(p):
             constraint = capability.constraint[0].propertyInstance[0]
             if namespace == _TAGS_NS:
                 name = cap_name
-                if constraint.operator == pbm.capability.Operator.NOT:
+                if constraint.operator == pbm.capability.Operator.NOT:  # pylint: disable=no-member
                     name = "!" + name
                 tags[name] = sorted(constraint.value.values)
             else:

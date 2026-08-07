@@ -23,7 +23,9 @@ def test_present_creates_when_missing(monkeypatch):
     )
     ret = st.present("bob", "s3cret", ["operator"], email="bob@example.test")
     assert ret["changes"] == {"new": "bob"}
-    assert calls == [("bob", "s3cret", ["operator"], {"enabled": True, "email": "bob@example.test"})]
+    assert calls == [
+        ("bob", "s3cret", ["operator"], {"enabled": True, "email": "bob@example.test"})
+    ]
 
 
 def test_present_test_mode_when_missing(monkeypatch):

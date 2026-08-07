@@ -16,10 +16,13 @@ def _cookie(token):
 def test_get_stub_caches(opts):
     fake_si = MagicMock()
     fake_si._stub.cookie = _cookie("cookie-1")  # noqa: SLF001
-    with patch(
-        "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
-        return_value=fake_si,
-    ), patch("saltext.vcf.utils.pbm.SoapStubAdapter") as adapter:
+    with (
+        patch(
+            "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
+            return_value=fake_si,
+        ),
+        patch("saltext.vcf.utils.pbm.SoapStubAdapter") as adapter,
+    ):
         adapter.return_value = MagicMock()
         stub1 = pbm.get_stub(opts)
         stub2 = pbm.get_stub(opts)
@@ -30,10 +33,13 @@ def test_get_stub_caches(opts):
 def test_get_stub_reuses_session_cookie(opts):
     fake_si = MagicMock()
     fake_si._stub.cookie = _cookie("session-cookie-X")  # noqa: SLF001
-    with patch(
-        "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
-        return_value=fake_si,
-    ), patch("saltext.vcf.utils.pbm.SoapStubAdapter") as adapter:
+    with (
+        patch(
+            "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
+            return_value=fake_si,
+        ),
+        patch("saltext.vcf.utils.pbm.SoapStubAdapter") as adapter,
+    ):
         stub_instance = MagicMock()
         adapter.return_value = stub_instance
         pbm.get_stub(opts)
@@ -51,10 +57,13 @@ def test_get_stub_sets_vc_session_cookie_request_context(opts):
     """
     fake_si = MagicMock()
     fake_si._stub.cookie = _cookie("session-cookie-X")  # noqa: SLF001
-    with patch(
-        "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
-        return_value=fake_si,
-    ), patch("saltext.vcf.utils.pbm.SoapStubAdapter") as adapter:
+    with (
+        patch(
+            "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
+            return_value=fake_si,
+        ),
+        patch("saltext.vcf.utils.pbm.SoapStubAdapter") as adapter,
+    ):
         adapter.return_value = MagicMock()
         pbm.get_stub(opts)
     assert pbm.VmomiSupport.GetRequestContext()["vcSessionCookie"] == "session-cookie-X"
@@ -67,13 +76,17 @@ def test_get_stub_routes_through_proxy_when_present(opts):
     """
     fake_si = MagicMock()
     fake_si._stub.cookie = _RAW_COOKIE  # noqa: SLF001
-    with patch(
-        "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
-        return_value=fake_si,
-    ), patch(
-        "saltext.vcf.utils.pbm.vim_utils._proxy_for_host",
-        return_value=("127.0.0.1", 1234),
-    ), patch("saltext.vcf.utils.pbm.SoapStubAdapter") as adapter:
+    with (
+        patch(
+            "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
+            return_value=fake_si,
+        ),
+        patch(
+            "saltext.vcf.utils.pbm.vim_utils._proxy_for_host",
+            return_value=("127.0.0.1", 1234),
+        ),
+        patch("saltext.vcf.utils.pbm.SoapStubAdapter") as adapter,
+    ):
         adapter.return_value = MagicMock()
         pbm.get_stub(opts)
     kwargs = adapter.call_args.kwargs
@@ -84,10 +97,13 @@ def test_get_stub_routes_through_proxy_when_present(opts):
 def test_invalidate_clears_cache(opts):
     fake_si = MagicMock()
     fake_si._stub.cookie = _RAW_COOKIE  # noqa: SLF001
-    with patch(
-        "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
-        return_value=fake_si,
-    ), patch("saltext.vcf.utils.pbm.SoapStubAdapter"):
+    with (
+        patch(
+            "saltext.vcf.utils.pbm.vim_utils.get_service_instance",
+            return_value=fake_si,
+        ),
+        patch("saltext.vcf.utils.pbm.SoapStubAdapter"),
+    ):
         pbm.get_stub(opts)
         assert pbm._PBM_STUB_CACHE
         pbm.invalidate_stub(opts)

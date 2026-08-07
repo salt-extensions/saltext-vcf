@@ -50,7 +50,9 @@ def interval_get(opts, name, profile=None):
     return intervals_get(opts, profile=profile).get(name)
 
 
-def interval_set(opts, name, enabled=None, interval_minutes=None, save_days=None, level=None, profile=None):
+def interval_set(
+    opts, name, enabled=None, interval_minutes=None, save_days=None, level=None, profile=None
+):
     """Update one built-in interval, leaving unspecified fields unchanged.
 
     *interval_minutes* is the sampling period; *save_days* is how long
@@ -59,7 +61,9 @@ def interval_set(opts, name, enabled=None, interval_minutes=None, save_days=None
     """
     key = _NAME_TO_KEY.get(name)
     if key is None:
-        raise ValueError(f"unknown statistics interval {name!r}; expected one of {sorted(_NAME_TO_KEY)}")
+        raise ValueError(
+            f"unknown statistics interval {name!r}; expected one of {sorted(_NAME_TO_KEY)}"
+        )
 
     mgr = soap.perf_manager(opts, profile=profile)
     current = next((i for i in mgr.historicalInterval if i.key == key), None)
@@ -69,7 +73,9 @@ def interval_set(opts, name, enabled=None, interval_minutes=None, save_days=None
     updated = vim.PerformanceManager.IntervalInfo(
         key=key,
         name=current.name,
-        samplingPeriod=(interval_minutes * 60) if interval_minutes is not None else current.samplingPeriod,
+        samplingPeriod=(
+            (interval_minutes * 60) if interval_minutes is not None else current.samplingPeriod
+        ),
         length=(save_days * 86400) if save_days is not None else current.length,
         level=level if level is not None else current.level,
         enabled=enabled if enabled is not None else current.enabled,

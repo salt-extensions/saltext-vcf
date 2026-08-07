@@ -71,7 +71,9 @@ def update(name, constraints=None, description=None, profile=None):
         salt '*' vcf_vcenter_storage_policy.update my-policy description='updated'
 
     """
-    return c.update(__opts__, name, constraints=constraints, description=description, profile=profile)
+    return c.update(
+        __opts__, name, constraints=constraints, description=description, profile=profile
+    )
 
 
 def delete(name, profile=None):

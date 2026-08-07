@@ -60,7 +60,9 @@ def list_domains(opts, cluster, profile=None):
     """Return the names of file service domains configured on *cluster*."""
     obj = vsan.find_cluster(opts, cluster, profile=profile)
     fs = vsan.file_service_system(opts, profile=profile)
-    domains = fs.QueryFileServiceDomains(querySpec=vim.vsan.FileServiceDomainQuerySpec(), cluster=obj)
+    domains = fs.QueryFileServiceDomains(
+        querySpec=vim.vsan.FileServiceDomainQuerySpec(), cluster=obj
+    )
     return [d.name for d in (domains or [])]
 
 
