@@ -1,0 +1,8 @@
+user:
+  username: svc-monitor
+  password: changeme
+  roles:
+    - operator
+  email: svc-monitor@example.test
+  full_name: Monitoring Service Account
+  enabled: True

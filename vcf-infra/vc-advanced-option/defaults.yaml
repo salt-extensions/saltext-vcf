@@ -1,3 +1,3 @@
 advanced_option:
-  key: config.vpxd.stats.maxQueryMetrics
-  value: 64
+  key: event.maxAge
+  value: 14

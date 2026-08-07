@@ -1,0 +1,5 @@
+folder:
+  name: Edge Services
+  type: VIRTUAL_MACHINE
+  parent: null
+  datacenter: mgmt-datacenter

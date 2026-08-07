@@ -123,6 +123,7 @@ def reset_caches():
     from saltext.vcf.utils import cim
     from saltext.vcf.utils import esxi
     from saltext.vcf.utils import installer
+    from saltext.vcf.utils import pbm
     from saltext.vcf.utils import sddc
     from saltext.vcf.utils import vcenter
     from saltext.vcf.utils import vcfa
@@ -141,6 +142,7 @@ def reset_caches():
         soap._SI_CACHE,
         cim._CONN_CACHE,
         vsan._VSAN_STUB_CACHE,
+        pbm._PBM_STUB_CACHE,
         vcfa._TOKEN_CACHE,
         vmsp._TOKEN_CACHE,
         vrli._TOKEN_CACHE,

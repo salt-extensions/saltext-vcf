@@ -56,18 +56,34 @@ def get_shares(opts, rp_id_or_name, profile=None):
     return {"cpu": _allocation(cfg.cpuAllocation), "memory": _allocation(cfg.memoryAllocation)}
 
 
-def _merge_allocation(current, spec):
-    """Merge *spec* (incoming overrides) on top of *current* (existing allocation info)."""
+def _build_allocation(spec):
+    """Build a *partial* ``ResourceAllocationInfo`` containing only the
+    fields *spec* explicitly names, leaving the rest unset (``None``).
+
+    ``UpdateConfig`` treats an unset field as "leave unchanged" -- critical
+    here, because a cluster's root resource pool rejects
+    ``reservation``/``limit``/``expandableReservation`` being present in
+    the spec *at all* (only ``shares`` is settable there), regardless of
+    the value. Always back-filling those fields from the pool's current
+    values (the previous behavior) sent them unconditionally and broke
+    shares-only updates against the root pool with
+    ``vmodl.fault.InvalidArgument`` /
+    ``rootSettingDisallowed``.
+    """
     info = vim.ResourceAllocationInfo()
-    info.reservation = int(spec.get("reservation", current.reservation or 0))
-    info.expandableReservation = bool(
-        spec.get("expandable_reservation", current.expandableReservation)
-    )
-    info.limit = int(spec.get("limit", current.limit if current.limit is not None else -1))
-    shares = vim.SharesInfo()
-    shares.level = spec.get("shares_level", current.shares.level if current.shares else "normal")
-    shares.shares = int(spec.get("shares_value", current.shares.shares if current.shares else 4000))
-    info.shares = shares
+    if "reservation" in spec:
+        info.reservation = int(spec["reservation"])
+    if "expandable_reservation" in spec:
+        info.expandableReservation = bool(spec["expandable_reservation"])
+    if "limit" in spec:
+        info.limit = int(spec["limit"])
+    if "shares_level" in spec or "shares_value" in spec:
+        shares = vim.SharesInfo()
+        if "shares_level" in spec:
+            shares.level = spec["shares_level"]
+        if "shares_value" in spec:
+            shares.shares = int(spec["shares_value"])
+        info.shares = shares
     return info
 
 
@@ -77,13 +93,14 @@ def set_shares(opts, rp_id_or_name, *, cpu=None, memory=None, profile=None):
     ``shares_level`` (``low|normal|high|custom``), ``shares_value`` (int).
 
     SOAP ``ResourceConfigSpec`` requires both ``cpuAllocation`` and
-    ``memoryAllocation`` to be populated; any None argument is merged on top
-    of the pool's current allocation so partial updates work safely.
+    ``memoryAllocation`` to be present, but only the sub-fields actually
+    named in *cpu*/*memory* are populated -- everything else is left unset
+    so it's left unchanged server-side, rather than being re-sent with the
+    pool's current value (see :func:`_build_allocation`).
     """
     rp = _find_rp(opts, rp_id_or_name, profile=profile)
-    cfg = rp.config
     config = vim.ResourceConfigSpec()
-    config.cpuAllocation = _merge_allocation(cfg.cpuAllocation, cpu or {})
-    config.memoryAllocation = _merge_allocation(cfg.memoryAllocation, memory or {})
+    config.cpuAllocation = _build_allocation(cpu or {})
+    config.memoryAllocation = _build_allocation(memory or {})
     rp.UpdateConfig(name=rp.name, config=config)
     return get_shares(opts, rp_id_or_name, profile=profile)

@@ -1,0 +1,4 @@
+localsh:
+  execute: True
+  features:
+    disable_usb_arbitrator: "/etc/init.d/usbarbitrator stop"

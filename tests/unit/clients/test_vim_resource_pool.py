@@ -68,3 +68,24 @@ def test_set_shares_writes_config(opts, rp_lookup):
     assert spec.memoryAllocation.limit == 4096
     # get_shares returned the lookup's cached state
     assert "cpu" in out and "memory" in out
+
+
+def test_set_shares_only_populates_named_fields(opts, rp_lookup):
+    """Fields not named in the spec must stay unset (None), not get
+    back-filled from the pool's current config.
+
+    A cluster's root resource pool rejects ``reservation``/``limit``/
+    ``expandableReservation`` being present in the ``ResourceConfigSpec``
+    at all -- only ``shares`` is settable there -- so a shares-only update
+    (as issued by ``vcf_vccluster_resource_pool.shares``) must not
+    accidentally re-send those fields.
+    """
+    vim_resource_pool.set_shares(opts, "rp-1", cpu={"shares_level": "high"})
+    spec = rp_lookup["rp-1"].UpdateConfig.call_args.kwargs["config"]
+    assert spec.cpuAllocation.shares.level == "high"
+    assert spec.cpuAllocation.reservation is None
+    assert spec.cpuAllocation.limit is None
+    assert spec.cpuAllocation.expandableReservation is None
+    # memory wasn't touched at all -- shares must be unset too
+    assert spec.memoryAllocation.shares is None
+    assert spec.memoryAllocation.reservation is None

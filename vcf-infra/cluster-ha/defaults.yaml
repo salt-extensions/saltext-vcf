@@ -1,3 +1,5 @@
+cluster:
+  name: mgmt-anchor
 ha:
   enabled: true
   host_monitoring: enabled

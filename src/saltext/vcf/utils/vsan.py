@@ -40,12 +40,22 @@ def get_stub(opts, profile=None):
     sslContext = (  # noqa: N806  pylint: disable=invalid-name
         None if cfg["verify_ssl"] else ssl._create_unverified_context()
     )
-    stub = SoapStubAdapter(
-        host=cfg["host"],
-        version="vim.version.version10",
-        path="/vsanHealth",
-        sslContext=sslContext,
-    )
+    stub_kwargs = {
+        "host": cfg["host"],
+        "version": "vim.version.version10",
+        "path": "/vsanHealth",
+        "sslContext": sslContext,
+    }
+    # Same VCF 9.x local-envoy-proxy requirement as the main /sdk connection
+    # (see utils.vim._proxy_for_host) -- this stub is built independently of
+    # get_service_instance()'s SmartConnect call, so it needs the same
+    # explicit httpProxyHost/httpProxyPort or it gets ConnectionRefusedError
+    # even though the main vim connection succeeds.
+    proxy_host, proxy_port = vim_utils._proxy_for_host(cfg["host"])  # noqa: SLF001
+    if proxy_host:
+        stub_kwargs["httpProxyHost"] = proxy_host
+        stub_kwargs["httpProxyPort"] = proxy_port
+    stub = SoapStubAdapter(**stub_kwargs)
     # Re-use vCenter session cookie for SSO
     stub.cookie = si._stub.cookie  # noqa: SLF001
     _VSAN_STUB_CACHE[key] = stub
@@ -101,6 +111,13 @@ def object_system(opts, profile=None):
     """vim.cluster.VsanObjectSystem — vSAN object queries."""
     return vim.cluster.VsanObjectSystem(
         "vsan-cluster-object-system", get_stub(opts, profile=profile)
+    )
+
+
+def file_service_system(opts, profile=None):
+    """vim.cluster.VsanVcFileServiceSystem — vSAN File Service (FSVM OVF, domains)."""
+    return vim.cluster.VsanVcFileServiceSystem(
+        "vsan-cluster-file-service-system", get_stub(opts, profile=profile)
     )
 
 

@@ -1,0 +1,7 @@
+policy:
+  name: vSAN-Default-Cluster-Policy
+  description: Default vSAN storage policy for cluster VMs
+  constraints:
+    - capabilities:
+        VSAN.replicaPreference: RAID-1 (Mirroring) - Performance
+        VSAN.hostFailuresToTolerate: 1
