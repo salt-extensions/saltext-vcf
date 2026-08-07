@@ -11,16 +11,16 @@ def inject_opts(monkeypatch, opts):
     monkeypatch.setattr(st, "__opts__", opts, raising=False)
 
 
-ARGS = dict(
-    cluster="SDDC-Cluster1",
-    network_name="VM-Mgmt",
-    domain_name="fileshare",
-    ip_to_fqdn={"10.0.0.1": "f0.test"},
-    subnet_mask="255.255.255.0",
-    gateway_address="10.0.0.250",
-    dns_suffixes=["test"],
-    dns_address=["10.0.0.250"],
-)
+ARGS = {
+    "cluster": "SDDC-Cluster1",
+    "network_name": "VM-Mgmt",
+    "domain_name": "fileshare",
+    "ip_to_fqdn": {"10.0.0.1": "f0.test"},
+    "subnet_mask": "255.255.255.0",
+    "gateway_address": "10.0.0.250",
+    "dns_suffixes": ["test"],
+    "dns_address": ["10.0.0.250"],
+}
 
 
 def test_configured_already_done(monkeypatch):
