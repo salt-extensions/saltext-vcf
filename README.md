@@ -39,19 +39,20 @@ VMSP (mediated), vSAN, and standalone ESXi.
   `esxi`, `vcf_vm` resource types for fleet-style management with
   grain-based targeting.
 
-~80 execution modules, 27 state modules, 82 REST/SOAP clients across
+~200 execution modules, ~105 state modules, ~225 REST/SOAP clients across
 six VCF components.
 
 ## Quickstart
 
-Base install ships the core Salt loader wiring and the REST client
-plumbing only. Every runtime dependency (pyvmomi, pywbem, the VMware
-SDKs, kubernetes) is opt-in via pip extras — pick the components you
-plan to use, or install everything with `[all]`:
+Base install ships the core Salt loader wiring, the REST client
+plumbing, and pyvmomi for the whole SOAP surface (vCenter/ESXi vim
+clients). The remaining runtime dependencies (pywbem, the VMware SDKs,
+kubernetes) are opt-in via pip extras — pick the components you plan to
+use, or install everything with `[all]`:
 
 ```bash
-pip install saltext.vcf            # base only; most modules will not load
-pip install 'saltext.vcf[all]'     # equivalent to the pre-split default
+pip install saltext.vcf            # base + SOAP surface
+pip install 'saltext.vcf[all]'     # every runtime dependency
 pip install 'saltext.vcf[vcenter,nsx]'
 ```
 
@@ -96,20 +97,22 @@ salt-call vcf_vcf_services.status_map
 
 ## Installing sub-components
 
-`saltext.vcf` is split into per-component extras. The base install is
-minimal on purpose — modules whose deps are missing return
-`__virtual__ = False` and are silently skipped by the Salt loader.
-Pick the extras that match the VCF surface area you actually manage:
+`saltext.vcf` is split into per-component extras. The base install now
+includes pyvmomi, so the SOAP surface (`vcf_vim_*`, `vcf_esxi_*`,
+`vcf_vcenter_*` REST+SOAP) loads with a plain install. Modules whose
+remaining deps are missing return `__virtual__ = False` and are silently
+skipped by the Salt loader. Pick the extras that match the VCF surface
+area you actually manage:
 
 | Extra | Adds | Enables |
 |---|---|---|
-| `[esxi]` | `pyvmomi`, `pywbem` | Standalone ESXi (`vcf_esxi_*`), CIM hardware health, vSAN SOAP helpers |
-| `[vcenter]` | `pyvmomi`, `vmware-vcenter` SDK | vCenter REST + SOAP (`vcf_vcenter_*`, `vim_*` clients, alarms, perf, snapshots) |
+| `[esxi]` | `pywbem` | CIM hardware health on standalone ESXi (`vcf_esxi_*` CIM checks) |
+| `[vcenter]` | `vmware-vcenter` SDK | vCenter SDK-typed flows (`vcf_vcenter_*` SDK paths, alarms, perf, snapshots) |
 | `[nsx]` | — (uses `requests` only) | NSX Policy + Management API (`vcf_nsx_*`) |
 | `[sddc]` | `vmware-vcf` SDK, `paramiko` | SDDC Manager (`vcf_sddc_*`), including appliance-local SSH controls |
 | `[vcfops]` | — (uses `requests` only) | VCF Operations (`vcf_vcfops_*`) |
 | `[vcfa]` | — (uses `requests` only) | VCF Automation (`vcf_vcfa_*`) |
-| `[installer]` | `pyvmomi` | VCF Installer OVA deploy (`vcf_installer_*`) |
+| `[installer]` | — (pyvmomi is base now) | VCF Installer OVA deploy (`vcf_installer_*`) |
 | `[vks]` | `saltext.kubernetes`, `kubernetes` | VKS Supervisor kubeconfig bridge |
 | `[all]` | Every runtime extra above | Matches the pre-split default install |
 

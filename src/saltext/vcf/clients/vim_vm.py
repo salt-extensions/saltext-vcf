@@ -13,6 +13,8 @@ Disk/NIC management has its own dedicated modules (``vim_vm_disk`` and
 ``vim_vm_nic``) since each has a richer surface.
 """
 
+import time
+
 from pyVmomi import vim
 
 from saltext.vcf.utils import vim as soap
@@ -443,8 +445,215 @@ def register(
     return task._moId  # noqa: SLF001
 
 
-def unregister(opts, vm_id_or_name, profile=None):
-    """Remove the VM from inventory but leave its files on disk."""
+def unregister(opts, vm_id_or_name, *, shutdown=False, profile=None):
+    """Remove the VM from inventory but leave its files on disk.
+
+    When *shutdown* is true, a running VM is gracefully shut down via
+    VMware Tools (with a hard ``PowerOffVM_Task`` fallback) before the
+    unregister. When false and the VM is powered on, the call fails.
+    """
     vm = _vm(opts, vm_id_or_name, profile=profile)
+    return _unregister_obj(vm, shutdown=shutdown)
+
+
+def _unregister_obj(vm, *, shutdown=False):
+    if vm.runtime.powerState == "poweredOn":
+        if not shutdown:
+            raise RuntimeError(f"VM {vm.name!r} must be powered off before unregister")
+        try:
+            vm.ShutdownGuest()
+        except vim.fault.ToolsUnavailable:
+            vm.PowerOffVM_Task()
+        deadline = time.monotonic() + 120
+        while vm.runtime.powerState == "poweredOn":
+            if time.monotonic() > deadline:
+                vm.PowerOffVM_Task()
+                break
+            time.sleep(2)
     vm.UnregisterVM()
     return True
+
+
+# ---------------------------------------------------------------------------
+# Inventory listings (template enumeration, folder-path, info)
+# ---------------------------------------------------------------------------
+
+
+def list_templates(opts, profile=None):
+    """Return the names of every VM flagged as a template on the vCenter."""
+    content = soap.content(opts, profile=profile)
+    container = content.viewManager.CreateContainerView(
+        content.rootFolder, [vim.VirtualMachine], True
+    )
+    names = []
+    try:
+        for vm in container.view:
+            config = getattr(vm, "config", None)
+            if config is not None and bool(getattr(config, "template", False)):
+                names.append(vm.name)
+    finally:
+        container.Destroy()
+    return names
+
+
+def path(opts, vm_id_or_name, profile=None):
+    """Return the inventory path of *vm* from its containing folder up to the root.
+
+    Example: ``/MyDC/vm/staging/web-01``.
+    """
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    root = soap.content(opts, profile=profile).rootFolder
+    parts = []
+    node = vm
+    depth = 0
+    while node is not None and depth < 64:
+        depth += 1
+        try:
+            if node._moId == root._moId:  # noqa: SLF001
+                break
+        except AttributeError:
+            break
+        try:
+            name = node.name
+            if not isinstance(name, str):
+                break
+            parts.append(name)
+        except AttributeError:
+            break
+        node = getattr(node, "parent", None)
+    return "/" + "/".join(reversed(parts))
+
+
+def runtime(opts, vm_id_or_name, profile=None):
+    """Return the VM's current runtime placement: ``{"host", "datastores"}``."""
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    host_obj = getattr(vm.runtime, "host", None)
+    host_name = None
+    if host_obj is not None:
+        try:
+            host_name = host_obj.name
+        except AttributeError:
+            host_name = None
+    return {
+        "host": host_name,
+        "datastores": [ds.name for ds in (vm.datastore or [])],
+    }
+
+
+def info(opts, vm_id_or_name, profile=None):
+    """Return a composed per-VM detail dict (SOAP summary + guest network).
+
+    Shape::
+
+        {
+            "moid", "name", "power_state", "guest_os", "uuid",
+            "vm_path_name", "template", "annotation",
+            "ip_addresses": [...], "mac_addresses": [...],
+            "folder_path": "/DC/folder/name",
+        }
+    """
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    summary = vm.summary
+    config = vm.config
+    ip_addresses = []
+    for net in (vm.guest.net or []):
+        ip_addresses.extend(ip for ip in (getattr(net, "ipAddress", None) or []))
+    mac_addresses = [
+        dev.macAddress
+        for dev in (config.hardware.device or [])
+        if isinstance(dev, vim.vm.device.VirtualEthernetCard) and dev.macAddress
+    ]
+    out = {
+        "moid": vm._moId,  # noqa: SLF001
+        "name": vm.name,
+        "power_state": str(summary.runtime.powerState),
+        "guest_os": summary.config.guestId if summary.config else None,
+        "uuid": summary.config.uuid if summary.config else None,
+        "vm_path_name": getattr(getattr(config, "files", None), "vmPathName", None),
+        "template": bool(getattr(config, "template", False)) if config else False,
+        "annotation": getattr(config, "annotation", "") if config else "",
+        "ip_addresses": ip_addresses,
+        "mac_addresses": mac_addresses,
+        "folder_path": path(opts, vm._moId, profile=profile),  # noqa: SLF001
+    }
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Bulk register / unregister across a folder or datastore
+# ---------------------------------------------------------------------------
+
+
+def _folder_vms(opts, folder, profile=None):
+    folder_obj = _find_by_type(opts, vim.Folder, folder, profile=profile)
+    return list(getattr(folder_obj, "childEntity", None) or [])
+
+
+def unregister_all(opts, folder=None, *, shutdown=False, profile=None):
+    """Unregister every VM under *folder* (whole inventory when ``None``).
+
+    Returns ``{vm_name: {success, comment, error}}`` per VM; ``success``
+    is False only when that VM failed.
+    """
+    if folder is not None:
+        vms = _folder_vms(opts, folder, profile=profile)
+    else:
+        content = soap.content(opts, profile=profile)
+        container = content.viewManager.CreateContainerView(
+            content.rootFolder, [vim.VirtualMachine], True
+        )
+        try:
+            vms = list(container.view)
+        finally:
+            container.Destroy()
+    out = {}
+    for vm in vms:
+        if not hasattr(vm, "UnregisterVM"):
+            continue
+        name = getattr(vm, "name", str(vm._moId))  # noqa: SLF001
+        try:
+            _unregister_obj(vm, shutdown=shutdown)
+            out[name] = {"success": True, "comment": None, "error": None}
+        except Exception as exc:  # pylint: disable=broad-except
+            out[name] = {"success": False, "comment": "unregister failed", "error": str(exc)}
+    return out
+
+
+def register_all(
+    opts,
+    datastore,
+    *,
+    resource_pool=None,
+    cluster=None,
+    host=None,
+    folder=None,
+    profile=None,
+):
+    """Register every ``*.vmx`` found on *datastore*.
+
+    Returns ``{vm_name: {success, comment, error}}`` per VM. Uses
+    :func:`saltext.vcf.clients.vim_datastore_file.find_vmx` to enumerate
+    candidates and :func:`register` for each one.
+    """
+    from saltext.vcf.clients import vim_datastore_file as dsf  # noqa: PLC0415
+
+    vmx_files = dsf.find_vmx(opts, datastore, profile=profile)
+    out = {}
+    for entry in vmx_files:
+        vm_name = entry["file_name"].removesuffix(".vmx")
+        vmx_path = f"{entry['folder_path']}{entry['file_name']}"
+        try:
+            register(
+                opts,
+                vmx_path,
+                vm_name,
+                folder=folder,
+                resource_pool=resource_pool,
+                cluster=cluster,
+                host=host,
+                profile=profile,
+            )
+            out[vm_name] = {"success": True, "comment": "registered", "error": None}
+        except Exception as exc:  # pylint: disable=broad-except
+            out[vm_name] = {"success": False, "comment": "register failed", "error": str(exc)}
+    return out

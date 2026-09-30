@@ -29,16 +29,25 @@ def _host(opts, host_id_or_name, profile=None):
 
 
 def ntp_get(opts, host, profile=None):
-    """Return ``{"servers": [...], "enabled": bool, "policy": "on"|"off"|"automatic"}``."""
+    """Return ``{"servers": [...], "enabled": bool, "policy", "time_zone", "config_file"}``."""
     h = _host(opts, host, profile=profile)
     date_time_info = h.config.dateTimeInfo
     servers = list(date_time_info.ntpConfig.server or []) if date_time_info.ntpConfig else []
     services = h.config.service.service or []
     ntpd = next((s for s in services if s.key == "ntpd"), None)
+    tz = getattr(date_time_info, "timeZone", None)
+    ntp_file = getattr(date_time_info.ntpConfig, "configFile", None) if date_time_info.ntpConfig else None
     return {
         "servers": servers,
         "enabled": bool(ntpd.running) if ntpd else False,
         "policy": ntpd.policy if ntpd else "off",
+        "time_zone": {
+            "key": getattr(tz, "key", None),
+            "name": getattr(tz, "name", None),
+        }
+        if tz is not None
+        else None,
+        "config_file": ntp_file,
     }
 
 
@@ -177,3 +186,50 @@ def advanced_set(opts, host, key, value, profile=None):
     h = _host(opts, host, profile=profile)
     opt = vim.option.OptionValue(key=key, value=value)
     h.configManager.advancedOption.UpdateOptions(changedValue=[opt])
+
+
+def advanced_set_many(opts, host, config_dict, profile=None):
+    """Set multiple advanced settings in one call with type coercion.
+
+    *config_dict* is ``{key: value}``; each value is type-cast using the
+    host's declared ``supportedOption`` (``BoolOption`` / ``IntOption`` /
+    ``LongOption``), mirroring ``vmware_esxi.set_advanced_configs``.
+    """
+    h = _host(opts, host, profile=profile)
+    mgr = h.configManager.advancedOption
+    supported = {}
+    for opt in (getattr(mgr, "supportedOption", None) or []):
+        try:
+            supported[opt.key] = opt.optionType
+        except AttributeError:
+            continue
+    changed = []
+    for key, value in config_dict.items():
+        option_type = supported.get(key)
+        if option_type is not None:
+            # pyvmomi instances type with the dotted class path
+            # (``vim.option.BoolOption``), so use isinstance checks.
+            if isinstance(option_type, vim.option.BoolOption):
+                value = bool(value)
+            elif isinstance(option_type, (vim.option.IntOption, vim.option.LongOption)):
+                value = int(value)
+            elif isinstance(option_type, vim.option.StringOption):
+                value = str(value)
+        changed.append(vim.option.OptionValue(key=key, value=value))
+    mgr.UpdateOptions(changedValue=changed)
+    return advanced_get(opts, host, profile=profile)
+
+
+# ---------------------------------------------------------------------------
+# Date/time (vmware_esxi.get_host_datetime parity)
+# ---------------------------------------------------------------------------
+
+
+def datetime_get(opts, host, profile=None):
+    """Return the host's current date/time (ISO string) via ``HostDateTimeSystem``."""
+    h = _host(opts, host, profile=profile)
+    dt_mgr = h.configManager.dateTimeSystem
+    if dt_mgr is None:
+        raise RuntimeError(f"host {host!r} has no dateTimeSystem manager")
+    dt = dt_mgr.QueryDateTime()
+    return {"host": h.name, "datetime": dt.isoformat() if hasattr(dt, "isoformat") else str(dt)}

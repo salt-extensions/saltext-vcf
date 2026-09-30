@@ -59,7 +59,7 @@ def test_acceptance_get(opts, host_factory):
 def test_acceptance_set(opts, host_factory):
     icm = host_factory["host"].configManager.imageConfigManager
     assert vim_host_acceptance.set_(opts, "esx-1", "partner") == "partner"
-    icm.HostImageConfigSetAcceptance.assert_called_with(newAcceptanceLevel="partner")
+    icm.UpdateHostImageAcceptanceLevel.assert_called_with(newAcceptanceLevel="partner")
 
 
 # -- hyperthreading ----------------------------------------------------------
@@ -158,3 +158,73 @@ def test_tcpip_update_dns(opts, host_factory):
     spec = net.UpdateNetStackInstance.call_args.kwargs["netStackInstance"]
     assert spec.key == "defaultTcpipStack"
     assert list(spec.dnsConfig.address) == ["10.0.0.99"]
+
+
+# -- SCSI LUN inventory + attach/detach (vmware_esxi parity) -----------------
+
+
+def _fake_lun(display="naa.001", path="vmhba0:C0:T0:L0", state="ok", ssd=True, local=True):
+    lun = MagicMock()
+    lun.canonicalName = display
+    lun.displayName = display
+    lun.devicePath = path
+    lun.deviceName = f"t10.ATA____{display}"
+    lun.uuid = "uuid-1"
+    lun.operationalState = [state]
+    d1 = MagicMock()
+    d1.id = "Serial Number"
+    d1.quality = "highQuality"
+    lun.descriptor = [d1]
+    lun.localDisk = local
+    lun.ssd = ssd
+    lun.physicalLocation = "0:0:0:0"
+    return lun
+
+
+def test_scsi_luns_full_dump(opts, host_factory):
+    host_factory["host"].configManager.storageSystem.storageDeviceInfo.scsiLun = [
+        _fake_lun(),
+        _fake_lun("naa.002", "vmhba1:C0:T1:L1", state="off", ssd=False),
+    ]
+    out = vim_host_storage.scsi_luns(opts, "esx-1")
+    assert len(out) == 2
+    assert out[0]["state"] == "attached"
+    assert out[0]["ssd"] is True
+    assert out[1]["state"] == "detached"
+
+
+def test_scsi_luns_filters(opts, host_factory):
+    host_factory["host"].configManager.storageSystem.storageDeviceInfo.scsiLun = [
+        _fake_lun(),
+        _fake_lun("naa.002", "vmhba1:C0:T1:L1", state="off", ssd=False),
+    ]
+    assert [d["device"] for d in vim_host_storage.scsi_luns(opts, "esx-1", ssd=False)] == ["t10.ATA____naa.002"]
+    assert [d["name"] for d in vim_host_storage.scsi_luns(opts, "esx-1", state="attached")] == ["naa.001"]
+    assert [d["name"] for d in vim_host_storage.scsi_luns(opts, "esx-1", lun_name="vmhba1")] == ["naa.002"]
+    assert vim_host_storage.scsi_luns(opts, "esx-1", disk_ids=["naa.001"]) [0]["name"] == "naa.001"
+
+
+def test_list_ssds_and_non_ssds(opts, host_factory):
+    host_factory["host"].configManager.storageSystem.storageDeviceInfo.scsiLun = [
+        _fake_lun(),
+        _fake_lun("naa.002", "vmhba1:C0:T1:L1", state="off", ssd=False),
+    ]
+    assert vim_host_storage.scsi_luns(opts, "esx-1", ssd=True)[0]["ssd"] is True
+    assert vim_host_storage.scsi_luns(opts, "esx-1", ssd=False)[0]["ssd"] is False
+
+
+def test_attach_lun_idempotent(opts, host_factory):
+    ss = host_factory["host"].configManager.storageSystem
+    from pyVmomi import vim as _vim
+
+    ss.AttachScsiLun.side_effect = _vim.fault.InvalidState()
+    assert vim_host_storage.attach_lun(opts, "esx-1", "naa.001") is True
+    assert ss.RefreshStorageSystem.called
+
+
+def test_detach_lun_missing_is_noop(opts, host_factory):
+    ss = host_factory["host"].configManager.storageSystem
+    from pyVmomi import vim as _vim
+
+    ss.DetachScsiLun.side_effect = _vim.fault.NotFound()
+    assert vim_host_storage.detach_lun(opts, "esx-1", "naa.001") is True

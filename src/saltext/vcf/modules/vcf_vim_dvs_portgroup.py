@@ -21,8 +21,8 @@ def list_(dvs, profile=None):
     return c.list_(__opts__, dvs, profile=profile)
 
 
-def get(dvs, name, profile=None):
-    """Return one DPG.
+def get(dvs, name, host=None, profile=None):
+    """Return one DPG; with *host*, include that host's pinned pnics.
 
     CLI Example:
 
@@ -30,7 +30,7 @@ def get(dvs, name, profile=None):
 
         salt '*' vcf_vim_dvs_portgroup.get prod-dvs prod-web
     """
-    return c.get(__opts__, dvs, name, profile=profile)
+    return c.get(__opts__, dvs, name, host=host, profile=profile)
 
 
 def get_or_none(dvs, name, profile=None):

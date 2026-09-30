@@ -95,6 +95,40 @@ def apply(vm, spec, profile=None):
     return c.apply(__opts__, vm, spec, profile=profile)
 
 
+def set_ip_info(
+    vm,
+    ip,
+    subnet,
+    gateway,
+    dns=None,
+    domain=None,
+    guest_os=None,
+    profile=None,
+):
+    """Set static IP config on a powered-off VM.
+
+    Builds a minimal customization spec (Linux or Windows identity) with
+    one NIC mapping and applies it.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm_customization.set_ip_info vm-100 ip=192.168.2.2 subnet=255.255.255.0 gateway=192.168.2.1 domain=example.com
+    """
+    return c.set_ip_info(
+        __opts__,
+        vm,
+        ip=ip,
+        subnet=subnet,
+        gateway=gateway,
+        dns=dns,
+        domain=domain,
+        guest_os=guest_os,
+        profile=profile,
+    )
+
+
 def spec_list(profile=None):
     """List saved customization specs on the vCenter.
 

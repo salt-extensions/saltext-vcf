@@ -127,3 +127,81 @@ def test_spec_delete(monkeypatch, opts):
     monkeypatch.setattr(mod, "_csmgr", lambda o, profile=None: mgr)
     vim_vm_customization.spec_delete(opts, "linux-prod")
     mgr.DeleteCustomizationSpec.assert_called_once_with(name="linux-prod")
+
+
+# ---------- set_ip_info (vmware_vm.set_ip_info parity) ----------
+
+
+def _powered_off_vm():
+    vm = MagicMock()
+    vm.name = "web-01"
+    vm.runtime.powerState = "poweredOff"
+    vm.summary.guest.guestFullName = "Red Hat Enterprise Linux 9 (64-bit)"
+    nic = MagicMock(spec=vim.vm.device.VirtualEthernetCard)
+    vm.config.hardware.device = [nic]
+    vm.CustomizeVM_Task.return_value = MagicMock(_moId="task-cust-1")
+    return vm
+
+
+def test_set_ip_info_linux_builds_spec(monkeypatch, opts):
+    vm = _powered_off_vm()
+    monkeypatch.setattr("saltext.vcf.clients.vim_vm._vm", lambda o, v, profile=None: vm)
+    task = vim_vm_customization.set_ip_info(
+        opts, "web-01", ip="192.168.2.2", subnet="255.255.255.0", gateway="192.168.2.1",
+        dns=["192.168.2.10"], domain="example.com",
+    )
+    assert task == "task-cust-1"
+    spec = vm.CustomizeVM_Task.call_args.kwargs["spec"]
+    assert isinstance(spec.identity, vim.vm.customization.LinuxPrep)
+    adapter = spec.nicSettingMap[0].adapter
+    assert adapter.ip.ipAddress == "192.168.2.2"
+    assert adapter.subnetMask == "255.255.255.0"
+    assert adapter.gateway == ["192.168.2.1"]
+    assert adapter.dnsDomain == "example.com"
+    assert spec.globalIPSettings.dnsSuffixList == ["example.com"]
+
+
+def test_set_ip_info_windows_builds_sysprep(monkeypatch, opts):
+    vm = _powered_off_vm()
+    vm.summary.guest.guestFullName = "Microsoft Windows Server 2022 (64-bit)"
+    monkeypatch.setattr("saltext.vcf.clients.vim_vm._vm", lambda o, v, profile=None: vm)
+    vim_vm_customization.set_ip_info(
+        opts, "web-01", ip="10.0.0.5", subnet="255.255.255.0", gateway="10.0.0.1"
+    )
+    spec = vm.CustomizeVM_Task.call_args.kwargs["spec"]
+    assert isinstance(spec.identity, vim.vm.customization.Sysprep)
+
+
+def test_set_ip_info_refuses_powered_on(monkeypatch, opts):
+    vm = _powered_off_vm()
+    vm.runtime.powerState = "poweredOn"
+    monkeypatch.setattr("saltext.vcf.clients.vim_vm._vm", lambda o, v, profile=None: vm)
+    with pytest.raises(RuntimeError):
+        vim_vm_customization.set_ip_info(
+            opts, "web-01", ip="10.0.0.5", subnet="255.255.255.0", gateway="10.0.0.1"
+        )
+
+
+def test_set_ip_info_multi_nic_refused(monkeypatch, opts):
+    vm = _powered_off_vm()
+    vm.config.hardware.device = [
+        MagicMock(spec=vim.vm.device.VirtualEthernetCard),
+        MagicMock(spec=vim.vm.device.VirtualEthernetCard),
+    ]
+    monkeypatch.setattr("saltext.vcf.clients.vim_vm._vm", lambda o, v, profile=None: vm)
+    with pytest.raises(RuntimeError):
+        vim_vm_customization.set_ip_info(
+            opts, "web-01", ip="10.0.0.5", subnet="255.255.255.0", gateway="10.0.0.1"
+        )
+
+
+def test_set_ip_info_guest_os_override(monkeypatch, opts):
+    vm = _powered_off_vm()
+    vm.summary.guest.guestFullName = ""
+    monkeypatch.setattr("saltext.vcf.clients.vim_vm._vm", lambda o, v, profile=None: vm)
+    vim_vm_customization.set_ip_info(
+        opts, "web-01", ip="10.0.0.5", subnet="255.255.255.0", gateway="10.0.0.1",
+        guest_os="Red Hat Enterprise Linux 9",
+    )
+    spec = vm.CustomizeVM_Task.call_args.kwargs["spec"]
+    assert isinstance(spec.identity, vim.vm.customization.LinuxPrep)

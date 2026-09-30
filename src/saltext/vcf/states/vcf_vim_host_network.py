@@ -198,12 +198,24 @@ def vmkernel_present(
     ip_address=None,
     subnet_mask=None,
     mtu=1500,
+    dvswitch_name=None,
+    vswitch_name=None,
+    tcpip_stack=None,
+    default_gateway=None,
+    traffic_types=None,
+    enable_vsan=None,
     profile=None,
 ):
     """Ensure a VMkernel *name* (device id, e.g. ``vmk1``) exists.
 
     If the device doesn't exist, a *portgroup* is required to bind it to.
     For an existing vmkernel, drift on IP/MTU/DHCP triggers an update.
+
+    Extra knobs (``vmware_esxi.create_vmkernel_adapter`` parity):
+    *dvswitch_name* binds to a distributed port group, *tcpip_stack*
+    selects the TCP/IP stack, *default_gateway* sets a per-adapter
+    gateway, *traffic_types* is a ``{type: bool}`` dict (or list) of
+    service types, and *enable_vsan* wires/unwires the adapter for vSAN.
     """
     ret = _ret(name)
     existing = c.vmkernel_get_or_none(__opts__, host, name, profile=profile)
@@ -218,25 +230,41 @@ def vmkernel_present(
                 drift["subnet_mask"] = (existing["subnet_mask"], subnet_mask)
         if mtu is not None and existing["mtu"] != int(mtu):
             drift["mtu"] = (existing["mtu"], int(mtu))
+        if default_gateway is not None:
+            drift["default_gateway"] = ("(existing)", default_gateway)
         if not drift:
             ret["comment"] = f"vmkernel {name} on {host} already matches"
-            return ret
-        if __opts__["test"]:
-            ret["result"] = None
-            ret["comment"] = f"vmkernel {name} on {host} would be updated: {sorted(drift)}"
-            return ret
-        c.vmkernel_update(
-            __opts__,
-            host,
-            name,
-            dhcp=dhcp,
-            ip_address=ip_address,
-            subnet_mask=subnet_mask,
-            mtu=mtu,
-            profile=profile,
-        )
-        ret["changes"] = drift
-        ret["comment"] = f"vmkernel {name} on {host} updated"
+        else:
+            if __opts__["test"]:
+                ret["result"] = None
+                ret["comment"] = f"vmkernel {name} on {host} would be updated: {sorted(drift)}"
+                ret["changes"] = drift
+                return ret
+            c.vmkernel_update(
+                __opts__,
+                host,
+                name,
+                dhcp=dhcp,
+                ip_address=ip_address,
+                subnet_mask=subnet_mask,
+                mtu=mtu,
+                default_gateway=default_gateway,
+                profile=profile,
+            )
+            ret["changes"] = drift
+            ret["comment"] = f"vmkernel {name} on {host} updated"
+        if traffic_types is not None:
+            ret["changes"].setdefault("traffic_types", traffic_types)
+            if not __opts__["test"]:
+                c.vmkernel_set_traffic_types(
+                    __opts__, host, name, traffic_types, profile=profile
+                )
+        if enable_vsan is not None:
+            changed = c.vmkernel_vsan(__opts__, host, name, enable_vsan, profile=profile)
+            if changed:
+                ret["changes"]["vsan"] = (not enable_vsan, enable_vsan)
+        if not ret["changes"] and ret["result"] is True:
+            ret["comment"] = f"vmkernel {name} on {host} already matches"
         return ret
     if portgroup is None:
         ret["result"] = False
@@ -254,8 +282,16 @@ def vmkernel_present(
         ip_address=ip_address,
         subnet_mask=subnet_mask,
         mtu=mtu,
+        dvswitch_name=dvswitch_name,
+        vswitch_name=vswitch_name,
+        tcpip_stack=tcpip_stack,
+        default_gateway=default_gateway,
         profile=profile,
     )
+    if traffic_types is not None:
+        c.vmkernel_set_traffic_types(__opts__, host, device, traffic_types, profile=profile)
+    if enable_vsan is not None:
+        c.vmkernel_vsan(__opts__, host, device, enable_vsan, profile=profile)
     ret["changes"] = {"new": device}
     ret["comment"] = f"vmkernel {device} created on {host}"
     return ret
@@ -347,4 +383,42 @@ def vswitch_teaming_configured(
     )
     ret["changes"] = drift
     ret["comment"] = f"vSwitch {name} teaming on {host} updated"
+    return ret
+
+
+def vmotion_configured(name, host, enabled, device="vmk0", profile=None):
+    """Ensure the host's vMotion interface is configured.
+
+    ``enabled=True`` selects *device* as the vMotion VMkernel NIC;
+    ``enabled=False`` deselects it.
+
+    .. code-block:: yaml
+
+        Configure vMotion:
+          vcf_vim_host_network.vmotion_configured:
+            - host: esxi-01
+            - enabled: true
+            - device: vmk1
+    """
+    from saltext.vcf.clients import vim_host_vmotion as vm_c  # noqa: PLC0415
+
+    ret = _ret(name)
+    current = vm_c.get_enabled(__opts__, host, profile=profile)
+    if bool(current.get("enabled")) == bool(enabled) and (not enabled or current.get("device") == device):
+        ret["comment"] = f"vMotion on {host} already configured (device={current.get('device')})."
+        return ret
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"vMotion on {host} would be {'enabled on ' + device if enabled else 'disabled'}."
+        ret["changes"] = {"enabled": (current.get("enabled"), bool(enabled))}
+        return ret
+    if enabled:
+        vm_c.enable(__opts__, host, device, profile=profile)
+    else:
+        vm_c.disable(__opts__, host, profile=profile)
+    ret["changes"] = {
+        "enabled": (current.get("enabled"), bool(enabled)),
+        "device": (current.get("device"), device if enabled else None),
+    }
+    ret["comment"] = f"vMotion on {host} updated."
     return ret

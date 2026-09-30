@@ -91,3 +91,15 @@ def remove_disks(host, disks, maintenance_mode_action="ensureObjectAccessibility
         maintenance_mode_action=maintenance_mode_action,
         profile=profile,
     )
+
+
+def host_enable(host, enabled, profile=None):
+    """Enable or disable vSAN on a single host.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vsan_disk.host_enable esxi-01 enabled=true
+    """
+    return c.host_enable(__opts__, host, enabled, profile=profile)

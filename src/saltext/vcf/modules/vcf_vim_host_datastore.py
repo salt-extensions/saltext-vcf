@@ -98,3 +98,60 @@ def rescan_storage(host, profile=None):
         salt '*' vcf_vim_host_datastore.rescan_storage <host>
     """
     return c.rescan_storage(__opts__, host, profile=profile)
+
+
+def lun_ids(host, profile=None):
+    """Return the LUN canonical names backing every datastore on *host*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_datastore.lun_ids esxi-01
+    """
+    return c.lun_ids(__opts__, host, profile=profile)
+
+
+def disks(host, disk_name=None, profile=None):
+    """Return per-datastore VMFS backing-disk info on *host*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_datastore.disks esxi-01 disk_name=ds1
+    """
+    return c.disks(__opts__, host, disk_name, profile=profile)
+
+
+def mount_vmfs(host, vmfs_uuid, lun_canonical_name=None, datastore_name=None, profile=None):
+    """Attach a LUN and mount an existing VMFS volume by uuid on *host*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_datastore.mount_vmfs esxi-01 5f6b... naa.0001
+    """
+    return c.mount_vmfs(
+        __opts__,
+        host,
+        vmfs_uuid,
+        lun_canonical_name=lun_canonical_name,
+        datastore_name=datastore_name,
+        profile=profile,
+    )
+
+
+def unmount_vmfs(host, vmfs_uuid, detach_luns=True, profile=None):
+    """Unmount a VMFS volume on *host* and optionally detach its LUNs.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_datastore.unmount_vmfs esxi-01 5f6b... detach_luns=true
+    """
+    return c.unmount_vmfs(
+        __opts__, host, vmfs_uuid, detach_luns=detach_luns, profile=profile
+    )

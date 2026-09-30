@@ -224,6 +224,35 @@ def remove(opts, vm_id_or_name, nic_key, profile=None):
     return task._moId  # noqa: SLF001
 
 
+def set_dvport(opts, vm_id_or_name, dvs_name_or_id, dport_group_name, *, nic_key=None, profile=None):
+    """Reattach a VM NIC to a distributed port group identified **by name**.
+
+    Resolves *dvs_name_or_id* + *dport_group_name* to the backing
+    ``switchUuid`` / ``portgroupKey`` pair (via
+    :mod:`saltext.vcf.clients.vim_dvs_portgroup`) and reconfigures the
+    NIC. When *nic_key* is omitted, the VM's first Ethernet NIC is used
+    (the ``vmware_vm.set_dvport`` behaviour).
+    """
+    from saltext.vcf.clients import vim_dvs_portgroup as dpg_c  # noqa: PLC0415
+
+    dpg = dpg_c.get(opts, dvs_name_or_id, dport_group_name, profile=profile)
+    dvs = dpg_c._dvs(opts, dvs_name_or_id, profile=profile)  # noqa: SLF001
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    if nic_key is None:
+        nics = [d for d in vm.config.hardware.device or [] if isinstance(d, vim.vm.device.VirtualEthernetCard)]
+        if not nics:
+            raise LookupError(f"VM {vm.name!r} has no Ethernet NICs")
+        nic_key = nics[0].key
+    return update_backing(
+        opts,
+        vm_id_or_name,
+        nic_key,
+        portgroup_key=dpg["key"],
+        dvs_uuid=dvs.uuid,
+        profile=profile,
+    )
+
+
 def _find_nic(vm, key):
     for dev in vm.config.hardware.device or []:
         if isinstance(dev, vim.vm.device.VirtualEthernetCard) and dev.key == int(key):

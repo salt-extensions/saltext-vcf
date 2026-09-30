@@ -82,6 +82,37 @@ def delete(opts, folder_id, profile=None):
     soap.wait_for_task(task)
 
 
+def rename(opts, folder, new_name, profile=None):
+    """Rename *folder* (MoID or name) to *new_name*. Returns task moId."""
+    obj = _folder_by_moid(opts, folder, profile=profile) if folder.startswith("folder-") else _find_folder_object(opts, folder, profile=profile)
+    if obj is None:
+        raise LookupError(f"folder {folder!r} not found")
+    task = obj.Rename_Task(newName=new_name)
+    soap.wait_for_task(task)
+    return task._moId  # noqa: SLF001
+
+
+def move(opts, folder, destination_folder, profile=None):
+    """Move *folder* (MoID or name) under *destination_folder* (MoID or name)."""
+    obj = (
+        _folder_by_moid(opts, folder, profile=profile)
+        if str(folder).startswith("folder-")
+        else _find_folder_object(opts, folder, profile=profile)
+    )
+    if obj is None:
+        raise LookupError(f"folder {folder!r} not found")
+    dst = (
+        _folder_by_moid(opts, destination_folder, profile=profile)
+        if str(destination_folder).startswith("folder-")
+        else _find_folder_object(opts, destination_folder, profile=profile)
+    )
+    if dst is None:
+        raise LookupError(f"destination folder {destination_folder!r} not found")
+    task = dst.MoveIntoFolder_Task(list=[obj])
+    soap.wait_for_task(task)
+    return task._moId  # noqa: SLF001
+
+
 def _folder_by_moid(opts, moid, profile=None):
     content = soap.content(opts, profile=profile)
     container = content.viewManager.CreateContainerView(content.rootFolder, [vim.Folder], True)
@@ -92,6 +123,18 @@ def _folder_by_moid(opts, moid, profile=None):
     finally:
         container.Destroy()
     raise LookupError(f"folder {moid!r} not found")
+
+
+def parent_name(opts, folder_moid, profile=None):
+    """Return the parent folder's name for *folder_moid* (or None at the root)."""
+    obj = _folder_by_moid(opts, folder_moid, profile=profile)
+    parent = getattr(obj, "parent", None)
+    if parent is None:
+        return None
+    try:
+        return parent.name
+    except AttributeError:
+        return None
 
 
 def _find_folder_object(opts, name, profile=None):

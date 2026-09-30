@@ -152,14 +152,31 @@ def test_advanced_setting_already_matches(monkeypatch):
 
 
 def test_advanced_setting_updates(monkeypatch):
-    actions = {"set": []}
+    actions = {"set_many": []}
     monkeypatch.setattr(c, "advanced_get", lambda o, h, key=None, profile=None: 0)
     monkeypatch.setattr(
-        c, "advanced_set", lambda o, h, k, v, profile=None: actions["set"].append((k, v))
+        c, "advanced_set_many", lambda o, h, cfg, profile=None: actions["set_many"].append(cfg)
     )
     ret = st.advanced_setting("UserVars.SuppressShellWarning", host="esxi-01", value=1)
-    assert ret["changes"] == {"value": (0, 1)}
-    assert actions["set"] == [("UserVars.SuppressShellWarning", 1)]
+    assert ret["changes"] == {"UserVars.SuppressShellWarning": (0, 1)}
+    assert actions["set_many"] == [{"UserVars.SuppressShellWarning": 1}]
+
+
+def test_advanced_setting_batch_configs(monkeypatch):
+    monkeypatch.setattr(
+        c,
+        "advanced_get",
+        lambda o, h, key=None, profile=None: {"A.Opt": 1, "B.Opt": 2}.get(key),
+    )
+    actions = {"set_many": []}
+    monkeypatch.setattr(
+        c, "advanced_set_many", lambda o, h, cfg, profile=None: actions["set_many"].append(cfg)
+    )
+    ret = st.advanced_setting(
+        "batch", host="esxi-01", configs={"A.Opt": 5, "B.Opt": 2}
+    )
+    assert ret["changes"] == {"A.Opt": (1, 5)}
+    assert actions["set_many"] == [{"A.Opt": 5}]
 
 
 def test_advanced_setting_missing_key(monkeypatch):

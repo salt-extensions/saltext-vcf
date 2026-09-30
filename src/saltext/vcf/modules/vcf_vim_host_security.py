@@ -178,3 +178,15 @@ def iscsi_set_chap(host, name, password, direction="prohibited", profile=None):
     return c.iscsi_set_chap(
         __opts__, host, name=name, password=password, direction=direction, profile=profile
     )
+
+
+def user_get(host, username, profile=None):
+    """Return one local account on *host* by principal.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_security.user_get esxi-01 root
+    """
+    return c.user_get(__opts__, host, username, profile=profile)
