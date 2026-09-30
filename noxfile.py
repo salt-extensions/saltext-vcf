@@ -139,7 +139,7 @@ def _install_requirements(
 
 @nox.session(python=PYTHON_VERSIONS)
 def tests(session):
-    # ``all`` pulls in every runtime extra (pyvmomi, pywbem, vmware-vcenter,
+    # ``all`` pulls every remaining runtime extra (pywbem, vmware-vcenter,
     # vmware-vcf, kubernetes, saltext.kubernetes) so unit tests for the
     # esxi/vcenter/vim/vsan/installer surfaces can import their clients.
     _install_requirements(session, install_source=True, install_extras=["all"])
@@ -269,10 +269,10 @@ class Tee:
 
 
 def _lint(session, rcfile, flags, paths, tee_output=True):
-    # ``all`` pulls every runtime extra (pyvmomi, pywbem, vmware-vcenter,
-    # vmware-vcf, saltext.kubernetes, kubernetes). Pylint needs those
-    # importable to lint the modules that use them — otherwise it flags
-    # every ``from pyVmomi import ...`` as ``import-error``. See PR #43
+    # ``all`` pulls every remaining runtime extra (pywbem, vmware-vcenter,
+    # vmware-vcf, saltext.kubernetes, kubernetes; pyvmomi is a base dep).
+    # Pylint needs those importable to lint the modules that use them —
+    # otherwise it flags imports as ``import-error``. See PR #43
     # (per-component extras split).
     _install_requirements(
         session,

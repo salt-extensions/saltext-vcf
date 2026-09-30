@@ -52,8 +52,24 @@ def list_(opts, dvs_name_or_id, profile=None):
     return [_to_dict(pg) for pg in (dvs.portgroup or [])]
 
 
-def get(opts, dvs_name_or_id, name, profile=None):
-    return _to_dict(_dpg(opts, dvs_name_or_id, name, profile=profile))
+def get(opts, dvs_name_or_id, name, *, host=None, profile=None):
+    """Return the port group dict; with *host*, include that host's pinned pnics."""
+    out = _to_dict(_dpg(opts, dvs_name_or_id, name, profile=profile))
+    if host is not None:
+        dvs = _dvs(opts, dvs_name_or_id, profile=profile)
+        for member in (dvs.config.host or []):
+            member_host = getattr(getattr(member, "config", None), "host", None)
+            if member_host is None:
+                continue
+            if host in (member_host._moId, member_host.name):  # noqa: SLF001
+                backing = getattr(member.config, "backing", None)
+                out["host_pnic_devices"] = [
+                    spec.pnicDevice for spec in (getattr(backing, "pnicSpec", None) or [])
+                ]
+                break
+        else:
+            out["host_pnic_devices"] = []
+    return out
 
 
 def get_or_none(opts, dvs_name_or_id, name, profile=None):

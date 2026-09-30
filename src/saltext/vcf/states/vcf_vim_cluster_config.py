@@ -20,12 +20,15 @@ def drs(
     default_vm_behavior=None,
     migration_threshold=None,
     vm_monitoring_enabled=None,
+    advanced_settings=None,
     profile=None,
 ):
     """Ensure DRS settings on *cluster* match the provided values.
 
     Only non-None fields participate in drift detection. *name* is
     informational; *cluster* defaults to *name* when omitted.
+    *advanced_settings* is a ``{key: value}`` dict applied to
+    ``drsConfig.option``.
     """
     cluster = cluster or name
     ret = _ret(name)
@@ -35,10 +38,19 @@ def drs(
         "default_vm_behavior": default_vm_behavior,
         "migration_threshold": migration_threshold,
         "vm_monitoring_enabled": vm_monitoring_enabled,
+        "advanced_settings": advanced_settings,
     }
-    drift = {
-        k: (current.get(k), v) for k, v in desired.items() if v is not None and current.get(k) != v
-    }
+    drift = {}
+    for k, v in desired.items():
+        if v is None:
+            continue
+        if k == "advanced_settings":
+            have = current.get(k) or {}
+            drifted = {kk: (have.get(kk), vv) for kk, vv in v.items() if have.get(kk) != vv}
+            if drifted:
+                drift[k] = drifted
+        elif current.get(k) != v:
+            drift[k] = (current.get(k), v)
     if not drift:
         ret["comment"] = f"DRS on {cluster} already matches"
         return ret
@@ -46,9 +58,12 @@ def drs(
         ret["result"] = None
         ret["comment"] = f"DRS on {cluster} would be updated: {sorted(drift)}"
         return ret
-    c.drs_set(
-        __opts__, cluster, profile=profile, **{k: v for k, v in desired.items() if v is not None}
-    )
+    kwargs = {
+        k: v
+        for k, v in desired.items()
+        if v is not None and (k != "advanced_settings" or drift.get("advanced_settings"))
+    }
+    c.drs_set(__opts__, cluster, profile=profile, **kwargs)
     ret["changes"] = drift
     ret["comment"] = f"DRS on {cluster} updated"
     return ret
@@ -63,9 +78,22 @@ def ha(
     restart_priority=None,
     isolation_response=None,
     admission_control_enabled=None,
+    vm_component_protecting=None,
+    vm_min_up_time=None,
+    vm_max_failure_window=None,
+    vm_max_failures=None,
+    vm_failure_interval=None,
+    restart_priority_timeout=None,
+    enable_apd_timeout_for_hosts=None,
+    vm_reaction_on_apd_cleared=None,
+    vm_storage_protection_for_apd=None,
+    vm_storage_protection_for_pdl=None,
+    vm_terminate_delay_for_apd_sec=None,
+    admission_control_policy=None,
+    advanced_options=None,
     profile=None,
 ):
-    """Ensure HA settings on *cluster* match the provided values."""
+    """Ensure HA settings on *cluster* match the provided values (full knob set)."""
     cluster = cluster or name
     ret = _ret(name)
     current = c.ha_get(__opts__, cluster, profile=profile)
@@ -76,10 +104,30 @@ def ha(
         "restart_priority": restart_priority,
         "isolation_response": isolation_response,
         "admission_control_enabled": admission_control_enabled,
+        "vm_component_protecting": vm_component_protecting,
+        "vm_min_up_time": vm_min_up_time,
+        "vm_max_failure_window": vm_max_failure_window,
+        "vm_max_failures": vm_max_failures,
+        "vm_failure_interval": vm_failure_interval,
+        "restart_priority_timeout": restart_priority_timeout,
+        "enable_apd_timeout_for_hosts": enable_apd_timeout_for_hosts,
+        "vm_reaction_on_apd_cleared": vm_reaction_on_apd_cleared,
+        "vm_storage_protection_for_apd": vm_storage_protection_for_apd,
+        "vm_storage_protection_for_pdl": vm_storage_protection_for_pdl,
+        "vm_terminate_delay_for_apd_sec": vm_terminate_delay_for_apd_sec,
+        "advanced_settings": advanced_options,
     }
-    drift = {
-        k: (current.get(k), v) for k, v in desired.items() if v is not None and current.get(k) != v
-    }
+    drift = {}
+    for k, v in desired.items():
+        if v is None:
+            continue
+        if k == "advanced_settings":
+            have = current.get("advanced_settings") or {}
+            drifted = {kk: (have.get(kk), vv) for kk, vv in v.items() if have.get(kk) != vv}
+            if drifted:
+                drift[k] = drifted
+        elif current.get(k) != v:
+            drift[k] = (current.get(k), v)
     if not drift:
         ret["comment"] = f"HA on {cluster} already matches"
         return ret
@@ -87,9 +135,14 @@ def ha(
         ret["result"] = None
         ret["comment"] = f"HA on {cluster} would be updated: {sorted(drift)}"
         return ret
-    c.ha_set(
-        __opts__, cluster, profile=profile, **{k: v for k, v in desired.items() if v is not None}
-    )
+    kwargs = {
+        k: v
+        for k, v in desired.items()
+        if v is not None and (k != "advanced_settings" or drift.get("advanced_settings"))
+    }
+    if admission_control_policy is not None:
+        kwargs["admission_control_policy"] = admission_control_policy
+    c.ha_set(__opts__, cluster, profile=profile, **kwargs)
     ret["changes"] = drift
     ret["comment"] = f"HA on {cluster} updated"
     return ret

@@ -134,3 +134,131 @@ def rescan_storage(opts, host, profile=None):
     h = _resolve_host(opts, host, profile=profile)
     h.configManager.storageSystem.RescanAllHba()
     return True
+
+
+# ---------------------------------------------------------------------------
+# VMFS extent / backing-disk inventory + mount/unmount by uuid
+# (vmware_esxi.get_lun_ids / get_host_disks / vmware_datastore.mount_datastore parity)
+# ---------------------------------------------------------------------------
+
+
+def _find_host(opts, name_or_id, profile=None):
+    return _resolve_host(opts, name_or_id, profile=profile)
+
+
+def lun_ids(opts, host, profile=None):
+    """Return the LUN canonical names backing every datastore visible to *host*."""
+    h = _find_host(opts, host, profile=profile)
+    ids = set()
+    for ds in h.datastore or []:
+        info = getattr(ds, "info", None)
+        vmfs = getattr(info, "vmfs", None)
+        if vmfs is None:
+            continue
+        for extent in vmfs.extent or []:
+            ids.add(extent.diskName)
+    return sorted(ids)
+
+
+def disks(opts, host, disk_name=None, profile=None):
+    """Return per-datastore VMFS backing-disk info on *host*.
+
+    Shape per entry: ``{scsi_address, name, uuid, local}`` where *name*
+    is the VMFS volume name (filterable via *disk_name*).
+    """
+    h = _find_host(opts, host, profile=profile)
+    out = []
+    for ds in h.datastore or []:
+        info = getattr(ds, "info", None)
+        vmfs = getattr(info, "vmfs", None)
+        if vmfs is None:
+            continue
+        if disk_name and vmfs.name != disk_name:
+            continue
+        for extent in vmfs.extent or []:
+            out.append(
+                {
+                    "scsi_address": extent.diskName,
+                    "name": vmfs.name,
+                    "uuid": vmfs.uuid,
+                    "local": bool(vmfs.local),
+                }
+            )
+    return out
+
+
+def mount_vmfs(opts, host, vmfs_uuid, lun_canonical_name=None, *, datastore_name=None, profile=None):
+    """Attach a LUN and mount an *existing* VMFS volume by uuid on *host*.
+
+    Handles the unresolved-volume case (same-uuid clone conflicts) with
+    ``QueryUnresolvedVmfsVolume`` + ``ResolveMultipleUnresolvedVmfsVolumes``
+    using ``uuidResolution="forceMounted"``. Returns a step log.
+    """
+    h = _find_host(opts, host, profile=profile)
+    storage = h.configManager.storageSystem
+    steps = []
+    if lun_canonical_name:
+        try:
+            storage.AttachScsiLun(lunCanonicalName=lun_canonical_name)
+            steps.append(f"attached disk {lun_canonical_name} to {h.name}")
+        except vim.fault.InvalidState:
+            steps.append(f"disk {lun_canonical_name} already attached to {h.name}")
+        storage.RefreshStorageSystem()
+    try:
+        storage.MountVmfsVolume(vmfs_uuid)
+        steps.append(f"mounted vmfs {vmfs_uuid} on {h.name}")
+    except vim.fault.NotFound:
+        steps.append(f"vmfs {vmfs_uuid} not found — resolving conflicts")
+        unresolved = storage.QueryUnresolvedVmfsVolume() or []
+        for vol in unresolved:
+            if vol.vmfsUuid != vmfs_uuid:
+                continue
+            if vol.resolveStatus.resolvable:
+                steps.append(f"{vmfs_uuid} has a resolvable conflict")
+                spec = vim.host.UnresolvedVmfsResolutionSpec()
+                spec.extentDevicePath = [e.devicePath for e in vol.extent]
+                spec.uuidResolution = "forceMounted"
+                storage.ResolveMultipleUnresolvedVmfsVolumes([spec])
+                steps.append(f"resolved {vmfs_uuid}")
+            else:
+                raise RuntimeError(f"{vmfs_uuid} has an unresolvable conflict on {h.name}")
+    except vim.fault.InvalidState:
+        steps.append(f"vmfs {vmfs_uuid} already mounted on {h.name}")
+    storage.RefreshStorageSystem()
+    return steps
+
+
+def unmount_vmfs(opts, host, vmfs_uuid, *, detach_luns=True, profile=None):
+    """Unmount the VMFS volume *vmfs_uuid* on *host* and optionally detach its LUNs.
+
+    The datastore stays registered for other hosts. Returns a step log.
+    """
+    h = _find_host(opts, host, profile=profile)
+    storage = h.configManager.storageSystem
+    steps = []
+    mount_infos = getattr(storage.fileSystemVolumeInfo, "mountInfo", None) or []
+    volume = None
+    for mi in mount_infos:
+        vol = mi.volume
+        if getattr(vol, "uuid", None) == vmfs_uuid:
+            volume = vol
+            break
+    if volume is None:
+        raise LookupError(f"vmfs volume {vmfs_uuid!r} not found on {h.name}")
+    try:
+        storage.UnmountVmfsVolume(vmfs_uuid)
+        steps.append(f"unmounted vmfs {vmfs_uuid} from {h.name}")
+    except Exception as exc:  # pylint: disable=broad-except
+        if "not mounted" in str(exc).lower() or getattr(exc, "name", "") == "InvalidState":
+            steps.append(f"vmfs {vmfs_uuid} not mounted on {h.name}")
+        else:
+            raise
+    if detach_luns:
+        for extent in volume.extent or []:
+            try:
+                storage.DetachScsiLun(lunCanonicalName=extent.diskName)
+                steps.append(f"detached disk {extent.diskName} from {h.name}")
+            except Exception as exc:  # pylint: disable=broad-except
+                steps.append(f"detach {extent.diskName} skipped: {exc}")
+    storage.RefreshStorageSystem()
+    return steps

@@ -9,6 +9,8 @@ _________________
 .. autosummary::
     :toctree:
 
+    vcf_automation_topology
+    vcf_avi
     vcf_cluster_config
     vcf_cluster_config_software
     vcf_esxi_ad_auth
@@ -16,12 +18,17 @@ _________________
     vcf_esxi_auth_proxy
     vcf_esxi_firewall
     vcf_esxi_host
+    vcf_esxi_localsh
+    vcf_esxi_netdump
     vcf_esxi_ntp
     vcf_esxi_service
     vcf_esxi_syslog
     vcf_esxi_vlcm
     vcf_fleet_password
+    vcf_hcx
+    vcf_installer_appliance
     vcf_installer_bringup
+    vcf_installer_topology
     vcf_nsx_cluster
     vcf_nsx_compute_collection
     vcf_nsx_context_profile
@@ -82,9 +89,11 @@ _________________
     vcf_vcenter_host
     vcf_vcenter_kms
     vcf_vcenter_lcm_depot
+    vcf_vcenter_localos_user
     vcf_vcenter_network
     vcf_vcenter_resource_pool
     vcf_vcenter_sso
+    vcf_vcenter_statistics
     vcf_vcenter_storage_policy
     vcf_vcenter_supervisor
     vcf_vcenter_supervisor_compat
@@ -123,6 +132,7 @@ _________________
     vcf_vcfops_credential
     vcf_vcfops_dashboard
     vcf_vcfops_deployment
+    vcf_vcfops_fleet_certificates
     vcf_vcfops_fleet_passwords
     vcf_vcfops_maintenance
     vcf_vcfops_policy
@@ -140,6 +150,7 @@ _________________
     vcf_vim_cluster_evc
     vcf_vim_cluster_overrides
     vcf_vim_custom_attribute
+    vcf_vim_datastore
     vcf_vim_datastore_cluster
     vcf_vim_datastore_file
     vcf_vim_drs_rule
@@ -147,15 +158,19 @@ _________________
     vcf_vim_dvs_portgroup
     vcf_vim_extension
     vcf_vim_first_class_disk
+    vcf_vim_host
     vcf_vim_host_acceptance
     vcf_vim_host_certificate
     vcf_vim_host_config
     vcf_vim_host_datastore
     vcf_vim_host_dns
+    vcf_vim_host_firewall
+    vcf_vim_host_firmware
     vcf_vim_host_hyperthreading
     vcf_vim_host_kernel_module
     vcf_vim_host_maintenance
     vcf_vim_host_network
+    vcf_vim_host_packages
     vcf_vim_host_passthrough
     vcf_vim_host_powermgmt
     vcf_vim_host_security
@@ -163,6 +178,8 @@ _________________
     vcf_vim_host_ssl_thumbprint
     vcf_vim_host_storage
     vcf_vim_host_tcpip
+    vcf_vim_host_vmotion
+    vcf_vim_info
     vcf_vim_infra_profile
     vcf_vim_license
     vcf_vim_ovf
@@ -174,6 +191,8 @@ _________________
     vcf_vim_vapp
     vcf_vim_vasa
     vcf_vim_vm
+    vcf_vim_vm_boot
+    vcf_vim_vm_cdrom
     vcf_vim_vm_console
     vcf_vim_vm_customization
     vcf_vim_vm_devices
@@ -186,11 +205,16 @@ _________________
     vcf_vim_vm_snapshot
     vcf_vim_vm_tools
     vcf_vks
+    vcf_vrli
     vcf_vrli_ad
     vcf_vrli_certificate
     vcf_vrli_settings
     vcf_vrli_version
+    vcf_vrni
+    vcf_vro
+    vcf_vro_bootstrap
     vcf_vsan_cluster
     vcf_vsan_disk
     vcf_vsan_fault_domain
+    vcf_vsan_file_service
     vcf_vsan_health

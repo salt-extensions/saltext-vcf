@@ -9,6 +9,8 @@ ______________
 .. autosummary::
     :toctree:
 
+    automation_topology
+    avi_controller
     cluster_config
     cluster_config_software
     esxi_ad_auth
@@ -16,12 +18,17 @@ ______________
     esxi_auth_proxy
     esxi_firewall
     esxi_host
+    esxi_localsh
+    esxi_netdump
     esxi_ntp
     esxi_service
     esxi_syslog
     esxi_vlcm
     fleet_password
+    hcx_manager
+    installer_appliance
     installer_bringup
+    installer_topology
     nsx_cluster
     nsx_compute_collection
     nsx_context_profile
@@ -62,6 +69,8 @@ ______________
     nsx_upgrade
     nsx_uplink_profile
     nsx_vidm
+    ovf_deploy
+    ovftool_deploy
     sddc_avn
     sddc_bundles
     sddc_certificates
@@ -73,6 +82,9 @@ ______________
     sddc_host
     sddc_license_keys
     sddc_manager
+    sddc_manager_local_accounts
+    sddc_manager_password_policy
+    sddc_manager_tls
     sddc_network_pools
     sddc_personalities
     sddc_releases
@@ -100,10 +112,12 @@ ______________
     vcenter_host
     vcenter_kms
     vcenter_lcm_depot
+    vcenter_localos_user
     vcenter_network
     vcenter_resource_pool
     vcenter_shell
     vcenter_sso
+    vcenter_statistics
     vcenter_storage_policy
     vcenter_supervisor
     vcenter_supervisor_compat
@@ -142,6 +156,7 @@ ______________
     vcfops_credential
     vcfops_dashboard
     vcfops_deployment
+    vcfops_fleet_certificates
     vcfops_fleet_passwords
     vcfops_maintenance
     vcfops_policy
@@ -159,6 +174,7 @@ ______________
     vim_cluster_evc
     vim_cluster_overrides
     vim_custom_attribute
+    vim_datastore
     vim_datastore_cluster
     vim_datastore_file
     vim_drs_rule
@@ -166,15 +182,19 @@ ______________
     vim_dvs_portgroup
     vim_extension
     vim_first_class_disk
+    vim_host
     vim_host_acceptance
     vim_host_certificate
     vim_host_config
     vim_host_datastore
     vim_host_dns
+    vim_host_firewall
+    vim_host_firmware
     vim_host_hyperthreading
     vim_host_kernel_module
     vim_host_maintenance
     vim_host_network
+    vim_host_packages
     vim_host_passthrough
     vim_host_powermgmt
     vim_host_security
@@ -182,6 +202,8 @@ ______________
     vim_host_ssl_thumbprint
     vim_host_storage
     vim_host_tcpip
+    vim_host_vmotion
+    vim_info
     vim_infra_profile
     vim_license
     vim_ovf
@@ -193,6 +215,8 @@ ______________
     vim_vapp
     vim_vasa
     vim_vm
+    vim_vm_boot
+    vim_vm_cdrom
     vim_vm_console
     vim_vm_customization
     vim_vm_devices
@@ -204,11 +228,18 @@ ______________
     vim_vm_power
     vim_vm_snapshot
     vim_vm_tools
+    vmsp_dns
+    vmsp_ntp
+    vmsp_syslog
     vrli_ad
     vrli_certificate
+    vrli_master
     vrli_settings
     vrli_version
+    vrni_platform
+    vro_orchestrator
     vsan_cluster
     vsan_disk
     vsan_fault_domain
+    vsan_file_service
     vsan_health

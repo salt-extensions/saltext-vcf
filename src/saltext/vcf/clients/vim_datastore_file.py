@@ -101,6 +101,33 @@ def list_(opts, datacenter, datastore, path="", profile=None):
     return out
 
 
+def find_vmx(opts, datastore, *, match_pattern="*.vmx", profile=None):
+    """Recursively list ``*.vmx`` files on *datastore* (candidate VMs for register).
+
+    Uses ``DatastoreBrowser.SearchDatastoreSubFolders_Task`` so nested
+    folders are included. Returns
+    ``[{datastore, folder_path, file_name}, ...]``.
+    """
+    ds = _find_datastore(opts, datastore, profile=profile)
+    spec = vim.host.DatastoreBrowser.SearchSpec()
+    spec.matchPattern = [match_pattern]
+    task = ds.browser.SearchDatastoreSubFolders_Task(
+        datastorePath=_ds_path(ds.name, ""), searchSpec=spec
+    )
+    results = soap.wait_for_task(task)
+    out = []
+    for res in results or []:
+        for entry in res.file or []:
+            out.append(
+                {
+                    "datastore": ds.name,
+                    "folder_path": res.folderPath,
+                    "file_name": entry.path,
+                }
+            )
+    return out
+
+
 def delete(opts, datacenter, datastore, path, profile=None):
     """Delete a file or directory. Returns the vim.Task moId."""
     dc = _find_datacenter(opts, datacenter, profile=profile)

@@ -119,3 +119,38 @@ def test_download_streams_via_https_get(opts, env, monkeypatch, tmp_path):
         n = vim_datastore_file.download(opts, "DC", "datastore-1", "iso/vsphere.iso", str(out))
     assert n == len(b"hello-bytes")
     assert out.read_bytes() == b"hello-bytes"
+
+
+# ---------- find_vmx (register_all parity) ----------
+
+
+def test_find_vmx_returns_folder_paths(opts, env, monkeypatch):
+    res_a = MagicMock()
+    res_a.folderPath = "[datastore-1] alpha/"
+    fa = MagicMock()
+    fa.path = "alpha.vmx"
+    res_a.file = [fa]
+    res_b = MagicMock()
+    res_b.folderPath = "[datastore-1] beta/nested/"
+    fb = MagicMock()
+    fb.path = "beta.vmx"
+    res_b.file = [fb]
+    sub_task = MagicMock(_moId="task-vmx")
+    env["ds"].browser.SearchDatastoreSubFolders_Task.return_value = sub_task
+    monkeypatch.setattr(
+        "saltext.vcf.utils.vim.wait_for_task", lambda task, **kw: [res_a, res_b]
+    )
+    out = vim_datastore_file.find_vmx(opts, "datastore-1")
+    assert out == [
+        {"datastore": "datastore-1", "folder_path": "[datastore-1] alpha/", "file_name": "alpha.vmx"},
+        {"datastore": "datastore-1", "folder_path": "[datastore-1] beta/nested/", "file_name": "beta.vmx"},
+    ]
+    spec = env["ds"].browser.SearchDatastoreSubFolders_Task.call_args.kwargs["searchSpec"]
+    assert spec.matchPattern == ["*.vmx"]
+
+
+def test_find_vmx_empty_results(opts, env, monkeypatch):
+    sub_task = MagicMock(_moId="task-vmx")
+    env["ds"].browser.SearchDatastoreSubFolders_Task.return_value = sub_task
+    monkeypatch.setattr("saltext.vcf.utils.vim.wait_for_task", lambda task, **kw: [])
+    assert vim_datastore_file.find_vmx(opts, "datastore-1") == []

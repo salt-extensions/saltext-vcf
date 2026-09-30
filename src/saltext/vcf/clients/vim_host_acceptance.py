@@ -34,5 +34,5 @@ def set_(opts, host, level, profile=None):
 
     *level* — ``community``, ``partner``, ``vmware_accepted``, ``vmware_certified``.
     """
-    _icm(_host(opts, host, profile=profile)).HostImageConfigSetAcceptance(newAcceptanceLevel=level)
+    _icm(_host(opts, host, profile=profile)).UpdateHostImageAcceptanceLevel(newAcceptanceLevel=level)
     return level

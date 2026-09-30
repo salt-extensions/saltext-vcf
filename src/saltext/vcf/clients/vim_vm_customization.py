@@ -121,6 +121,7 @@ def _build_spec(identity, nics, dns_servers, dns_search_path):
             subnetMask=nic.get("subnet", ""),
             gateway=list(nic.get("gateway") or []),
             dnsServerList=list(nic.get("dns_servers") or []),
+            dnsDomain=nic.get("domain"),
         )
         adapter_mappings.append(vim.vm.customization.AdapterMapping(adapter=adapter))
     return vim.vm.customization.Specification(
@@ -148,6 +149,71 @@ def apply(opts, vm_id_or_name, spec, profile=None):
     from saltext.vcf.clients.vim_vm import _vm  # avoid circular at import time
 
     vm = _vm(opts, vm_id_or_name, profile=profile)
+    task = vm.CustomizeVM_Task(spec=spec)
+    return task._moId  # noqa: SLF001
+
+
+def set_ip_info(
+    opts,
+    vm_id_or_name,
+    *,
+    ip,
+    subnet,
+    gateway,
+    dns=None,
+    domain=None,
+    guest_os=None,
+    profile=None,
+):
+    """Set static IP config on a powered-off VM (``vmware_vm.set_ip_info`` parity).
+
+    Builds a minimal customization spec — ``LinuxPrep`` for Linux guests,
+    bare ``Sysprep`` for Windows — with one NIC mapping (ip, subnet mask,
+    gateway, DNS servers) plus global DNS settings. The VM must be
+    powered off; the guest OS is sniffed from ``guestFullName`` or taken
+    from *guest_os* for freshly-imported VMs.
+    """
+    from saltext.vcf.clients.vim_vm import _vm  # avoid circular at import time
+
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    if vm.runtime.powerState == "poweredOn":
+        raise RuntimeError("VM must be powered off before IP customization")
+    vm_os = (
+        (getattr(vm.summary.guest, "guestFullName", None) or "").lower()
+        or (guest_os or "").lower()
+    )
+    if not vm_os:
+        raise ValueError("guestFullName is empty AND guest_os was not passed")
+    if "linux" in vm_os:
+        identity = vim.vm.customization.LinuxPrep(
+            hostName=vim.vm.customization.FixedName(name=vm.name),
+            domain=domain or "",
+        )
+    elif "windows" in vm_os:
+        identity = vim.vm.customization.Sysprep()
+    else:
+        raise ValueError("Unsupported OS for IP customization")
+    nics = [
+        d for d in vm.config.hardware.device or [] if isinstance(d, vim.vm.device.VirtualEthernetCard)
+    ]
+    if len(nics) > 1:
+        raise RuntimeError("Only a single NIC is supported for IP customization")
+    ip_settings = vim.vm.customization.IPSettings(
+        ip=vim.vm.customization.FixedIp(ipAddress=ip),
+        subnetMask=subnet,
+        gateway=[gateway],
+        dnsServerList=list(dns or []),
+        dnsDomain=domain,
+    )
+    global_ip = vim.vm.customization.GlobalIPSettings(
+        dnsServerList=list(dns or []),
+        dnsSuffixList=[domain] if domain else [],
+    )
+    spec = vim.vm.customization.Specification(
+        identity=identity,
+        globalIPSettings=global_ip,
+        nicSettingMap=[vim.vm.customization.AdapterMapping(adapter=ip_settings)],
+    )
     task = vm.CustomizeVM_Task(spec=spec)
     return task._moId  # noqa: SLF001
 

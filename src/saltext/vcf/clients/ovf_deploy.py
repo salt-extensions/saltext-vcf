@@ -269,7 +269,9 @@ def _materialize_ova(source, verify_ssl):
 
     For ``http(s)://`` sources the OVA is streamed to a tempfile and the
     cleanup path is returned for caller-side ``unlink``. For local paths
-    no copy is made.
+    no copy is made. Raw OVF sources — a ``.ovf`` file or a directory
+    containing ``.ovf`` + sidecars (``.mf``, ``.vmdk``) — are packed into
+    a temporary OVA tar so the rest of the pipeline stays tar-based.
     """
     if source.startswith("http://") or source.startswith("https://"):
         fd, tmp_path = tempfile.mkstemp(suffix=".ova", prefix="vcf-ova-")
@@ -285,9 +287,41 @@ def _materialize_ova(source, verify_ssl):
             raise
         return tmp_path, tmp_path
     p = Path(source).expanduser()
+    if p.is_dir():
+        tmp_path, cleanup = _pack_ovf_dir(p)
+        return tmp_path, cleanup
+    if p.is_file() and p.suffix.lower() == ".ovf":
+        tmp_path, cleanup = _pack_ovf_dir(p.parent)
+        return tmp_path, cleanup
     if not p.is_file():
         raise FileNotFoundError(source)
     return str(p), None
+
+
+def _pack_ovf_dir(ovf_dir):
+    """Pack ``ovf_dir`` (descriptor + sidecars) into a temp OVA tar.
+
+    Returns ``(temp_path, temp_path)`` — the caller unlinks the archive
+    in its ``finally`` block. Raises ``FileNotFoundError`` when no
+    ``.ovf`` descriptor is present.
+    """
+    ovf_file = None
+    for f in sorted(Path(ovf_dir).iterdir()):
+        if f.is_file() and f.suffix.lower() == ".ovf":
+            ovf_file = f
+            break
+    if ovf_file is None:
+        raise FileNotFoundError(f"no .ovf descriptor found in directory {ovf_dir!r}")
+    fd, tmp_path = tempfile.mkstemp(suffix=".ova", prefix="vcf-ovf-")
+    try:
+        with tarfile.open(tmp_path, "w") as tar:
+            for f in sorted(Path(ovf_dir).iterdir()):
+                if f.is_file():
+                    tar.add(str(f), arcname=f.name)
+    except Exception:
+        Path(tmp_path).unlink(missing_ok=True)
+        raise
+    return tmp_path, tmp_path
 
 
 def _read_ovf_descriptor(tar, members, max_disk_gib=None):

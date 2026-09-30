@@ -90,3 +90,49 @@ def test_delete_missing_raises(opts):
     with patch("saltext.vcf.clients.vcenter_folder.soap.content", return_value=content):
         with pytest.raises(LookupError):
             c.delete(opts, "group-v9")
+
+
+# ---------- rename / move (vmware_folder parity) ----------
+
+
+def test_rename_invokes_rename_task(opts):
+    folder = _folder("group-v1", "staging")
+    folder.Rename_Task.return_value = MagicMock(_moId="task-ren")
+    content = _content_with_folders([folder])
+    with (
+        patch("saltext.vcf.clients.vcenter_folder.soap.content", return_value=content),
+        patch("saltext.vcf.clients.vcenter_folder.soap.wait_for_task") as wait_mock,
+    ):
+        moid = c.rename(opts, "staging", "archive")
+    assert moid == "task-ren"
+    folder.Rename_Task.assert_called_once_with(newName="archive")
+    wait_mock.assert_called_once()
+
+
+def test_rename_missing_raises(opts):
+    content = _content_with_folders([])
+    with patch("saltext.vcf.clients.vcenter_folder.soap.content", return_value=content):
+        with pytest.raises(LookupError):
+            c.rename(opts, "missing", "whatever")
+
+
+def test_move_invokes_move_task(opts):
+    src = _folder("group-v1", "staging")
+    dst = _folder("group-v2", "archive")
+    dst.MoveIntoFolder_Task.return_value = MagicMock(_moId="task-mv")
+    content = _content_with_folders([src, dst])
+    with (
+        patch("saltext.vcf.clients.vcenter_folder.soap.content", return_value=content),
+        patch("saltext.vcf.clients.vcenter_folder.soap.wait_for_task") as wait_mock,
+    ):
+        moid = c.move(opts, "staging", "archive")
+    assert moid == "task-mv"
+    dst.MoveIntoFolder_Task.assert_called_once()
+
+
+def test_parent_name(opts):
+    folder = _folder("group-v1", "staging")
+    folder.parent.name = "vm"
+    content = _content_with_folders([folder])
+    with patch("saltext.vcf.clients.vcenter_folder.soap.content", return_value=content):
+        assert c.parent_name(opts, "group-v1") == "vm"

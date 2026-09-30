@@ -402,6 +402,24 @@ def vmkernel_get_or_none(opts, host, device, profile=None):
         return None
 
 
+_TRAFFIC_TYPES = (
+    "management",
+    "faultToleranceLogging",
+    "vSphereProvisioning",
+    "vSphereReplication",
+    "vSphereReplicationNFC",
+    "vmotion",
+    "vsan",
+)
+
+_NET_STACKS = {
+    "default": "defaultTcpipStack",
+    "provisioning": "vSphereProvisioning",
+    "vmotion": "vmotion",
+    "vxlan": "vxlan",
+}
+
+
 def vmkernel_add(
     opts,
     host,
@@ -413,9 +431,26 @@ def vmkernel_add(
     mtu=1500,
     mac_address=None,
     nic_types=None,
+    dvswitch_name=None,
+    vswitch_name=None,
+    tcpip_stack=None,
+    default_gateway=None,
     profile=None,
 ):
-    """Add a VMkernel adapter on *portgroup*.
+    """Add a VMkernel adapter on *portgroup* (standard vSwitch or DVS).
+
+    Extra knobs (``vmware_esxi.create_vmkernel_adapter`` parity):
+
+    * *dvswitch_name* — bind the adapter to a distributed port group
+      (resolves the port group under the named DVS; *portgroup* may be
+      the DPG name or key).
+    * *tcpip_stack* — ``default`` | ``provisioning`` | ``vmotion`` | ``vxlan``.
+    * *default_gateway* — per-adapter override of the default gateway.
+    * *nic_types* — dict-style traffic types: pass a list to select
+      (``management``, ``vmotion``, ``vsan``, ``faultToleranceLogging``,
+      ``vSphereReplication``, ``vSphereReplicationNFC``,
+      ``vSphereProvisioning``), or a dict ``{type: bool}`` to enable /
+      disable specific types.
 
     Returns the new vmkernel device name (e.g. ``vmk1``).
     """
@@ -431,12 +466,100 @@ def vmkernel_add(
     )
     if mac_address:
         spec.mac = mac_address
-    if nic_types:
-        spec.netStackInstanceKey = "defaultTcpipStack"
-    device = _net(opts, host, profile=profile).AddVirtualNic(portgroup=portgroup, nic=spec)
-    if nic_types:
+    if tcpip_stack:
+        stack_key = _NET_STACKS.get(str(tcpip_stack).lower())
+        if stack_key is None:
+            raise ValueError(f"tcpip_stack must be one of {sorted(_NET_STACKS)}")
+        spec.netStackInstanceKey = stack_key
+    if default_gateway:
+        route_spec = vim.host.VirtualNic.IpRouteSpec()
+        route_spec.ipRouteConfig = vim.host.IpRouteConfig()
+        route_spec.ipRouteConfig.defaultGateway = default_gateway
+        spec.ipRouteSpec = route_spec
+    if dvswitch_name:
+        # Distributed port group: resolve switch uuid + portgroup key and
+        # point the adapter's spec at the port connection.
+        from saltext.vcf.clients import vim_dvs_portgroup as dpg_c  # noqa: PLC0415
+
+        dvs = dpg_c._dvs(opts, dvswitch_name, profile=profile)  # noqa: SLF001
+        pg = dpg_c.get(opts, dvswitch_name, portgroup, profile=profile)
+        spec.distributedVirtualPort = vim.dvs.PortConnection(
+            switchUuid=dvs.uuid, portgroupKey=pg["key"]
+        )
+        add_portgroup = ""
+    else:
+        add_portgroup = portgroup
+    device = _net(opts, host, profile=profile).AddVirtualNic(portgroup=add_portgroup, nic=spec)
+    if nic_types is not None:
         _select_traffic_types(opts, host, device, nic_types, profile=profile)
     return device
+
+
+def vmkernel_vsan(opts, host, device, enabled, profile=None):
+    """Wire (or unwire) VMkernel *device* for vSAN traffic.
+
+    Uses ``HostVsanSystem.UpdateVsan_Task`` with the ``ConfigInfo.
+    NetworkInfo.port`` list, mirroring ``vmware_esxi.create_vmkernel_adapter``'s
+    vSAN wiring. Returns ``True`` when the wiring changed.
+    """
+    h = _host(opts, host, profile=profile)
+    vsan = h.configManager.vsanSystem
+    if vsan is None:
+        raise RuntimeError(f"host {host!r} has no vsanSystem manager")
+    cfg = vim.vsan.host.ConfigInfo()
+    cfg.networkInfo = vsan.config.networkInfo
+    current = [p.device for p in (cfg.networkInfo.port or [])] if cfg.networkInfo else []
+    if enabled:
+        if device in current:
+            return False
+        port_config = vim.vsan.host.ConfigInfo.NetworkInfo.PortConfig()
+        port_config.device = device
+        if cfg.networkInfo is None:
+            cfg.networkInfo = vim.vsan.host.ConfigInfo.NetworkInfo()
+            cfg.networkInfo.port = [port_config]
+        else:
+            cfg.networkInfo.port.append(port_config)
+    else:
+        if cfg.networkInfo is None or device not in current:
+            return False
+        cfg.networkInfo.port = [p for p in cfg.networkInfo.port if p.device != device]
+    soap.wait_for_task(vsan.UpdateVsan_Task(cfg))
+    return True
+
+
+def _select_traffic_types(opts, host, device, nic_types, profile=None):
+    """Select/deselect traffic types on a VMkernel adapter.
+
+    *nic_types* is a list (select those types) or a ``{type: bool}`` dict
+    (explicit enable/disable per type).
+    """
+    h = _host(opts, host, profile=profile)
+    vnic_mgr = h.configManager.virtualNicManager
+    if vnic_mgr is None:
+        raise LookupError("VMkernel manager not available on host")
+    if isinstance(nic_types, dict):
+        for nic_type, enable in nic_types.items():
+            if enable:
+                vnic_mgr.SelectVnicForNicType(nicType=nic_type, device=device)
+            else:
+                try:
+                    vnic_mgr.DeselectVnicForNicType(nicType=nic_type, device=device)
+                except vim.fault.NotFound:
+                    continue
+                except vim.fault.VimFault:
+                    continue
+        return
+    # First disable any current selection, then enable the desired set.
+    for current in vnic_mgr.info.netConfig or []:
+        for _sel in current.selectedVnic or []:
+            try:
+                vnic_mgr.DeselectVnicForNicType(nicType=current.nicType, device=device)
+            except vim.fault.NotFound:
+                continue
+            except vim.fault.VimFault:
+                continue
+    for nic_type in nic_types:
+        vnic_mgr.SelectVnicForNicType(nicType=nic_type, device=device)
 
 
 def vmkernel_update(
@@ -448,8 +571,13 @@ def vmkernel_update(
     ip_address=None,
     subnet_mask=None,
     mtu=None,
+    nic_types=None,
+    tcpip_stack=None,
+    default_gateway=None,
     profile=None,
 ):
+    """Update a VMkernel adapter's IP/MTU and (optionally) traffic types,
+    TCP/IP stack and per-adapter default gateway."""
     existing = vmkernel_get(opts, host, device, profile=profile)
     spec = vim.host.VirtualNic.Specification(
         ip=vim.host.IpConfig(
@@ -459,7 +587,19 @@ def vmkernel_update(
         ),
         mtu=int(mtu) if mtu is not None else existing["mtu"],
     )
+    if tcpip_stack is not None:
+        stack_key = _NET_STACKS.get(str(tcpip_stack).lower())
+        if stack_key is None:
+            raise ValueError(f"tcpip_stack must be one of {sorted(_NET_STACKS)}")
+        spec.netStackInstanceKey = stack_key
+    if default_gateway is not None:
+        route_spec = vim.host.VirtualNic.IpRouteSpec()
+        route_spec.ipRouteConfig = vim.host.IpRouteConfig()
+        route_spec.ipRouteConfig.defaultGateway = default_gateway
+        spec.ipRouteSpec = route_spec
     _net(opts, host, profile=profile).UpdateVirtualNic(device=device, nic=spec)
+    if nic_types is not None:
+        _select_traffic_types(opts, host, device, nic_types, profile=profile)
 
 
 def vmkernel_remove(opts, host, device, profile=None):
@@ -508,28 +648,11 @@ def vmkernel_set_traffic_types(opts, host, device, nic_types, profile=None):
     """Replace the traffic-type bitmap on a VMkernel adapter.
 
     *nic_types* is a list of strings — ``management``, ``vmotion``, ``vsan``,
-    ``faultToleranceLogging``, ``vSphereReplication``, ``provisioning``,
-    ``vSphereProvisioning``, ``vSphereBackupNFC``.
+    ``faultToleranceLogging``, ``vSphereReplication``, ``vSphereReplicationNFC``,
+    ``vSphereProvisioning`` — or a ``{type: bool}`` dict for explicit
+    enable/disable per type.
     """
     _select_traffic_types(opts, host, device, nic_types, profile=profile)
-
-
-def _select_traffic_types(opts, host, device, nic_types, profile=None):
-    h = _host(opts, host, profile=profile)
-    vnic_mgr = h.configManager.virtualNicManager
-    if vnic_mgr is None:
-        raise LookupError("VMkernel manager not available on host")
-    # First disable any current selection, then enable the desired set.
-    for current in vnic_mgr.info.netConfig or []:
-        for _sel in current.selectedVnic or []:
-            try:
-                vnic_mgr.DeselectVnicForNicType(nicType=current.nicType, device=device)
-            except vim.fault.NotFound:
-                continue
-            except vim.fault.VimFault:
-                continue
-    for nic_type in nic_types:
-        vnic_mgr.SelectVnicForNicType(nicType=nic_type, device=device)
 
 
 def _vnic_to_dict(v):

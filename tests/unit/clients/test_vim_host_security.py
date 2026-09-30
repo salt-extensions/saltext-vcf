@@ -215,3 +215,39 @@ def test_iscsi_set_chap(host_factory, opts):
     assert auth.chapName == "chap-user"
     assert auth.chapSecret == "secret"
     assert auth.chapAuthEnabled is True
+
+
+# -- host-scoped user directory (vmware_esxi.get_user parity) ----------------
+
+
+def test_user_list_uses_host_directory(host_factory, opts):
+    host_factory["host"] = _fake_host()
+    result = MagicMock()
+    result.principal = "salt-user"
+    result.fullName = "Salt User"
+    result.group = False
+    result.shellAccess = True
+    result.id = "salt-user"
+    host_factory["host"].configManager.userDirectory = MagicMock()
+    host_factory["host"].configManager.userDirectory.RetrieveUserGroups.return_value = [result]
+    out = vim_host_security.user_list(opts, "esxi-01")
+    assert out == [
+        {"principal": "salt-user", "full_name": "Salt User", "group": False, "shell_access": True, "id": "salt-user"}
+    ]
+    call = host_factory["host"].configManager.userDirectory.RetrieveUserGroups.call_args
+    assert call.args[1] == ""  # empty searchStr = all users
+
+
+def test_user_get_exact_match(host_factory, opts):
+    host_factory["host"] = _fake_host()
+    hit = MagicMock()
+    hit.principal = "salt-user"
+    hit.fullName = "Salt User"
+    hit.group = False
+    hit.shellAccess = None
+    hit.id = "salt-user"
+    host_factory["host"].configManager.userDirectory = MagicMock()
+    host_factory["host"].configManager.userDirectory.RetrieveUserGroups.return_value = [hit]
+    out = vim_host_security.user_get(opts, "esxi-01", "salt-user")
+    assert out["principal"] == "salt-user"
+    assert vim_host_security.user_get_or_none(opts, "esxi-01", "missing") is None

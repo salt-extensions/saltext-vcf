@@ -27,22 +27,23 @@ that needs the modules.
 
 ## Sub-component extras
 
-The base install ships the Salt loader wiring and REST plumbing only.
-Every third-party runtime dep (pyvmomi, pywbem, the VMware SDKs,
-kubernetes) is opt-in via a pip extra. Modules whose deps are missing
-return `__virtual__ = False` and are silently skipped by the loader —
-install just the components you use, or use `[all]` for the pre-split
-default.
+The base install ships the Salt loader wiring, REST plumbing, and
+pyvmomi for the whole SOAP surface (vCenter/ESXi vim clients). The
+remaining third-party runtime deps (pywbem, the VMware SDKs,
+kubernetes) are opt-in via a pip extra. Modules whose remaining deps
+are missing return `__virtual__ = False` and are silently skipped by
+the loader — install just the components you use, or use `[all]` for
+every runtime dependency.
 
 | Extra | Adds | Enables |
 |---|---|---|
-| `[esxi]` | `pyvmomi`, `pywbem` | Standalone ESXi (`vcf_esxi_*`), CIM hardware health, vSAN SOAP helpers |
-| `[vcenter]` | `pyvmomi`, `vmware-vcenter` SDK | vCenter REST + SOAP (`vcf_vcenter_*`, `vim_*` clients) |
+| `[esxi]` | `pywbem` | CIM hardware health on standalone ESXi (`vcf_esxi_*` CIM checks) |
+| `[vcenter]` | `vmware-vcenter` SDK | vCenter SDK-typed flows (`vcf_vcenter_*` SDK paths, alarms, perf, snapshots) |
 | `[nsx]` | — (uses `requests` only) | NSX Policy + Management API (`vcf_nsx_*`) |
 | `[sddc]` | `vmware-vcf` SDK, `paramiko` | SDDC Manager (`vcf_sddc_*`), including appliance-local SSH controls |
 | `[vcfops]` | — (uses `requests` only) | VCF Operations (`vcf_vcfops_*`) |
 | `[vcfa]` | — (uses `requests` only) | VCF Automation (`vcf_vcfa_*`) |
-| `[installer]` | `pyvmomi` | VCF Installer OVA deploy (`vcf_installer_*`) |
+| `[installer]` | — (pyvmomi is base now) | VCF Installer OVA deploy (`vcf_installer_*`) |
 | `[vks]` | `saltext.kubernetes`, `kubernetes` | VKS Supervisor kubeconfig bridge |
 | `[all]` | Every runtime extra above | Matches the pre-split default install |
 
