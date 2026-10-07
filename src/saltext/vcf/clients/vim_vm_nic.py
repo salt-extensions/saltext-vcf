@@ -184,8 +184,12 @@ def update_backing(
         backing.port = vim.dvs.PortConnection(portgroupKey=portgroup_key, switchUuid=dvs_uuid)
     elif network_moid:
         backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo()
+        network_obj = _find_network(opts, network_moid, profile=profile)
         backing.network = vim.Network(network_moid, None)
-        backing.deviceName = ""
+        try:
+            backing.deviceName = network_obj.name
+        except AttributeError:
+            backing.deviceName = ""
     else:
         raise ValueError("provide network_moid OR (portgroup_key AND dvs_uuid)")
     nic.backing = backing
