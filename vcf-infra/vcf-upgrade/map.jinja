@@ -1,0 +1,2 @@
+{% import_yaml "vcf-upgrade/defaults.yaml" as defaults %}
+{% set cfg = salt['pillar.get']('saltext.vcf:vcf_upgrade', default=defaults, merge=True) %}
