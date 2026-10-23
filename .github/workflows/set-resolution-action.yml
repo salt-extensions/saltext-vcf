@@ -11,6 +11,8 @@ jobs:
     name: Set the CI Pipeline Exit Status
     runs-on: ubuntu-24.04
     if: always()
+    permissions:
+      actions: write
 
     steps:
       - name: Download Exit Status Files

@@ -21,3 +21,5 @@ jobs:
     needs:
       - call_central_workflow
     uses: ./.github/workflows/set-resolution-action.yml
+    permissions:
+      actions: write
