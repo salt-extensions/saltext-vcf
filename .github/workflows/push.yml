@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       count: ${{ steps.workflow_count.outputs.count }}
+    permissions:
+      actions: read
 
     steps:
       - name: Count Running Release Workflows Triggered by Automated PR
@@ -64,6 +66,8 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       news-fragments-available: ${{ steps.check-available.outputs.available }}
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
@@ -83,6 +87,10 @@ jobs:
       - check-prepare-release
     if: success() && needs.check-prepare-release.outputs.news-fragments-available == '1'
     uses: ./.github/workflows/prepare-release-action.yml
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     secrets:
       AUTORELEASE_CLID: ${{ secrets.AUTORELEASE_CLID }}
       AUTORELEASE_PRIV: ${{ secrets.AUTORELEASE_PRIV }}
@@ -98,3 +106,5 @@ jobs:
       - prepare-release
     if: always() && needs.check_release_in_progress.outputs.count == '0'
     uses: ./.github/workflows/set-resolution-action.yml
+    permissions:
+      actions: write
