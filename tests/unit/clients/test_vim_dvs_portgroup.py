@@ -219,3 +219,30 @@ def test_list_exposes_teaming_in_dict(dvs_factory, opts):
     result = vim_dvs_portgroup.list_(opts, "prod-dvs")
     assert result[0]["teaming"]["policy"] == "loadbalance_srcmac"
     assert result[0]["teaming"]["active_uplinks"] == ["Uplink 1"]
+
+
+# ---------- host pnic detail (vmware_dvportgroup.get parity) ----------
+
+
+def test_get_with_host_includes_pnics(dvs_factory, opts):
+    dvs = dvs_factory["dvs"]
+    dvs.portgroup = [_vlan_pg(name="prod-web", key="dvportgroup-25")]
+    host = MagicMock()
+    host._moId = "host-1"  # noqa: SLF001
+    host.name = "esxi-01"
+    member = MagicMock()
+    member.config.host = host
+    spec = MagicMock()
+    spec.pnicDevice = "vmnic0"
+    member.config.backing.pnicSpec = [spec]
+    dvs.config.host = [member]
+    out = vim_dvs_portgroup.get(opts, "prod-dvs", "prod-web", host="esxi-01")
+    assert out["host_pnic_devices"] == ["vmnic0"]
+
+
+def test_get_with_host_unknown_host_yields_empty(dvs_factory, opts):
+    dvs = dvs_factory["dvs"]
+    dvs.portgroup = [_vlan_pg(name="prod-web", key="dvportgroup-25")]
+    dvs.config.host = []
+    out = vim_dvs_portgroup.get(opts, "prod-dvs", "prod-web", host="missing")
+    assert out["host_pnic_devices"] == []

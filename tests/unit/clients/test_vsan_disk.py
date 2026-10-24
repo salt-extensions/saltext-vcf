@@ -73,3 +73,28 @@ def test_add_disks_raises_on_missing(opts, fake_host):
     with patch("saltext.vcf.clients.vsan_disk._find_host", return_value=fake_host):
         with pytest.raises(LookupError):
             vsan_disk.add_disks(opts, "esx-0-00.example.com", ["naa.aaa"])
+
+
+# -- host_enable (vmware_esxi.vsan_enable parity) ----------------------------
+
+
+def test_host_enable_idempotent(opts, fake_host):
+    vs = fake_host.configManager.vsanSystem
+    vs.config.enabled = True
+    with patch("saltext.vcf.clients.vsan_disk._find_host", return_value=fake_host):
+        out = vsan_disk.host_enable(opts, "esxi-01", True)
+    assert out["changed"] is False
+    vs.UpdateVsan_Task.assert_not_called()
+
+
+def test_host_enable_transitions(opts, fake_host):
+    vs = fake_host.configManager.vsanSystem
+    vs.config.enabled = False
+    with (
+        patch("saltext.vcf.clients.vsan_disk._find_host", return_value=fake_host),
+        patch("saltext.vcf.utils.vim.wait_for_task", lambda t, **kw: None),
+    ):
+        out = vsan_disk.host_enable(opts, "esxi-01", True)
+    assert out["changed"] is True
+    cfg = vs.UpdateVsan_Task.call_args.args[0]
+    assert cfg.enabled is True

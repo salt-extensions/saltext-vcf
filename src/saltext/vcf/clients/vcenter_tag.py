@@ -25,6 +25,14 @@ def get_or_none(opts, tag, profile=None):
         raise
 
 
+def by_name(opts, name, profile=None):
+    """Resolve a tag id by its (unique) name across all categories."""
+    for tag in list_(opts, profile=profile) or []:
+        if tag.get("name") == name:
+            return tag
+    return None
+
+
 def create(opts, name, category_id, description="", profile=None):
     body = {
         "name": name,

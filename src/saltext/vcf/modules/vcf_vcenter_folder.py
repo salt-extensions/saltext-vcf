@@ -87,3 +87,27 @@ def delete(folder_id, profile=None):
 
     """
     return c.delete(__opts__, folder_id, profile=profile)
+
+
+def rename(name, new_name, profile=None):
+    """Rename a folder.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcenter_folder.rename staging renamed-staging
+    """
+    return c.rename(__opts__, name, new_name, profile=profile)
+
+
+def move(name, destination_folder_name, profile=None):
+    """Move a folder under another folder.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vcenter_folder.move staging archive
+    """
+    return c.move(__opts__, name, destination_folder_name, profile=profile)

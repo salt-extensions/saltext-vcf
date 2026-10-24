@@ -82,27 +82,53 @@ def service(name, host=None, service_id=None, running=None, policy=None, profile
     return ret
 
 
-def advanced_setting(name, host=None, key=None, value=None, profile=None):
-    """Ensure an advanced host setting equals *value*."""
+def advanced_setting(name, host=None, key=None, value=None, configs=None, profile=None):
+    """Ensure advanced host setting(s) match the desired value(s).
+
+    Pass either a single ``key``/``value`` pair, or a *configs* dict for
+    a batch of settings in one call (``vmware_esxi.advanced_configs``
+    parity — values are type-cast against the host's supported options).
+
+    .. code-block:: yaml
+
+        Advanced configs:
+          vcf_vim_host_config.advanced_setting:
+            - host: esxi-01
+            - configs:
+                Net.BlockGuestBPDU: false
+                Mem.ShareForceSalting: 2
+    """
     host = host or name
-    key = key or name
     ret = _ret(name)
-    try:
-        current = c.advanced_get(__opts__, host, key=key, profile=profile)
-    except LookupError:
-        ret["result"] = False
-        ret["comment"] = f"advanced setting {key} not found on {host}"
-        return ret
-    if current == value:
-        ret["comment"] = f"{key} on {host} already {value!r}"
+    if configs is not None:
+        desired = dict(configs)
+    elif key is not None:
+        desired = {key or name: value}
+    else:
+        desired = {name: value}
+    drift = {}
+    for k, v in desired.items():
+        try:
+            current = c.advanced_get(__opts__, host, key=k, profile=profile)
+        except LookupError:
+            ret["result"] = False
+            ret["comment"] = f"advanced setting {k} not found on {host}"
+            return ret
+        if current != v:
+            drift[k] = (current, v)
+    if not drift:
+        ret["comment"] = f"advanced settings on {host} already match"
         return ret
     if __opts__["test"]:
         ret["result"] = None
-        ret["comment"] = f"{key} on {host} would change from {current!r} to {value!r}"
+        ret["comment"] = f"advanced settings on {host} would change: {sorted(drift)}"
+        ret["changes"] = drift
         return ret
-    c.advanced_set(__opts__, host, key, value, profile=profile)
-    ret["changes"] = {"value": (current, value)}
-    ret["comment"] = f"{key} on {host} set to {value!r}"
+    c.advanced_set_many(
+        __opts__, host, {k: desired[k] for k in drift if k in desired}, profile=profile
+    )
+    ret["changes"] = drift
+    ret["comment"] = f"advanced settings on {host} updated"
     return ret
 
 

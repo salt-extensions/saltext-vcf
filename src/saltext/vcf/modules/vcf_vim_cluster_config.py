@@ -27,12 +27,17 @@ def drs_set(
     default_vm_behavior=None,
     migration_threshold=None,
     vm_monitoring_enabled=None,
+    advanced_settings=None,
+    vmotion_rate=None,
     profile=None,
 ):
     """Update DRS settings.
 
     *default_vm_behavior*: ``manual`` | ``partiallyAutomated`` | ``fullyAutomated``.
-    *migration_threshold*: 1 (conservative) to 5 (aggressive).
+    *migration_threshold*: raw ``vmotionRate`` 1 (aggressive) to 5 (conservative).
+    *vmotion_rate*: user-friendly scale — 1 (conservative) to 5 (aggressive);
+    converted internally (``6 - vmotion_rate``). Supersedes *migration_threshold*
+    when both are given.
 
     CLI Example:
 
@@ -40,6 +45,8 @@ def drs_set(
 
         salt '*' vcf_vim_cluster_config.drs_set domain-c9 enabled=true default_vm_behavior=fullyAutomated
     """
+    if migration_threshold is None and vmotion_rate is not None:
+        migration_threshold = 6 - int(vmotion_rate)
     return c.drs_set(
         __opts__,
         cluster,
@@ -47,8 +54,21 @@ def drs_set(
         default_vm_behavior=default_vm_behavior,
         migration_threshold=migration_threshold,
         vm_monitoring_enabled=vm_monitoring_enabled,
+        advanced_settings=advanced_settings,
         profile=profile,
     )
+
+
+def get_config(cluster, profile=None):
+    """Aggregate DRS + HA + vSAN enablement for *cluster*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_cluster_config.get_config domain-c9
+    """
+    return c.get_config(__opts__, cluster, profile=profile)
 
 
 def ha_get(cluster, profile=None):
@@ -71,14 +91,32 @@ def ha_set(
     restart_priority=None,
     isolation_response=None,
     admission_control_enabled=None,
+    vm_component_protecting=None,
+    vm_min_up_time=None,
+    vm_max_failure_window=None,
+    vm_max_failures=None,
+    vm_failure_interval=None,
+    restart_priority_timeout=None,
+    enable_apd_timeout_for_hosts=None,
+    vm_reaction_on_apd_cleared=None,
+    vm_storage_protection_for_apd=None,
+    vm_storage_protection_for_pdl=None,
+    vm_terminate_delay_for_apd_sec=None,
+    admission_control_policy=None,
+    advanced_options=None,
     profile=None,
 ):
-    """Update HA settings.
+    """Update HA settings (full ``vim.cluster.ConfigSpecEx.dasConfig`` surface).
 
     *host_monitoring*: ``enabled`` | ``disabled``.
     *vm_monitoring*: ``vmMonitoringDisabled`` | ``vmMonitoringOnly`` | ``vmAndAppMonitoring``.
     *restart_priority*: ``disabled`` | ``low`` | ``medium`` | ``high`` | ``clusterRestartPriority``.
     *isolation_response*: ``none`` | ``powerOff`` | ``shutdown``.
+    *admission_control_policy*: dict with one of
+      ``slot_based_admission_control``, ``failover_host_admission_control``,
+      ``reservation_based_admission_control`` (each with ``failover_level`` and
+      policy-specific fields).
+    *advanced_options*: ``{key: value}`` applied to ``dasConfig.option``.
 
     CLI Example:
 
@@ -95,6 +133,19 @@ def ha_set(
         restart_priority=restart_priority,
         isolation_response=isolation_response,
         admission_control_enabled=admission_control_enabled,
+        vm_component_protecting=vm_component_protecting,
+        vm_min_up_time=vm_min_up_time,
+        vm_max_failure_window=vm_max_failure_window,
+        vm_max_failures=vm_max_failures,
+        vm_failure_interval=vm_failure_interval,
+        restart_priority_timeout=restart_priority_timeout,
+        enable_apd_timeout_for_hosts=enable_apd_timeout_for_hosts,
+        vm_reaction_on_apd_cleared=vm_reaction_on_apd_cleared,
+        vm_storage_protection_for_apd=vm_storage_protection_for_apd,
+        vm_storage_protection_for_pdl=vm_storage_protection_for_pdl,
+        vm_terminate_delay_for_apd_sec=vm_terminate_delay_for_apd_sec,
+        admission_control_policy=admission_control_policy,
+        advanced_options=advanced_options,
         profile=profile,
     )
 

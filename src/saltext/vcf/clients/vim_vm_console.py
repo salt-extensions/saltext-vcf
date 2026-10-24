@@ -1,8 +1,30 @@
-"""VM console operations: screenshot + sendkey via ``VirtualMachine`` methods."""
+"""VM console operations: screenshot, sendkey and MKS tickets."""
 
 from pyVmomi import vim
 
 from saltext.vcf.clients.vim_vm import _vm
+
+_TICKET_TYPES = {"device", "guestControl", "guestIntegrity", "mks", "webmks"}
+
+
+def ticket(opts, vm_id_or_name, ticket_type="mks", profile=None):
+    """Acquire a console access ticket of *ticket_type* for *vm*.
+
+    Valid types: ``device``, ``guestControl``, ``guestIntegrity``,
+    ``mks``, ``webmks``. Returns
+    ``{type, host, port, ssl_thumbprint, ticket}``.
+    """
+    if ticket_type not in _TICKET_TYPES:
+        raise ValueError(f"ticket_type must be one of {sorted(_TICKET_TYPES)}")
+    vm = _vm(opts, vm_id_or_name, profile=profile)
+    t = vm.AcquireTicket(vim.VirtualMachine.TicketType(ticket_type))
+    return {
+        "type": str(getattr(t, "_wsdlName", ticket_type) or ticket_type),
+        "host": getattr(t, "host", None),
+        "port": int(t.port) if getattr(t, "port", None) is not None else None,
+        "ssl_thumbprint": getattr(t, "sslThumbprint", None),
+        "ticket": getattr(t, "ticket", None),
+    }
 
 
 def screenshot(opts, vm_id_or_name, profile=None):

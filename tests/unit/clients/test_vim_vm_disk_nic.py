@@ -269,3 +269,37 @@ def test_nic_remove_missing_raises(vm_factory, opts):
     vm_factory["vm"] = _fake_vm([])
     with pytest.raises(LookupError):
         vim_vm_nic.remove(opts, "vm-100", 999)
+
+
+def test_nic_set_dvport_resolves_names(vm_factory, opts, monkeypatch):
+    vm_factory["vm"] = _fake_vm([_nic(4000, "n1", network_moid="network-12")])
+    dpg_dict = {"moid": "dvportgroup-25", "key": "dvportgroup-25", "name": "dpg-1"}
+    dvs = MagicMock()
+    dvs.uuid = "switch-uuid-1"
+    monkeypatch.setattr(
+        "saltext.vcf.clients.vim_dvs_portgroup.get", lambda o, d, n, profile=None: dpg_dict
+    )
+    monkeypatch.setattr(
+        "saltext.vcf.clients.vim_dvs_portgroup._dvs", lambda o, d, profile=None: dvs
+    )
+    vim_vm_nic.set_dvport(opts, "vm-100", "prod-dvs", "dpg-1")
+    change = vm_factory["vm"].ReconfigVM_Task.call_args.kwargs["spec"].deviceChange[0]
+    assert change.operation == "edit"
+    assert change.device.backing.port.portgroupKey == "dvportgroup-25"
+    assert change.device.backing.port.switchUuid == "switch-uuid-1"
+
+
+def test_nic_set_dvport_uses_explicit_key(vm_factory, opts, monkeypatch):
+    vm_factory["vm"] = _fake_vm([_nic(4000, "n1"), _nic(4001, "n2")])
+    dpg_dict = {"key": "dvportgroup-31"}
+    dvs = MagicMock()
+    dvs.uuid = "uuid-2"
+    monkeypatch.setattr(
+        "saltext.vcf.clients.vim_dvs_portgroup.get", lambda o, d, n, profile=None: dpg_dict
+    )
+    monkeypatch.setattr(
+        "saltext.vcf.clients.vim_dvs_portgroup._dvs", lambda o, d, profile=None: dvs
+    )
+    vim_vm_nic.set_dvport(opts, "vm-100", "dvs", "dpg", nic_key=4001)
+    change = vm_factory["vm"].ReconfigVM_Task.call_args.kwargs["spec"].deviceChange[0]
+    assert change.device.key == 4001

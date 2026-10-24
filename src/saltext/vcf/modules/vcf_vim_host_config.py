@@ -187,3 +187,27 @@ def advanced_set(host, key, value, profile=None):
         salt '*' vcf_vim_host_config.advanced_set esxi-01 UserVars.SuppressShellWarning 1
     """
     return c.advanced_set(__opts__, host, key, value, profile=profile)
+
+
+def datetime_get(host, profile=None):
+    """Return the host's current date/time.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_config.datetime_get esxi-01
+    """
+    return c.datetime_get(__opts__, host, profile=profile)
+
+
+def advanced_set_many(host, config_dict, profile=None):
+    """Set multiple advanced settings in one call, with type coercion.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_config.advanced_set_many esxi-01 '{"Net.BlockGuestBPDU": false}'
+    """
+    return c.advanced_set_many(__opts__, host, config_dict, profile=profile)

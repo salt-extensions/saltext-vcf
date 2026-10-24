@@ -561,3 +561,38 @@ def test_find_vm_returns_dict_when_present(monkeypatch):
         vm_name="vrli",
     )
     assert result == {"vm_name": "vrli", "vm_moid": "vm-1042", "powered_on": True}
+
+
+# ---------------------------------------------------------------------------
+# Raw-OVF sources (deploy_ovf parity)
+# ---------------------------------------------------------------------------
+
+
+def test_materialize_ovf_dir_packs_sidecars(tmp_path):
+    (tmp_path / "app.ovf").write_text("<Envelope/>")
+    (tmp_path / "app.mf").write_text("SHA1(app.ovf)=abc")
+    (tmp_path / "disk1.vmdk").write_bytes(b"VMDK")
+    path, cleanup = ovf_deploy._materialize_ova(str(tmp_path), verify_ssl=False)
+    assert cleanup == path
+    with tarfile.open(path) as tar:
+        names = sorted(m.name for m in tar.getmembers())
+    assert names == ["app.mf", "app.ovf", "disk1.vmdk"]
+    if cleanup:
+        __import__("pathlib").Path(cleanup).unlink(missing_ok=True)
+
+
+def test_materialize_ovf_file_packs_siblings(tmp_path):
+    (tmp_path / "app.ovf").write_text("<Envelope/>")
+    (tmp_path / "disk1.vmdk").write_bytes(b"VMDK")
+    path, cleanup = ovf_deploy._materialize_ova(str(tmp_path / "app.ovf"), verify_ssl=False)
+    with tarfile.open(path) as tar:
+        names = sorted(m.name for m in tar.getmembers())
+    assert names == ["app.ovf", "disk1.vmdk"]
+    if cleanup:
+        __import__("pathlib").Path(cleanup).unlink(missing_ok=True)
+
+
+def test_materialize_ovf_dir_without_descriptor_raises(tmp_path):
+    (tmp_path / "disk1.vmdk").write_bytes(b"VMDK")
+    with pytest.raises(FileNotFoundError):
+        ovf_deploy._materialize_ova(str(tmp_path), verify_ssl=False)

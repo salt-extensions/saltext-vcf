@@ -94,3 +94,67 @@ def assign(opts, entity_id, license_key, *, name=None, profile=None):
 def unassign(opts, entity_id, profile=None):
     _lam(opts, profile=profile).RemoveAssignedLicense(entityId=entity_id)
     return True
+
+
+def resolve_entity(
+    opts,
+    datacenter=None,
+    cluster=None,
+    esxi_hostname=None,
+    profile=None,
+):
+    """Resolve the license-assignment entity id.
+
+    With no arguments, the vCenter instance UUID is returned. Otherwise
+    the named cluster (within *datacenter*) or ESXi host MoID.
+    """
+    from pyVmomi import vim  # local import keeps top-level deps minimal
+
+    if not any((datacenter, cluster, esxi_hostname)):
+        si = soap.get_service_instance(opts, profile=profile)
+        return si.RetrieveContent().about.instanceUuid
+    content = soap.content(opts, profile=profile)
+    if esxi_hostname:
+        host = soap.resolve_host_system(opts, esxi_hostname, profile=profile)
+        return host._moId  # noqa: SLF001
+    container = content.viewManager.CreateContainerView(
+        content.rootFolder, [vim.ClusterComputeResource], True
+    )
+    try:
+        for entity in container.view:
+            if cluster in (entity._moId, entity.name):  # noqa: SLF001
+                return entity._moId  # noqa: SLF001
+    finally:
+        container.Destroy()
+    raise LookupError(f"cluster {cluster!r} not found")
+
+
+def assign_by_name(
+    opts,
+    license_key,
+    *,
+    datacenter=None,
+    cluster=None,
+    esxi_hostname=None,
+    profile=None,
+):
+    """Resolve the entity by name and assign *license_key* to it."""
+    entity_id = resolve_entity(
+        opts, datacenter=datacenter, cluster=cluster, esxi_hostname=esxi_hostname, profile=profile
+    )
+    return assign(opts, entity_id, license_key, profile=profile)
+
+
+def unassign_by_name(
+    opts,
+    *,
+    datacenter=None,
+    cluster=None,
+    esxi_hostname=None,
+    profile=None,
+):
+    """Resolve the entity by name and remove its license assignment."""
+    entity_id = resolve_entity(
+        opts, datacenter=datacenter, cluster=cluster, esxi_hostname=esxi_hostname, profile=profile
+    )
+    return unassign(opts, entity_id, profile=profile)

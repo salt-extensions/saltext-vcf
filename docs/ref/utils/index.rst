@@ -9,12 +9,22 @@ _________
 .. autosummary::
     :toctree:
 
+    avi
     cim
+    drift
     esxi
+    hcx
     installer
     nsx
+    pbm
     sddc
+    ssh
     vcenter
+    vcfa
     vcfops
     vim
+    vmsp
+    vrli
+    vrni
+    vro
     vsan

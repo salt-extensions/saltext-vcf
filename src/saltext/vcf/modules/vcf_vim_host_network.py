@@ -276,9 +276,18 @@ def vmkernel_add(
     mtu=1500,
     mac_address=None,
     nic_types=None,
+    dvswitch_name=None,
+    vswitch_name=None,
+    tcpip_stack=None,
+    default_gateway=None,
     profile=None,
 ):
     """Add a VMkernel adapter; returns the new device name (e.g. ``vmk1``).
+
+    *dvswitch_name* binds the adapter to a distributed port group.
+    *tcpip_stack* is one of ``default`` / ``provisioning`` / ``vmotion`` /
+    ``vxlan``. *default_gateway* overrides the adapter's gateway.
+    *nic_types* is a list or a ``{type: bool}`` dict.
 
     CLI Example:
 
@@ -296,6 +305,10 @@ def vmkernel_add(
         mtu=mtu,
         mac_address=mac_address,
         nic_types=nic_types,
+        dvswitch_name=dvswitch_name,
+        vswitch_name=vswitch_name,
+        tcpip_stack=tcpip_stack,
+        default_gateway=default_gateway,
         profile=profile,
     )
 
@@ -307,15 +320,18 @@ def vmkernel_update(
     ip_address=None,
     subnet_mask=None,
     mtu=None,
+    nic_types=None,
+    tcpip_stack=None,
+    default_gateway=None,
     profile=None,
 ):
-    """Update a VMkernel adapter.
+    """Update a VMkernel adapter (IP/MTU and optional traffic types, stack, gateway).
 
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' vcf_vim_host_network.vmkernel_update esxi-01 vmk1 mtu=9000
+        salt '*' vcf_vim_host_network.vmkernel_update esxi-01 vmk1 mtu=9000 tcpip_stack=vmotion
     """
     return c.vmkernel_update(
         __opts__,
@@ -325,6 +341,9 @@ def vmkernel_update(
         ip_address=ip_address,
         subnet_mask=subnet_mask,
         mtu=mtu,
+        nic_types=nic_types,
+        tcpip_stack=tcpip_stack,
+        default_gateway=default_gateway,
         profile=profile,
     )
 
@@ -399,3 +418,15 @@ def ipv6_set(host, enabled, profile=None):
         salt '*' vcf_vim_host_network.ipv6_set <host> True
     """
     return c.ipv6_set(__opts__, host, enabled, profile=profile)
+
+
+def vmkernel_vsan(host, device, enabled, profile=None):
+    """Wire (or unwire) a VMkernel adapter for vSAN traffic.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_host_network.vmkernel_vsan esxi-01 vmk2 enabled=true
+    """
+    return c.vmkernel_vsan(__opts__, host, device, enabled, profile=profile)
