@@ -10,14 +10,14 @@ without it, the `saltext.vcf.resources` subpackage is dormant
 
 ## Types
 
-| Type | One resource per | Pillar key |
-|---|---|---|
-| `vcenter` | vCenter Server | `resources.vcenter.instances` |
-| `sddc` | SDDC Manager | `resources.sddc.instances` |
-| `nsx` | NSX Manager | `resources.nsx.instances` |
-| `vcfops` | VCF Operations appliance | `resources.vcf_ops.instances` |
-| `esxi` | Standalone ESXi host | `resources.esxi.instances` |
-| `vcf_vm` | Virtual machine (references a `vcenter` id) | `resources.vcf_vm.instances` |
+| Type      | One resource per                            | Pillar key                    |
+| --------- | ------------------------------------------- | ----------------------------- |
+| `vcenter` | vCenter Server                              | `resources.vcenter.instances` |
+| `sddc`    | SDDC Manager                                | `resources.sddc.instances`    |
+| `nsx`     | NSX Manager                                 | `resources.nsx.instances`     |
+| `vcfops`  | VCF Operations appliance                    | `resources.vcf_ops.instances` |
+| `esxi`    | Standalone ESXi host                        | `resources.esxi.instances`    |
+| `vcf_vm`  | Virtual machine (references a `vcenter` id) | `resources.vcf_vm.instances`  |
 
 ## Pillar
 
@@ -111,14 +111,14 @@ vCenter at `grains()`: `name`, `power_state`, `cpu_count`,
 
 Per-resource operations:
 
-| Function | Notes |
-|---|---|
-| `info` | Full VM record |
-| `power_state` | Current power state string |
-| `power_on` / `power_off` / `reset` | Power control |
-| `snapshot_list` / `snapshot_current` | Snapshot tree |
-| `snapshot_create` / `snapshot_revert` / `snapshot_remove` / `snapshot_remove_all` | Lifecycle (SOAP) |
-| `tag_assign` / `tag_list_assigned` | vCenter tag association |
+| Function                                                                          | Notes                      |
+| --------------------------------------------------------------------------------- | -------------------------- |
+| `info`                                                                            | Full VM record             |
+| `power_state`                                                                     | Current power state string |
+| `power_on` / `power_off` / `reset`                                                | Power control              |
+| `snapshot_list` / `snapshot_current`                                              | Snapshot tree              |
+| `snapshot_create` / `snapshot_revert` / `snapshot_remove` / `snapshot_remove_all` | Lifecycle (SOAP)           |
+| `tag_assign` / `tag_list_assigned`                                                | vCenter tag association    |
 
 VM auto-discovery from vCenter (phase 10b) is deferred pending
 `discover()` pagination in the Resources framework.
@@ -126,8 +126,7 @@ VM auto-discovery from vCenter (phase 10b) is deferred pending
 ## VKS handoff
 
 The Supervisor cluster's Kubernetes API is consumed via
-`saltext-kubernetes`. After
-`vcf_vks.fetch_kubeconfig(<cluster_id>)`:
+`saltext-kubernetes`. After `vcf_vks.fetch_kubeconfig(<cluster_id>)`:
 
 ```yaml
 resources:

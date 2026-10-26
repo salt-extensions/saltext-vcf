@@ -8,8 +8,8 @@ through SDDC Manager's `/v1/vcf-services`.
 
 ## Module
 
-| Module | Purpose |
-|---|---|
+| Module             | Purpose                                                    |
+| ------------------ | ---------------------------------------------------------- |
 | `vcf_vcf_services` | List/get the VMSP service catalog mediated by SDDC Manager |
 
 No separate `vmsp:` pillar block; uses the existing `sddc_manager`
@@ -19,13 +19,13 @@ connection.
 
 VCF 9.2 exposes at least:
 
-| Name | Backing ingress |
-|---|---|
-| `COMMON_SERVICES` | `vsp-platform` |
-| `DOMAIN_MANAGER` | `vsp-platform` |
-| `OPERATIONS_MANAGER` | `vsp-fleet` |
-| `LCM` | `vsp-fleet` / `vsp-instance` |
-| `SDDC_MANAGER_UI` | `vsp-platform` |
+| Name                 | Backing ingress              |
+| -------------------- | ---------------------------- |
+| `COMMON_SERVICES`    | `vsp-platform`               |
+| `DOMAIN_MANAGER`     | `vsp-platform`               |
+| `OPERATIONS_MANAGER` | `vsp-fleet`                  |
+| `LCM`                | `vsp-fleet` / `vsp-instance` |
+| `SDDC_MANAGER_UI`    | `vsp-platform`               |
 
 Each entry: `id`, `name`, `version`, `status` (`UP`, `DOWN`,
 `DEGRADED`).
@@ -55,8 +55,7 @@ Never modifies VMSP. Use as a precondition for SDDC LCM operations.
 The VMSP ingresses require an internal JWT issued by VIDB, not the
 SDDC Manager bearer token. Direct k3s API access is out of scope —
 SDDC Manager is the supported integration boundary, and going around
-it couples the extension to internals that change across VCF
-releases.
+it couples the extension to internals that change across VCF releases.
 
 ## Resources framework
 

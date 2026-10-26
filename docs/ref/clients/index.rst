@@ -9,6 +9,8 @@ ______________
 .. autosummary::
     :toctree:
 
+    automation_topology
+    avi_controller
     cluster_config
     cluster_config_software
     esxi_ad_auth
@@ -16,12 +18,17 @@ ______________
     esxi_auth_proxy
     esxi_firewall
     esxi_host
+    esxi_localsh
+    esxi_netdump
     esxi_ntp
     esxi_service
     esxi_syslog
     esxi_vlcm
     fleet_password
+    hcx_manager
+    installer_appliance
     installer_bringup
+    installer_topology
     nsx_cluster
     nsx_compute_collection
     nsx_context_profile
@@ -66,6 +73,8 @@ ______________
     nsx_upgrade
     nsx_uplink_profile
     nsx_vidm
+    ovf_deploy
+    ovftool_deploy
     sddc_avn
     sddc_bundles
     sddc_certificates
@@ -77,6 +86,9 @@ ______________
     sddc_host
     sddc_license_keys
     sddc_manager
+    sddc_manager_local_accounts
+    sddc_manager_password_policy
+    sddc_manager_tls
     sddc_network_pools
     sddc_personalities
     sddc_releases
@@ -104,10 +116,12 @@ ______________
     vcenter_host
     vcenter_kms
     vcenter_lcm_depot
+    vcenter_localos_user
     vcenter_network
     vcenter_resource_pool
     vcenter_shell
     vcenter_sso
+    vcenter_statistics
     vcenter_storage_policy
     vcenter_supervisor
     vcenter_supervisor_compat
@@ -146,6 +160,7 @@ ______________
     vcfops_credential
     vcfops_dashboard
     vcfops_deployment
+    vcfops_fleet_certificates
     vcfops_fleet_passwords
     vcfops_maintenance
     vcfops_policy
@@ -197,6 +212,7 @@ ______________
     vim_vapp
     vim_vasa
     vim_vm
+    vim_vm_cdrom
     vim_vm_console
     vim_vm_customization
     vim_vm_devices
@@ -208,11 +224,18 @@ ______________
     vim_vm_power
     vim_vm_snapshot
     vim_vm_tools
+    vmsp_dns
+    vmsp_ntp
+    vmsp_syslog
     vrli_ad
     vrli_certificate
+    vrli_master
     vrli_settings
     vrli_version
+    vrni_platform
+    vro_orchestrator
     vsan_cluster
     vsan_disk
     vsan_fault_domain
+    vsan_file_service
     vsan_health

@@ -57,8 +57,8 @@ Custom role:
     - privilege_keys: [DASHBOARD, METRICS_DASHBOARDS, ALERTS_VIEW]
 ```
 
-System-defined roles can't be deleted; `vcf_vcfops_role.absent`
-no-ops on them.
+System-defined roles can't be deleted; `vcf_vcfops_role.absent` no-ops
+on them.
 
 ## Collectors
 
@@ -99,7 +99,7 @@ salt-call vcf_vcfops_supermetric.list_ page_size=20
 Rolling-average CPU:
   vcf_vcfops_supermetric.present:
     - name: rolling-avg-cpu
-    - formula: 'avg(${this, metric=cpu|usage_average})'
+    - formula: avg(${this, metric=cpu|usage_average})
     - description: 7-day rolling average CPU
 ```
 
