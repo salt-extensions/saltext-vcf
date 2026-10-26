@@ -64,6 +64,13 @@ def _task_settings(kwargs):
     return timeout, poll_interval
 
 
+def _depot_entries(depots):
+    """Return depot dicts from a list, or from vCenter's ``{depot_id: depot}`` map."""
+    if isinstance(depots, dict):
+        depots = depots.values()
+    return [d for d in depots if isinstance(d, dict)]
+
+
 def depot_configured(
     name,
     depot_type=None,
@@ -100,7 +107,7 @@ def depot_configured(
             existing = c.online_depot_list(__opts__, profile=profile) or []
         else:
             existing = c.offline_depot_list(__opts__, profile=profile) or []
-        match = next((d for d in existing if d.get("location") == location), None)
+        match = next((d for d in _depot_entries(existing) if d.get("location") == location), None)
     except Exception as exc:  # pylint: disable=broad-except
         return _fail(ret, exc)
 

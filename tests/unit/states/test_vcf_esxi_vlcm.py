@@ -54,6 +54,19 @@ def test_depot_configured_noop_when_existing(monkeypatch):
     assert "already configured" in ret["comment"]
 
 
+def test_depot_configured_noop_when_existing_id_keyed_map(monkeypatch):
+    # vCenter returns {depot_id: depot}, not a list.
+    monkeypatch.setattr(
+        c,
+        "offline_depot_list",
+        lambda opts, profile=None: {"depot-1": {"location": "http://repo/d.zip"}},
+    )
+    ret = st.depot_configured("d1", location="http://repo/d.zip")
+    assert ret["result"] is True
+    assert ret["changes"] == {}
+    assert "already configured" in ret["comment"]
+
+
 def test_depot_configured_creates_offline(monkeypatch):
     calls = []
     monkeypatch.setattr(c, "offline_depot_list", lambda opts, profile=None: [])
