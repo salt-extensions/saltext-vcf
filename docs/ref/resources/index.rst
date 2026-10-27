@@ -13,5 +13,6 @@ ______________________________
     nsx
     sddc
     vcenter
-    vcfops
     vcf_vm
+    vcfops
+    vmsp

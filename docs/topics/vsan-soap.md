@@ -6,12 +6,12 @@ that reuses the vCenter session cookie (no separate auth).
 
 ## Modules
 
-| Module | Surface |
-|---|---|
-| `vcf_vsan_cluster` | Cluster-level reconfigure (dedup/compression, encryption, ESA vs OSA, fault tolerance) |
-| `vcf_vsan_disk` | Disk group + disk membership |
-| `vcf_vsan_fault_domain` | Fault domain definition + host assignment |
-| `vcf_vsan_health` | Health summary, silent health checks |
+| Module                  | Surface                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------- |
+| `vcf_vsan_cluster`      | Cluster-level reconfigure (dedup/compression, encryption, ESA vs OSA, fault tolerance) |
+| `vcf_vsan_disk`         | Disk group + disk membership                                                           |
+| `vcf_vsan_fault_domain` | Fault domain definition + host assignment                                              |
+| `vcf_vsan_health`       | Health summary, silent health checks                                                   |
 
 ## Configuration
 

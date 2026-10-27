@@ -31,7 +31,8 @@ Appliance DNS:
 Segment:
   vcf_nsx_segment.present:
     - name: tenant-a-web
-    - transport_zone_path: /infra/sites/default/enforcement-points/default/transport-zones/<tz-id>
+    - transport_zone_path: >-
+        /infra/sites/default/enforcement-points/default/transport-zones/<tz-id>
     - subnets:
         - gateway_address: 10.10.0.1/24
 
@@ -101,7 +102,7 @@ Adapter credential:
 Super metric:
   vcf_vcfops_supermetric.present:
     - name: rolling-avg-cpu
-    - formula: 'avg(${this, metric=cpu|usage_average})'
+    - formula: avg(${this, metric=cpu|usage_average})
 ```
 
 ## VMSP
@@ -162,13 +163,13 @@ NTP:
 Syslog:
   vcf_esxi_syslog.present:
     - name: ops-forwarding
-    - servers: ['udp://syslog.example.com:514']
+    - servers: [udp://syslog.example.com:514]
 
 Firewall rule:
   vcf_esxi_firewall.present:
     - name: sshServer
     - enabled: true
-    - allowed_ips: ['10.0.0.0/8']
+    - allowed_ips: [10.0.0.0/8]
     - all_ip: false
 ```
 

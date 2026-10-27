@@ -9,17 +9,23 @@ _____________
 .. autosummary::
     :toctree:
 
+    vcf_avi
     vcf_cluster_config
     vcf_esxi_ad_auth
     vcf_esxi_advanced
     vcf_esxi_auth_proxy
     vcf_esxi_firewall
     vcf_esxi_host
+    vcf_esxi_localsh
+    vcf_esxi_netdump
     vcf_esxi_ntp
     vcf_esxi_service
     vcf_esxi_syslog
     vcf_esxi_vlcm
+    vcf_hcx
+    vcf_installer_appliance
     vcf_installer_bringup
+    vcf_installer_topology
     vcf_nsx_cluster_vip
     vcf_nsx_dhcp
     vcf_nsx_dns_servers
@@ -41,9 +47,16 @@ _____________
     vcf_nsx_telemetry
     vcf_nsx_tier0
     vcf_nsx_tier1
+    vcf_nsx_transport_zone
     vcf_nsx_uplink_profile
     vcf_nsx_vidm
+    vcf_sddc_domain
     vcf_sddc_host
+    vcf_sddc_manager
+    vcf_sddc_manager_local_accounts
+    vcf_sddc_manager_password_policy
+    vcf_sddc_manager_tls_min_version
+    vcf_sddc_manager_tls_profile
     vcf_vc_patch
     vcf_vccluster_resource_pool
     vcf_vcenter_ad_domain
@@ -53,11 +66,17 @@ _____________
     vcf_vcenter_cluster
     vcf_vcenter_content_library
     vcf_vcenter_custom_attribute
+    vcf_vcenter_datacenter
     vcf_vcenter_dvs_nioc
     vcf_vcenter_dvs_nioc_vccluster
+    vcf_vcenter_folder
     vcf_vcenter_host
+    vcf_vcenter_localos_user
     vcf_vcenter_shell
+    vcf_vcenter_statistics
+    vcf_vcenter_storage_policy
     vcf_vcenter_supervisor_service
+    vcf_vcenter_vm
     vcf_vcenter_vm_class
     vcf_vcf_services
     vcf_vcfops_credential
@@ -74,6 +93,7 @@ _____________
     vcf_vim_host_acceptance
     vcf_vim_host_certificate
     vcf_vim_host_config
+    vcf_vim_host_datastore
     vcf_vim_host_dns
     vcf_vim_host_hyperthreading
     vcf_vim_host_kernel_module
@@ -84,9 +104,18 @@ _____________
     vcf_vim_resource_pool
     vcf_vim_role
     vcf_vim_scheduled_task
+    vcf_vim_vm
     vcf_vim_vm_devices
+    vcf_vmsp_dns
+    vcf_vmsp_ntp
+    vcf_vmsp_syslog
+    vcf_vrli
     vcf_vrli_ad
     vcf_vrli_certificate
     vcf_vrli_settings
+    vcf_vrni
+    vcf_vro
+    vcf_vro_bootstrap
     vcf_vsan_cluster
     vcf_vsan_fault_domain
+    vcf_vsan_file_service
