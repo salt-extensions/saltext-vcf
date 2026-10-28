@@ -12,9 +12,11 @@ vc-staged:
     - require:
       - vcf_vc_patch: vc-repo
 
+{% if cfg.get('install_enabled', false) %}
 vc-installed:
   vcf_vc_patch.update_installed:
-    - version: {{ cfg.version }}
-    - sso_password: {{ cfg.sso_password }}
+    - version: {{ cfg.version | tojson }}
+    - sso_password: {{ cfg.sso_password | tojson }}
     - require:
       - vcf_vc_patch: vc-staged
+{% endif %}
