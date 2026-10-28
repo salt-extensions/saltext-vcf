@@ -4,6 +4,7 @@ import logging
 
 from saltext.vcf.utils.vcf_upgrade_orchestrator import VcfUpgradeOrchestrator
 from saltext.vcf.utils.vcf_upgrade_transport import CommandExecutionError
+from saltext.vcf.utils.vcf_upgrade_transport import boolean
 
 log = logging.getLogger(__name__)
 __virtualname__ = "vcf_upgrade"
@@ -14,6 +15,8 @@ def __virtual__():
 
 
 def _provider(profile=None, **kwargs):
+    # salt/salt-call inject __pub_* call metadata into functions that accept **kwargs.
+    kwargs = {k: v for k, v in kwargs.items() if not k.startswith("__pub_")}
     if kwargs:
         raise CommandExecutionError(
             f"Unsupported options: {sorted(kwargs)}; use sddc_manager pillar/profile"
@@ -26,6 +29,14 @@ def _provider(profile=None, **kwargs):
 def _u():
     root = __opts__.get("pillar", {}).get("saltext.vcf") or __opts__.get("saltext.vcf") or {}
     return root.get("vcf_upgrade", {}) or {}
+
+
+def _sync_depot_enabled(cfg):
+    """Sync the online depot before bundle lookup unless ``depot:sync`` is false."""
+    depot = cfg.get("depot") or {}
+    return str(depot.get("type") or "").lower() == "online" and boolean(
+        depot.get("sync", True), "depot:sync"
+    )
 
 
 def _orch(checkpoint_file=None, **kwargs):
@@ -97,6 +108,7 @@ def download_bundle(
         life.get("bundle_timeout_seconds", 14400) if timeout is None else timeout,
         life.get("poll_interval_seconds", 60) if poll_interval is None else poll_interval,
         dry_run,
+        _sync_depot_enabled(cfg),
     )
 
 
@@ -151,6 +163,7 @@ def _single(
         cfg.get("lifecycle"),
         dry_run=dry_run,
         create_only=create_only,
+        sync_depot=_sync_depot_enabled(cfg),
     )
 
 
@@ -335,4 +348,5 @@ def run_sequence(
         cfg.get("lifecycle"),
         dry_run,
         reset_checkpoint,
+        sync_depot=_sync_depot_enabled(cfg),
     )
