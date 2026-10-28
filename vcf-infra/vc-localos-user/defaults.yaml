@@ -1,3 +1,5 @@
+# Override user.password under the vc-localos-user pillar key with a protected secret.
+# The example password below is not suitable for a live apply.
 user:
   username: svc-monitor
   password: changeme

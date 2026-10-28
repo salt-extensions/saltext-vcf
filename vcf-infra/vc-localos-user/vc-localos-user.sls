@@ -2,7 +2,7 @@
 
 {{ cfg.user.username }}:
   vcf_vcenter_localos_user.present:
-    - password: {{ cfg.user.password }}
+    - password: {{ cfg.user.password | tojson }}
     - roles: {{ cfg.user.roles }}
     - email: {{ cfg.user.email }}
     - full_name: {{ cfg.user.full_name }}
