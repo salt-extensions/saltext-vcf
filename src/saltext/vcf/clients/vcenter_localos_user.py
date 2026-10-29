@@ -38,9 +38,10 @@ def create(opts, username, password, roles, profile=None, **spec):
     Extra fields (``email``, ``full_name``, ``enabled``, ...) pass through
     in *spec*.
     """
-    body = {"password": password, "roles": list(roles)}
-    body.update(spec)
-    return vcenter.api_post(opts, f"{PATH}/{username}", body=body, profile=profile)
+    config = {"password": password, "roles": list(roles)}
+    config.update(spec)
+    body = {"username": username, "config": config}
+    return vcenter.api_post(opts, PATH, body=body, profile=profile)
 
 
 def update(opts, username, profile=None, **spec):

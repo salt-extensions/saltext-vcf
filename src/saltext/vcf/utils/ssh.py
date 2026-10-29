@@ -36,13 +36,14 @@ DEFAULT_PORT = 22
 DEFAULT_TIMEOUT = 30
 
 
-def run(ssh_cfg, command, timeout=DEFAULT_TIMEOUT):
+def run(ssh_cfg, command, timeout=DEFAULT_TIMEOUT, input_data=None):
     """Execute *command* on the remote host over SSH.
 
     :param ssh_cfg: Dict with keys ``host``, ``username``, ``password`` and
         optional ``port`` (see :func:`saltext.vcf.utils.sddc.get_ssh_config`).
     :param command: Shell command to run on the appliance.
     :param timeout: Connect / exec timeout in seconds.
+    :param input_data: Optional stdin text; never included in command logging.
     :return: Tuple ``(returncode, stdout, stderr)`` with text output.
     :raises RuntimeError: if paramiko is unavailable or the connection fails.
     """
@@ -64,7 +65,13 @@ def run(ssh_cfg, command, timeout=DEFAULT_TIMEOUT):
             pass
 
     client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(_FIPSAcceptPolicy())
+    if ssh_cfg.get("verify_host_key", False):
+        client.load_system_host_keys()
+        if ssh_cfg.get("known_hosts"):
+            client.load_host_keys(ssh_cfg["known_hosts"])
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
+    else:
+        client.set_missing_host_key_policy(_FIPSAcceptPolicy())
     try:
         client.connect(
             hostname=host,
@@ -78,10 +85,15 @@ def run(ssh_cfg, command, timeout=DEFAULT_TIMEOUT):
             look_for_keys=False,
         )
     except Exception as exc:  # noqa: BLE001 - surface any connect failure uniformly
+        client.close()
         raise RuntimeError(f"SSH connection to {host} failed: {exc}") from exc
 
     try:
         _stdin, stdout, stderr = client.exec_command(command, timeout=timeout)
+        if input_data is not None:
+            _stdin.write(input_data)
+            _stdin.flush()
+            _stdin.channel.shutdown_write()
         out = stdout.read().decode("utf-8", errors="ignore")
         err = stderr.read().decode("utf-8", errors="ignore")
         rc = stdout.channel.recv_exit_status()

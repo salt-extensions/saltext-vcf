@@ -24,9 +24,9 @@ def _find_by_name(opts, name, profile=None):
 def present(name, ldap_servers, base_dn, profile=None, **spec):
     """Ensure LDAP identity source *name* exists.
 
-    Presence-only: an existing source's fields are not diffed/updated here
-    (the id is server-generated, so there's no named-resource PUT contract
-    to reconcile a single field against).
+    Presence-only: an existing source's fields are not diffed/updated here.
+    New sources use name as their Policy API ID. Creation requires
+    resource_type and domain_name in spec.
     """
     ret = _ret(name)
     if _find_by_name(__opts__, name, profile=profile) is not None:

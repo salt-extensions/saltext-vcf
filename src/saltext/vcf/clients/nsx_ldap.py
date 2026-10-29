@@ -1,17 +1,14 @@
-"""NSX Management API — LDAP identity sources (``/api/v1/aaa/ldap/identity-sources``).
+"""NSX Policy API LDAP identity sources.
 
-Configures an external LDAP/Active-Directory identity source NSX Manager
-authenticates users against — distinct from :mod:`nsx_role_binding` (which
-assigns a role to a principal already known to NSX, not a directory source).
-
-Field names below (``ldap_servers``, ``base_dn``) follow the standard NSX-T
-shape but haven't been exercised against a live NSX Manager — verify
-against your version before real use.
+Sources use caller-supplied IDs and PUT requests at
+``/policy/api/v1/aaa/ldap-identity-sources/{source-id}``.
 """
+
+from urllib.parse import quote
 
 from saltext.vcf.utils import nsx
 
-PATH = "/api/v1/aaa/ldap/identity-sources"
+PATH = "/policy/api/v1/aaa/ldap-identity-sources"
 
 
 def list_(opts, profile=None):
@@ -19,23 +16,36 @@ def list_(opts, profile=None):
 
 
 def create(opts, name, ldap_servers, base_dn, profile=None, **spec):
-    """Create an LDAP identity source named *name*.
+    """Create a source using *name* as its ID and display name.
 
-    *ldap_servers* is a list of dicts like
-    ``[{"url": "ldaps://ldap.corp.example.test:636", "bind_identity": "...",
-    "password": "...", "use_starttls": False}]``. *base_dn* scopes the
-    directory search. Extra fields (``identity_source_type``, ``domain_name``,
-    ...) pass through via *spec*. The id is server-generated; there's no
-    named-resource PUT for this endpoint.
+    Requires resource_type (ActiveDirectoryIdentitySource or
+    OpenLdapIdentitySource) and domain_name in spec. Additional directory
+    options pass through to the API.
     """
-    body = {"display_name": name, "ldap_servers": list(ldap_servers), "base_dn": base_dn}
-    body.update(spec)
-    return nsx.api_post(opts, PATH, body=body, profile=profile)
+    if spec.get("resource_type") not in (
+        "ActiveDirectoryIdentitySource", "OpenLdapIdentitySource"
+    ):
+        raise ValueError(
+            "resource_type must be ActiveDirectoryIdentitySource or OpenLdapIdentitySource"
+        )
+    domain = spec.get("domain_name")
+    if not isinstance(domain, str) or not domain.strip():
+        raise ValueError("domain_name is required")
+    if not isinstance(ldap_servers, (list, tuple)):
+        raise ValueError("ldap_servers must be a list of LDAP server configurations")
+    body = dict(spec)
+    body.update({
+        "id": name,
+        "display_name": name,
+        "ldap_servers": list(ldap_servers),
+        "base_dn": base_dn,
+    })
+    return nsx.api_put(opts, f"{PATH}/{quote(name, safe='')}", body=body, profile=profile)
 
 
 def update(opts, source_id, body, profile=None):
-    return nsx.api_put(opts, f"{PATH}/{source_id}", body=body, profile=profile)
+    return nsx.api_put(opts, f"{PATH}/{quote(source_id, safe='')}", body=body, profile=profile)
 
 
 def delete(opts, source_id, profile=None):
-    return nsx.api_delete(opts, f"{PATH}/{source_id}", profile=profile)
+    return nsx.api_delete(opts, f"{PATH}/{quote(source_id, safe='')}", profile=profile)
