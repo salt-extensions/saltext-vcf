@@ -4,6 +4,3 @@ repository:
   certificate_check: true
 
 version: "9.0.1.0.12345"
-
-# Installation requires explicit opt-in and an SSO password from protected pillar.
-install_enabled: false
