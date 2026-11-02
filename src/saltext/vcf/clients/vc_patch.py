@@ -67,6 +67,10 @@ def is_transient_error(exc):
     which can surface as 401/403/404/500/502/503 on the next poll — treated
     as transient (retry after re-authenticating), not a hard failure.
     """
+    if isinstance(exc, (requests.ConnectionError, requests.Timeout)):
+        # appliance (or a proxy in front of it) is unreachable while services
+        # restart or the VM reboots mid-install
+        return True
     resp = getattr(exc, "response", None)
     return resp is not None and resp.status_code in TRANSIENT_STATUS_CODES
 
@@ -477,7 +481,7 @@ def monitor_install(opts, poll_interval=120, timeout=7200, max_transient_errors=
                 return {"success": True, "state": state, "status": status}
             if state == "INSTALL_FAILED":
                 raise RuntimeError(f"Install failed. Status: {status}")
-        except requests.HTTPError as exc:
+        except requests.RequestException as exc:
             if not is_transient_error(exc):
                 raise
             transient_errors += 1
