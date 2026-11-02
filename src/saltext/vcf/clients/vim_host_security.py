@@ -67,35 +67,51 @@ def lockdown_set_exception_users(opts, host, users, profile=None):
 def user_list(opts, host, search_str="", exact=False, find_users=True, profile=None):
     """List local accounts matching *search_str* (empty = all).
 
-    Uses ``UserDirectory.RetrieveUserGroups`` on the host's userDirectory.
-    Returns a list of ``{principal, full_name, id, group, ...}`` dicts.
+    Queries the **host's own** ``configManager.userDirectory``
+    (``RetrieveUserGroups``) so results reflect host-local accounts even
+    when the host is vCenter-managed (``vmware_esxi.get_user`` parity).
+    Returns a list of ``{principal, full_name, group, shell_access, id}``.
     """
-    _host(opts, host, profile=profile)
-    # The host's userDirectory exposes RetrieveUserGroups, but vCenter-managed
-    # hosts route through their own content. We don't have direct access to
-    # the host's content from here so fall back to the ServiceInstance content's
-    # userDirectory which queries vCenter SSO.
-    content = soap.content(opts, profile=profile)
-    directory = content.userDirectory
+    h = _host(opts, host, profile=profile)
+    directory = h.configManager.userDirectory
+    if directory is None:
+        raise RuntimeError(f"host {host!r} has no userDirectory manager")
     results = directory.RetrieveUserGroups(
-        domain=None,
-        searchStr=search_str,
-        belongsToGroup=None,
-        belongsToUser=None,
-        exactMatch=bool(exact),
-        findUsers=bool(find_users),
-        findGroups=False,
+        None,
+        search_str,
+        None,
+        None,
+        bool(exact),
+        bool(find_users),
+        False,
     )
     out = []
     for u in results or []:
         out.append(
             {
                 "principal": u.principal,
-                "full_name": u.fullName,
+                "full_name": getattr(u, "fullName", None),
                 "group": bool(u.group),
+                "shell_access": getattr(u, "shellAccess", None),
+                "id": getattr(u, "id", None),
             }
         )
     return out
+
+
+def user_get(opts, host, username, profile=None):
+    """Return one local account on *host* by principal (raises ``LookupError``)."""
+    for u in user_list(opts, host, search_str=username, exact=True, profile=profile):
+        if u["principal"] == username:
+            return u
+    raise LookupError(f"user {username!r} not found on {host!r}")
+
+
+def user_get_or_none(opts, host, username, profile=None):
+    try:
+        return user_get(opts, host, username, profile=profile)
+    except LookupError:
+        return None
 
 
 def user_create(opts, host, username, password, description="", profile=None):

@@ -39,6 +39,13 @@ from saltext.vcf.utils import vcenter as vc_rest
 
 log = logging.getLogger(__name__)
 
+# pyVmomi builds classes dynamically, so pylint can't see the nested
+# ``TaskInfo.State`` enum — alias it once here instead of disabling
+# ``no-member`` at every use site.
+_TASK_RUNNING = _vim.TaskInfo.State.running  # pylint: disable=no-member
+_TASK_QUEUED = _vim.TaskInfo.State.queued  # pylint: disable=no-member
+_TASK_ERROR = _vim.TaskInfo.State.error  # pylint: disable=no-member
+
 # Cached ServiceInstance per (host, username). pyVmomi sessions are
 # heavier than REST tokens; reusing them across calls saves ~150ms each.
 _SI_CACHE: dict[str, object] = {}
@@ -276,13 +283,13 @@ def wait_for_task(task, *, timeout=300, poll_interval=0.5):
     error and ``TimeoutError`` if the task hasn't finished in time.
     """
     deadline = time.monotonic() + timeout
-    while task.info.state in (_vim.TaskInfo.State.running, _vim.TaskInfo.State.queued):
+    while task.info.state in (_TASK_RUNNING, _TASK_QUEUED):
         if time.monotonic() > deadline:
             raise TimeoutError(
                 f"task {task._moId!r} did not finish within {timeout}s"  # noqa: SLF001
             )
         time.sleep(poll_interval)
-    if task.info.state == _vim.TaskInfo.State.error:
+    if task.info.state == _TASK_ERROR:
         msg = task.info.error.msg if task.info.error else "task failed"
         raise RuntimeError(f"task {task._moId!r} failed: {msg}")  # noqa: SLF001
     return task.info.result

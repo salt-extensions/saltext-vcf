@@ -11,29 +11,15 @@ they don't block the deploy test but they limit how much of the
 
 ## NSX transport zone CRUD
 
-`src/saltext/vcf/clients/nsx_transport_zone.py` and
-`src/saltext/vcf/modules/vcf_nsx_transport_zone.py` only expose `list_`
-and `get`. Reference parity needs `create`, `update`, `delete`, plus a
-state module `states/vcf_nsx_transport_zone.py` with a
-`transport_zone_present(name, zone_type)` function.
-
-NSX transport zones are normally created by the VCF Installer as part
-of bringup (which is why the deploy test doesn't need this), but
-day-2 zone management — adding an overlay TZ for a new workload domain,
-removing a deprecated VLAN TZ — has no Salt-driven path today.
+CLOSED — `clients/nsx_transport_zone.py` exposes `list_`/`get`/`create`/
+`update`/`delete`, `modules/vcf_nsx_transport_zone.py` mirrors them, and
+`states/vcf_nsx_transport_zone.py` provides `present`/`absent`.
 
 ## SDDC workload domain CRUD via exec module
 
-`src/saltext/vcf/clients/sddc_domain.py` already implements `create`,
-`update`, `delete`, `mark_for_deletion`, and `validate` against
-`/v1/domains`. The exec module
-`src/saltext/vcf/modules/vcf_sddc_domain.py` only surfaces `list_` and
-`get`, so the create/update/delete client functions aren't reachable
-from a Salt state.
-
-This is the cheapest gap to close: just add module wrappers that call
-the existing client functions, plus a `states/vcf_sddc_domain.py` with
-`present(name, spec)` / `absent(name)`.
+CLOSED — `modules/vcf_sddc_domain.py` and
+`states/vcf_sddc_domain.py` expose the create/update/delete/validate
+surface that already existed in `clients/sddc_domain.py`.
 
 ## ESXi config aggregator
 
@@ -50,26 +36,25 @@ orchestrate the existing per-area clients.
 
 ## State modules for already-supported exec ops
 
-The following exec modules ship with the operations but have no
-state-module counterpart, so they can't be driven from a `state.apply`:
-
-- `states/vcf_sddc_domain.py` — wraps the CRUD gap above.
-- `states/vcf_sddc_host.py` — `commissioned(name, host_specs)` /
-  `decommissioned(name)` against
-  `modules/vcf_sddc_host.commission/decommission`. The exec module
-  works today; only the declarative wrapper is missing.
-- `states/vcf_nsx_transport_zone.py` — depends on the NSX CRUD gap.
+CLOSED — `states/vcf_sddc_domain.py`, `states/vcf_sddc_host.py` and
+`states/vcf_nsx_transport_zone.py` all exist.
 
 ## OVF deploy: pyVmomi vs ovftool
 
 `clients/ovf_deploy.deploy_ova` is a pure pyVmomi implementation
 (`OvfManager.CreateImportSpec` + `ResourcePool.ImportVApp` +
-`HttpNfcLease` streaming PUT). `clients/vim_ovf.py` exports OVFs via
-the same lease mechanism — there's no ovftool subprocess dependency
-anywhere in saltext-vcf.
+`HttpNfcLease` streaming PUT) and `clients/ovftool_deploy.deploy_ova`
+provides an ovftool-subprocess backend for the same operation
+(backend selectable at the client level; the product-specific exec
+modules route through the pyVmomi path). `clients/vim_ovf.py` exports
+OVFs via the same lease mechanism.
 
-`saltext-vcf-automation`'s OVA deploy uses `ovftool` subprocess. If
-operators prefer ovftool's deeper handling of OVF properties /
-networks for non-VCF-Installer OVAs, an `ovftool`-driven path could be
-added as a separate client (or as an alternative backend to
-`deploy_ova(..., backend="ovftool")`). Not blocking anything today.
+Not blocking anything today.
+
+## vSphere parity with saltext-vmware
+
+DONE — the missing and partial vSphere/pyVmomi surface from the
+`saltext-vmware` extension has been ported into saltext-vcf's
+conventions. The function-level ledger (what was ported, what was
+already covered, and known deviations) lives in
+`docs/topics/vsphere-parity.md`.

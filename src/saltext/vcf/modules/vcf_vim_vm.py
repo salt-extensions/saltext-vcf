@@ -279,13 +279,104 @@ def register(
     )
 
 
-def unregister(vm, profile=None):
+def unregister(vm, shutdown=False, profile=None):
     """Remove a VM from inventory without deleting its files.
+
+    With ``shutdown=True`` a running VM is gracefully shut down via
+    VMware Tools first; with ``shutdown=False`` the VM must already be
+    powered off.
 
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' vcf_vim_vm.unregister <vm>
+        salt '*' vcf_vim_vm.unregister <vm> shutdown=true
     """
-    return c.unregister(__opts__, vm, profile=profile)
+    return c.unregister(__opts__, vm, shutdown=shutdown, profile=profile)
+
+
+def list_templates(profile=None):
+    """List the names of every VM flagged as a template.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm.list_templates
+    """
+    return c.list_templates(__opts__, profile=profile)
+
+
+def path(vm, profile=None):
+    """Return the inventory path of *vm* from the root folder down.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm.path vm-100
+    """
+    return c.path(__opts__, vm, profile=profile)
+
+
+def runtime(vm, profile=None):
+    """Return the VM's current host and attached datastore names.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm.runtime vm-100
+    """
+    return c.runtime(__opts__, vm, profile=profile)
+
+
+def info(vm, profile=None):
+    """Return a composed per-VM detail dict (guest IPs, MACs, uuid, paths).
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm.info vm-100
+    """
+    return c.info(__opts__, vm, profile=profile)
+
+
+def register_all(
+    datastore,
+    resource_pool=None,
+    cluster=None,
+    host=None,
+    folder=None,
+    profile=None,
+):
+    """Register every ``*.vmx`` file found on *datastore*.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm.register_all ds1 cluster=domain-c9 folder=restored
+    """
+    return c.register_all(
+        __opts__,
+        datastore,
+        resource_pool=resource_pool,
+        cluster=cluster,
+        host=host,
+        folder=folder,
+        profile=profile,
+    )
+
+
+def unregister_all(folder=None, shutdown=False, profile=None):
+    """Unregister every VM under *folder* (or the whole inventory).
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm.unregister_all folder=restored shutdown=true
+    """
+    return c.unregister_all(__opts__, folder, shutdown=shutdown, profile=profile)

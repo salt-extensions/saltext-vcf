@@ -107,3 +107,24 @@ def remove(vm, nic_key, profile=None):
         salt '*' vcf_vim_vm_nic.remove vm-100 4000
     """
     return c.remove(__opts__, vm, nic_key, profile=profile)
+
+
+def set_dvport(vm, dvs_name_or_id, dport_group_name, nic_key=None, profile=None):
+    """Reattach a NIC to a distributed port group identified by name.
+
+    When *nic_key* is omitted the VM's first Ethernet NIC is updated.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm_nic.set_dvport vm-100 dvs-1 'VM Network'
+    """
+    return c.set_dvport(
+        __opts__,
+        vm,
+        dvs_name_or_id,
+        dport_group_name,
+        nic_key=nic_key,
+        profile=profile,
+    )

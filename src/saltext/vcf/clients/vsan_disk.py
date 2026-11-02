@@ -166,3 +166,22 @@ def remove_disks(
     spec.vsanMode.objectAction = maintenance_mode_action
     task = vs.RemoveDisk_Task(disk=selected, maintenanceSpec=spec)
     return task._moId  # noqa: SLF001
+
+
+def host_enable(opts, host_id_or_name, enabled, profile=None):
+    """Enable or disable vSAN on *host* (``HostVsanSystem.UpdateVsan_Task``).
+
+    Per-host primitive behind cluster-level vSAN bootstrap
+    (``vmware_esxi.vsan_enable`` parity).
+    """
+    host = _find_host(opts, host_id_or_name, profile=profile)
+    vs = host.configManager.vsanSystem
+    if vs is None:
+        raise RuntimeError(f"host {host_id_or_name!r} has no vsanSystem manager")
+    if vs.config.enabled == bool(enabled):
+        return {"host": host.name, "enabled": bool(enabled), "changed": False}
+    cfg = vim.vsan.host.ConfigInfo()
+    cfg.enabled = bool(enabled)
+    task = vs.UpdateVsan_Task(cfg)
+    vim_utils.wait_for_task(task)
+    return {"host": host.name, "enabled": bool(enabled), "changed": True}

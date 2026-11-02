@@ -135,6 +135,9 @@ src/saltext/vcf/version.py
 # Ignore CI generated artifacts
 artifacts/
 
+# Local scratch space: pyVmomi/pyVim stub + smoke scripts (not shipped)
+/tmp/
+
 .claude/
 /.cursor-ai/.gitignore
 /.idea/.gitignore

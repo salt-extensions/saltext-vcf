@@ -37,6 +37,18 @@ def get_or_none(opts, category_id, profile=None):
         raise
 
 
+def by_name(opts, name, profile=None):
+    """Resolve a category id by its (unique) name."""
+    for cid in list_(opts, profile=profile) or []:
+        try:
+            cat = get(opts, cid, profile=profile)
+        except requests.HTTPError:
+            continue
+        if cat.get("name") == name:
+            return cat
+    return None
+
+
 def create(
     opts,
     name,

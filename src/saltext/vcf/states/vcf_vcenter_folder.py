@@ -57,3 +57,65 @@ def absent(name, profile=None):
     ret["changes"] = {"deleted": name}
     ret["comment"] = f"folder {name} deleted"
     return ret
+
+
+def renamed(name, new_name, profile=None):
+    """Ensure the folder *name* is renamed to *new_name*.
+
+    .. code-block:: yaml
+
+        Rename folder:
+          vcf_vcenter_folder.renamed:
+            - name: staging
+            - new_name: archive
+    """
+    ret = _ret(name)
+    existing = c.find_by_name(__opts__, name, profile=profile)
+    if existing is None:
+        ret["result"] = False
+        ret["comment"] = f"folder {name!r} not found"
+        return ret
+    if c.find_by_name(__opts__, new_name, profile=profile) is not None:
+        ret["comment"] = f"folder {new_name!r} already exists (rename may have already run)."
+        return ret
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"folder {name!r} would be renamed to {new_name!r}."
+        ret["changes"] = {"name": (name, new_name)}
+        return ret
+    c.rename(__opts__, name, new_name, profile=profile)
+    ret["changes"] = {"name": (name, new_name)}
+    ret["comment"] = f"folder {name!r} renamed to {new_name!r}."
+    return ret
+
+
+def moved(name, destination_folder_name, profile=None):
+    """Ensure folder *name* is nested under *destination_folder_name*.
+
+    .. code-block:: yaml
+
+        Move folder:
+          vcf_vcenter_folder.moved:
+            - name: staging
+            - destination_folder_name: archive
+    """
+    ret = _ret(name)
+    existing = c.find_by_name(__opts__, name, profile=profile)
+    if existing is None:
+        ret["result"] = False
+        ret["comment"] = f"folder {name!r} not found"
+        return ret
+    # Detect the current parent via the SOAP walk (the REST get carries moid only).
+    current_parent = c.parent_name(__opts__, existing["folder"], profile=profile)
+    if current_parent == destination_folder_name:
+        ret["comment"] = f"folder {name!r} already under {destination_folder_name!r}."
+        return ret
+    if __opts__["test"]:
+        ret["result"] = None
+        ret["comment"] = f"folder {name!r} would be moved under {destination_folder_name!r}."
+        ret["changes"] = {"parent": (current_parent, destination_folder_name)}
+        return ret
+    c.move(__opts__, name, destination_folder_name, profile=profile)
+    ret["changes"] = {"parent": (current_parent, destination_folder_name)}
+    ret["comment"] = f"folder {name!r} moved under {destination_folder_name!r}."
+    return ret

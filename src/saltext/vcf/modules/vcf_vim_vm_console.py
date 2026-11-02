@@ -33,3 +33,18 @@ def send_keys(vm, keys, profile=None):
         salt '*' vcf_vim_vm_console.send_keys <vm> '[f2]'
     """
     return c.send_keys(__opts__, vm, keys, profile=profile)
+
+
+def get_ticket(vm, ticket_type="mks", profile=None):
+    """Acquire a console ticket of *ticket_type* for *vm*.
+
+    Valid types: ``device``, ``guestControl``, ``guestIntegrity``,
+    ``mks``, ``webmks``. Returns ``{type, host, port, ssl_thumbprint, ticket}``.
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' vcf_vim_vm_console.get_ticket <vm> ticket_type=webmks
+    """
+    return c.ticket(__opts__, vm, ticket_type, profile=profile)

@@ -44,6 +44,9 @@ dynamic = ["version"]
 dependencies = [
     "salt>=3006",
     "requests>=2.3.0",
+    # SOAP surface (vim_* clients / vcf_vim_* / vcf_esxi_* modules) is part
+    # of the base install — pyVmomi ships both ``pyVmomi`` and ``pyVim``.
+    "pyvmomi>=8.0.0",
 ]
 
 [project.readme]
@@ -59,14 +62,16 @@ Tracker = "https://github.com/salt-extensions/saltext-vcf/issues"
 [project.optional-dependencies]
 # Runtime sub-component extras. Install only the areas you use, e.g.
 # ``pip install saltext.vcf[vcenter,nsx]``. Use ``[all]`` to pull every
-# runtime dependency (matches pre-split base install behavior).
-esxi = ["pyvmomi>=8.0.0", "pywbem>=1.7.0"]
-vcenter = ["pyvmomi>=8.0.0", "vmware-vcenter>=9.0.0.0"]
+# runtime dependency. pyvmomi is a base dependency (the whole SOAP
+# surface loads with a plain install); these extras add only the
+# remaining product-specific deps.
+esxi = ["pywbem>=1.7.0"]
+vcenter = ["vmware-vcenter>=9.0.0.0"]
 nsx = []
 sddc = ["vmware-vcf>=0.4.0", "paramiko>=2.7.0"]
 vcfops = []
 vcfa = []
-installer = ["pyvmomi>=8.0.0"]
+installer = []
 vks = ["saltext.kubernetes>=2.1.0", "kubernetes>=27.2.0"]
 # vRLI (VCF Operations for Logs) uses requests for REST + paramiko for
 # SSH-based session-timeout / DNS controls the API doesn't expose.

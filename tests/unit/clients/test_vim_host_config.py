@@ -27,6 +27,8 @@ def _fake_host(
 ):
     h = MagicMock()
     h.config.dateTimeInfo.ntpConfig.server = ntp_servers or []
+    h.config.dateTimeInfo.timeZone = None
+    h.config.dateTimeInfo.ntpConfig.configFile = None
     h.config.service.service = services or []
     if ad_info is not None:
         h.config.authenticationManagerInfo.authConfig = [ad_info]
@@ -69,6 +71,8 @@ def test_ntp_get_returns_servers_and_service_state(host_factory, opts):
         "servers": ["time1.example.com", "time2.example.com"],
         "enabled": True,
         "policy": "on",
+        "time_zone": None,
+        "config_file": None,
     }
 
 
@@ -203,3 +207,49 @@ def test_advanced_set(host_factory, opts):
     assert len(changed) == 1
     assert changed[0].key == "UserVars.SuppressShellWarning"
     assert changed[0].value == 1
+
+
+# -- datetime + advanced_set_many (vmware_esxi parity) -----------------------
+
+
+def test_datetime_get(host_factory, opts):
+    from datetime import datetime
+
+    host_factory["host"].name = "esxi-01"
+    host_factory["host"].configManager.dateTimeSystem.QueryDateTime.return_value = datetime(
+        2026, 9, 28, 10, 30, 0
+    )
+    out = vim_host_config.datetime_get(opts, "esxi-01")
+    assert out["host"] == "esxi-01"
+    assert out["datetime"].startswith("2026-09-28T10:30:00")
+
+
+def test_advanced_set_many_with_type_coercion(host_factory, opts):
+    bool_opt = MagicMock()
+    bool_opt.key = "Flag.Opt"
+    bool_opt.optionType = vim.option.BoolOption()
+    int_opt = MagicMock()
+    int_opt.key = "Count.Opt"
+    int_opt.optionType = vim.option.IntOption()
+    host_factory["host"].configManager.advancedOption.supportedOption = [bool_opt, int_opt]
+    host_factory["host"].configManager.advancedOption.setting = [
+        MagicMock(key="Flag.Opt", value=False),
+        MagicMock(key="Count.Opt", value=1),
+    ]
+    vim_host_config.advanced_set_many(opts, "esxi-01", {"Flag.Opt": "true", "Count.Opt": "4"})
+    changed = host_factory["host"].configManager.advancedOption.UpdateOptions.call_args.kwargs[
+        "changedValue"
+    ]
+    by_key = {c.key: c.value for c in changed}
+    assert by_key["Flag.Opt"] is True
+    assert by_key["Count.Opt"] == 4
+
+
+def test_advanced_set_many_no_coercion_without_option_type(host_factory, opts):
+    host_factory["host"].configManager.advancedOption.supportedOption = []
+    host_factory["host"].configManager.advancedOption.setting = [MagicMock(key="X.Opt", value=1)]
+    vim_host_config.advanced_set_many(opts, "esxi-01", {"X.Opt": "raw"})
+    changed = host_factory["host"].configManager.advancedOption.UpdateOptions.call_args.kwargs[
+        "changedValue"
+    ]
+    assert changed[0].value == "raw"
