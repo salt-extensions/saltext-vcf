@@ -42,19 +42,30 @@ def test_get_reraises_non_404(opts, mocked_responses, vcenter_authed):
 def test_create_posts_expected_body(opts, mocked_responses, vcenter_authed):
     mocked_responses.add(
         responses.POST,
-        "https://vc.test/api/appliance/local-accounts/bob",
-        json={},
-        status=200,
+        "https://vc.test/api/appliance/local-accounts",
+        status=204,
     )
-    c.create(opts, "bob", "s3cret", ["operator"], enabled=True, email="bob@example.test")
+    c.create(
+        opts,
+        "bob",
+        "s3cret",
+        ["operator"],
+        enabled=True,
+        email="bob@example.test",
+        full_name="Test Operator",
+    )
     req = mocked_responses.calls[-1].request
     assert req.method == "POST"
     body = json.loads(req.body)
     assert body == {
-        "password": "s3cret",
-        "roles": ["operator"],
-        "enabled": True,
-        "email": "bob@example.test",
+        "username": "bob",
+        "config": {
+            "password": "s3cret",
+            "roles": ["operator"],
+            "enabled": True,
+            "email": "bob@example.test",
+            "full_name": "Test Operator",
+        },
     }
 
 

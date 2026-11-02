@@ -1,9 +1,7 @@
-# LDAP/AD identity source for NSX Manager authentication. `**spec` is a
-# raw pass-through to the create call. Field names follow the standard
-# NSX-T shape but haven't been exercised against a live NSX Manager —
-# verify before real use.
+# NSX Policy API LDAP identity source. Replace example connection values before applying.
 provider:
   name: corp-ldap
+  resource_type: ActiveDirectoryIdentitySource
   base_dn: dc=corp,dc=example,dc=test
   domain_name: corp.example.test
   ldap_servers:

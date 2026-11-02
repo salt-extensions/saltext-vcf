@@ -1,11 +1,6 @@
-# Exec-only bridge via `module.run` — no dedicated state exists yet for
-# vcf_vcenter_sso. NOTE: not idempotent — providers_create's spec has no
-# caller-supplied id (server-generated), so there's no clean existence
-# check before creating.
+# Supply a complete federation-provider spec through protected pillar under
+# vcenter-identity-source:provider:spec. Standalone LDAP source fields are not
+# valid for this API. No sample credentials are sent by default.
+# This module.run invokes creation on every actual apply; it is not idempotent.
 provider:
-  spec:
-    name: corp-ldap
-    server_type: AD_OVER_LDAP
-    server_endpoints:
-      - ldap://ldap.corp.example.test:389
-    domain_name: corp.example.test
+  spec: {}

@@ -1,7 +1,4 @@
-# Exec-only bridge via Salt's generic `module.run` state — no dedicated
-# `vcf_*` state exists for vCenter SSO groups yet. Guarded with `unless`
-# against `groups_get_or_none` for real idempotency (unlike most module.run
-# bridges in this tree, this one IS safe to re-run).
+# Local SSO group; uses appliance SSH/dir-cli. See README.md for connection setup.
 group:
   name: vcf-automation-operators
   domain: vsphere.local
