@@ -1,7 +1,7 @@
 # Configuration
 
-All connection details live under `saltext.vcf` in pillar, one
-block per component.
+All connection details live under `saltext.vcf` in pillar, one block
+per component.
 
 ```yaml
 saltext.vcf:
@@ -35,13 +35,13 @@ saltext.vcf:
 
 ## Per-component
 
-| Block | Auth | Used by |
-|---|---|---|
-| `vcenter` | `POST /api/session` → session token | `vcf_vcenter_*`, `vcf_vsan_*`, `vcf_vim_*` |
-| `sddc_manager` | `POST /v1/tokens` → bearer JWT | `vcf_sddc_*`, `vcf_vcf_services` |
-| `nsx` | HTTP Basic | `vcf_nsx_*` (Policy + Management APIs) |
-| `vcf_ops` | `POST /suite-api/api/auth/token/acquire` → `Authorization: vRealizeOpsToken <token>` | `vcf_vcfops_*` |
-| `esxi` | `POST /api/session` (same shape as vCenter) | `vcf_esxi_*` |
+| Block          | Auth                                                                                 | Used by                                    |
+| -------------- | ------------------------------------------------------------------------------------ | ------------------------------------------ |
+| `vcenter`      | `POST /api/session` → session token                                                  | `vcf_vcenter_*`, `vcf_vsan_*`, `vcf_vim_*` |
+| `sddc_manager` | `POST /v1/tokens` → bearer JWT                                                       | `vcf_sddc_*`, `vcf_vcf_services`           |
+| `nsx`          | HTTP Basic                                                                           | `vcf_nsx_*` (Policy + Management APIs)     |
+| `vcf_ops`      | `POST /suite-api/api/auth/token/acquire` → `Authorization: vRealizeOpsToken <token>` | `vcf_vcfops_*`                             |
+| `esxi`         | `POST /api/session` (same shape as vCenter)                                          | `vcf_esxi_*`                               |
 
 Session tokens cache per `(host, username)` for the Python process
 lifetime. Call `<util>.invalidate_session(opts)` to force re-auth.

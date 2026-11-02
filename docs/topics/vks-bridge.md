@@ -7,14 +7,14 @@ operations are delegated to [`saltext-kubernetes`].
 
 ## vCenter-side modules
 
-| Module | Surface |
-|---|---|
-| `vcf_vcenter_supervisor` | Enable/disable Supervisor, namespaces, compatibility listing |
-| `vcf_vcenter_supervisor_service` | Service catalog (TKG, Velero, Harbor, …) + activate/deactivate |
-| `vcf_vcenter_supervisor_software` | K8s version state + upgrade trigger |
-| `vcf_vcenter_supervisor_compat` | Pre-enable DVS / edge / sizing probes |
-| `vcf_vcenter_vm_class` | VM class catalog |
-| `vcf_vks` | Materialize a Supervisor kubeconfig to disk |
+| Module                            | Surface                                                        |
+| --------------------------------- | -------------------------------------------------------------- |
+| `vcf_vcenter_supervisor`          | Enable/disable Supervisor, namespaces, compatibility listing   |
+| `vcf_vcenter_supervisor_service`  | Service catalog (TKG, Velero, Harbor, …) + activate/deactivate |
+| `vcf_vcenter_supervisor_software` | K8s version state + upgrade trigger                            |
+| `vcf_vcenter_supervisor_compat`   | Pre-enable DVS / edge / sizing probes                          |
+| `vcf_vcenter_vm_class`            | VM class catalog                                               |
+| `vcf_vks`                         | Materialize a Supervisor kubeconfig to disk                    |
 
 ## Kubernetes-side
 

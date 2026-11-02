@@ -12,16 +12,17 @@ VMSP (mediated), vSAN, and standalone ESXi.
   providers; pyVmomi/SOAP for alarms, perf, extensions, VM snapshots.
 - **vSphere 9 Cluster Configuration Profile** — desired-state profile
   API for vCenter-managed clusters (replaces direct ESXi REST).
-- **ESXi Lifecycle (vLCM patching)** — depot config/sync, desired-image
-  drafts, cluster apply policy, and compliance/precheck/stage/remediate
-  against vCenter's ESX Lifecycle Manager REST API.
+- **ESXi Lifecycle (vLCM patching)** — depot config/sync,
+  desired-image drafts, cluster apply policy, and
+  compliance/precheck/stage/remediate against vCenter's ESX Lifecycle
+  Manager REST API.
 - **VC Patch** — VCSA self-update via the VAMI appliance-update API:
   repository config, staging with idempotency/stage-timeout recovery,
   precheck, and install.
 - **NSX** — Policy API (segments, tier-0/tier-1, groups, security
   policies, firewall rules, services, context profiles, NAT, IP
-  blocks/pools, DHCP, edge clusters) and Management API (node,
-  cluster status, transport zones/nodes, compute collections, RBAC).
+  blocks/pools, DHCP, edge clusters) and Management API (node, cluster
+  status, transport zones/nodes, compute collections, RBAC).
 - **SDDC Manager** — hosts, clusters, workload domains, vCenters,
   bundles, network pools, releases, upgrades, certificates,
   credentials, VMSP service health via `/v1/vcf-services`.
@@ -39,7 +40,7 @@ VMSP (mediated), vSAN, and standalone ESXi.
   `esxi`, `vcf_vm` resource types for fleet-style management with
   grain-based targeting.
 
-~80 execution modules, 27 state modules, 82 REST/SOAP clients across
+\~80 execution modules, 27 state modules, 82 REST/SOAP clients across
 six VCF components.
 
 ## Quickstart
@@ -101,17 +102,17 @@ minimal on purpose — modules whose deps are missing return
 `__virtual__ = False` and are silently skipped by the Salt loader.
 Pick the extras that match the VCF surface area you actually manage:
 
-| Extra | Adds | Enables |
-|---|---|---|
-| `[esxi]` | `pyvmomi`, `pywbem` | Standalone ESXi (`vcf_esxi_*`), CIM hardware health, vSAN SOAP helpers |
-| `[vcenter]` | `pyvmomi`, `vmware-vcenter` SDK | vCenter REST + SOAP (`vcf_vcenter_*`, `vim_*` clients, alarms, perf, snapshots) |
-| `[nsx]` | — (uses `requests` only) | NSX Policy + Management API (`vcf_nsx_*`) |
-| `[sddc]` | `vmware-vcf` SDK, `paramiko` | SDDC Manager (`vcf_sddc_*`), including appliance-local SSH controls |
-| `[vcfops]` | — (uses `requests` only) | VCF Operations (`vcf_vcfops_*`) |
-| `[vcfa]` | — (uses `requests` only) | VCF Automation (`vcf_vcfa_*`) |
-| `[installer]` | `pyvmomi` | VCF Installer OVA deploy (`vcf_installer_*`) |
-| `[vks]` | `saltext.kubernetes`, `kubernetes` | VKS Supervisor kubeconfig bridge |
-| `[all]` | Every runtime extra above | Matches the pre-split default install |
+| Extra         | Adds                               | Enables                                                                         |
+| ------------- | ---------------------------------- | ------------------------------------------------------------------------------- |
+| `[esxi]`      | `pyvmomi`, `pywbem`                | Standalone ESXi (`vcf_esxi_*`), CIM hardware health, vSAN SOAP helpers          |
+| `[vcenter]`   | `pyvmomi`, `vmware-vcenter` SDK    | vCenter REST + SOAP (`vcf_vcenter_*`, `vim_*` clients, alarms, perf, snapshots) |
+| `[nsx]`       | — (uses `requests` only)           | NSX Policy + Management API (`vcf_nsx_*`)                                       |
+| `[sddc]`      | `vmware-vcf` SDK, `paramiko`       | SDDC Manager (`vcf_sddc_*`), including appliance-local SSH controls             |
+| `[vcfops]`    | — (uses `requests` only)           | VCF Operations (`vcf_vcfops_*`)                                                 |
+| `[vcfa]`      | — (uses `requests` only)           | VCF Automation (`vcf_vcfa_*`)                                                   |
+| `[installer]` | `pyvmomi`                          | VCF Installer OVA deploy (`vcf_installer_*`)                                    |
+| `[vks]`       | `saltext.kubernetes`, `kubernetes` | VKS Supervisor kubeconfig bridge                                                |
+| `[all]`       | Every runtime extra above          | Matches the pre-split default install                                           |
 
 ```bash
 pip install 'saltext.vcf[vcenter,nsx,sddc]'
@@ -131,6 +132,7 @@ xdg-open docs/_build/html/index.html
 ```
 
 Topic guides under `docs/topics/`:
+
 - [Installation](docs/topics/installation.md)
 - [Configuration](docs/topics/configuration.md)
 - [Resources Framework](docs/topics/resources-framework.md)
@@ -148,8 +150,9 @@ pre-commit install
 pytest tests/ -q
 ```
 
-Live integration tests run against a real VCF lab and live in a separate
-integration repository; they're not part of the unit test suite here.
+Live integration tests run against a real VCF lab and live in a
+separate integration repository; they're not part of the unit test
+suite here.
 
 ## License
 

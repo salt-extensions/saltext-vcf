@@ -20,6 +20,13 @@ Install saltext-vcf:
   pip.installed:
     - name: saltext-vcf
 ```
+
+Salt itself is expected to be provided by the environment. If it
+should be pip-managed as well, request the `salt` extra:
+
+```bash
+pip install 'saltext-vcf[salt]'
+```
 :::
 
 Saltexts are not distributed via the fileserver. Install on every node
@@ -34,17 +41,17 @@ return `__virtual__ = False` and are silently skipped by the loader —
 install just the components you use, or use `[all]` for the pre-split
 default.
 
-| Extra | Adds | Enables |
-|---|---|---|
-| `[esxi]` | `pyvmomi`, `pywbem` | Standalone ESXi (`vcf_esxi_*`), CIM hardware health, vSAN SOAP helpers |
-| `[vcenter]` | `pyvmomi`, `vmware-vcenter` SDK | vCenter REST + SOAP (`vcf_vcenter_*`, `vim_*` clients) |
-| `[nsx]` | — (uses `requests` only) | NSX Policy + Management API (`vcf_nsx_*`) |
-| `[sddc]` | `vmware-vcf` SDK, `paramiko` | SDDC Manager (`vcf_sddc_*`), including appliance-local SSH controls |
-| `[vcfops]` | — (uses `requests` only) | VCF Operations (`vcf_vcfops_*`) |
-| `[vcfa]` | — (uses `requests` only) | VCF Automation (`vcf_vcfa_*`) |
-| `[installer]` | `pyvmomi` | VCF Installer OVA deploy (`vcf_installer_*`) |
-| `[vks]` | `saltext.kubernetes`, `kubernetes` | VKS Supervisor kubeconfig bridge |
-| `[all]` | Every runtime extra above | Matches the pre-split default install |
+| Extra         | Adds                               | Enables                                                                |
+| ------------- | ---------------------------------- | ---------------------------------------------------------------------- |
+| `[esxi]`      | `pyvmomi`, `pywbem`                | Standalone ESXi (`vcf_esxi_*`), CIM hardware health, vSAN SOAP helpers |
+| `[vcenter]`   | `pyvmomi`, `vmware-vcenter` SDK    | vCenter REST + SOAP (`vcf_vcenter_*`, `vim_*` clients)                 |
+| `[nsx]`       | — (uses `requests` only)           | NSX Policy + Management API (`vcf_nsx_*`)                              |
+| `[sddc]`      | `vmware-vcf` SDK, `paramiko`       | SDDC Manager (`vcf_sddc_*`), including appliance-local SSH controls    |
+| `[vcfops]`    | — (uses `requests` only)           | VCF Operations (`vcf_vcfops_*`)                                        |
+| `[vcfa]`      | — (uses `requests` only)           | VCF Automation (`vcf_vcfa_*`)                                          |
+| `[installer]` | `pyvmomi`                          | VCF Installer OVA deploy (`vcf_installer_*`)                           |
+| `[vks]`       | `saltext.kubernetes`, `kubernetes` | VKS Supervisor kubeconfig bridge                                       |
+| `[all]`       | Every runtime extra above          | Matches the pre-split default install                                  |
 
 ```bash
 pip install 'saltext-vcf[vcenter,nsx]'
@@ -75,5 +82,5 @@ flat-pillar path still works.
 
 ## Next
 
-* [Configuration](configuration.md)
-* [Reference](../ref/modules/index.rst)
+- [Configuration](configuration.md)
+- [Reference](../ref/modules/index.rst)

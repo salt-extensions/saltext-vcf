@@ -51,14 +51,14 @@ salt -G 'tier:production' vcf_vm.power_off
 
 ## Operations
 
-| Function | Returns |
-|---|---|
-| `info` | Full VM record |
-| `power_state` | `POWERED_ON` / `POWERED_OFF` / `SUSPENDED` |
-| `power_on` / `power_off` / `reset` | Action result |
-| `snapshot_list` / `snapshot_current` | Snapshot tree |
-| `snapshot_create` / `snapshot_revert` / `snapshot_remove` / `snapshot_remove_all` | Lifecycle (SOAP) |
-| `tag_assign(tag_id)` / `tag_list_assigned` | vCenter tag association |
+| Function                                                                          | Returns                                    |
+| --------------------------------------------------------------------------------- | ------------------------------------------ |
+| `info`                                                                            | Full VM record                             |
+| `power_state`                                                                     | `POWERED_ON` / `POWERED_OFF` / `SUSPENDED` |
+| `power_on` / `power_off` / `reset`                                                | Action result                              |
+| `snapshot_list` / `snapshot_current`                                              | Snapshot tree                              |
+| `snapshot_create` / `snapshot_revert` / `snapshot_remove` / `snapshot_remove_all` | Lifecycle (SOAP)                           |
+| `tag_assign(tag_id)` / `tag_list_assigned`                                        | vCenter tag association                    |
 
 ## Cross-vCenter fleet
 
@@ -66,9 +66,9 @@ salt -G 'tier:production' vcf_vm.power_off
 resources:
   vcenter:
     instances:
-      mgmt-vc:    {host: mgmt-vc.example.com, ...}
-      prod-vc-1:  {host: prod-vc-1.example.com, ...}
-      prod-vc-2:  {host: prod-vc-2.example.com, ...}
+      mgmt-vc: {host: mgmt-vc.example.com, '...': null}
+      prod-vc-1: {host: prod-vc-1.example.com, '...': null}
+      prod-vc-2: {host: prod-vc-2.example.com, '...': null}
 
   vcf_vm:
     instances:

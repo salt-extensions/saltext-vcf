@@ -75,10 +75,10 @@ See :doc:`topics/configuration` for the full pillar shape.
    :maxdepth: 2
    :caption: Reference
 
-   ref/modules/index
-   ref/states/index
-   ref/resources/index
    ref/clients/index
+   ref/modules/index
+   ref/resources/index
+   ref/states/index
    ref/utils/index
    changelog
 

@@ -23,7 +23,8 @@ salt-call vcf_vcenter_vm.reset vm-100
 
 ## VM snapshots (SOAP)
 
-REST has no snapshot surface in VCF 9.x; snapshots route through pyVmomi.
+REST has no snapshot surface in VCF 9.x; snapshots route through
+pyVmomi.
 
 ```bash
 salt-call vcf_vim_vm_snapshot.list_ vm-100
@@ -79,9 +80,9 @@ salt-call vcf_vcenter_kms.create '{"provider":"my-kms","type":"NATIVE", ...}'
 
 ## ESXi Lifecycle (vLCM patching)
 
-Patch ESXi hosts in a vSphere cluster: depot → desired image → policy →
-compliance/precheck/stage/remediate. Same `vcenter` pillar connection as
-the rest of this page — no separate credentials needed.
+Patch ESXi hosts in a vSphere cluster: depot → desired image → policy
+→ compliance/precheck/stage/remediate. Same `vcenter` pillar
+connection as the rest of this page — no separate credentials needed.
 
 ```bash
 salt-call vcf_esxi_vlcm.offline_depot_create '{"location": "http://repo.example.com/depot.zip"}'
@@ -106,19 +107,19 @@ domain-c9:
   vcf_esxi_vlcm.image_configured:
     - image_spec:
         base_image:
-          version: "9.2.0.0.25504872"
+          version: 9.2.0.0.25504872
     - require:
-      - vcf_esxi_vlcm: patch-depot
+        - vcf_esxi_vlcm: patch-depot
   vcf_esxi_vlcm.remediated:
     - require:
-      - vcf_esxi_vlcm.image_configured: domain-c9
+        - vcf_esxi_vlcm.image_configured: domain-c9
 ```
 
 ## VC Patch (VCSA self-update)
 
-Patches the vCenter Server Appliance itself via its VAMI appliance-update
-API — a distinct workflow from ESXi/NSX/SDDC Manager patching. Same
-`vcenter` pillar connection as the rest of this page.
+Patches the vCenter Server Appliance itself via its VAMI
+appliance-update API — a distinct workflow from ESXi/NSX/SDDC Manager
+patching. Same `vcenter` pillar connection as the rest of this page.
 
 ```bash
 salt-call vcf_vc_patch.get_update_policy

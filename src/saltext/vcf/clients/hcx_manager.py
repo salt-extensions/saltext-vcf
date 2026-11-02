@@ -8,6 +8,7 @@ through its first-boot activation + vCenter registration flow.
 Two API surfaces used:
 
 * Data-plane / :443:
+
   * ``GET /hybridity/api/endpointInfo`` -- unauthenticated liveness probe.
     HCX 9.x has no ``/api/activate`` (runs in EVALUATION_MODE by default);
     ``/about`` requires a session token which itself requires SSO, so this
@@ -16,6 +17,7 @@ Two API surfaces used:
   * ``GET /hybridity/api/cloudConfigs`` -- registered cloud sites (list).
 
 * Admin plane / :9443, ``x-hm-authorization`` header:
+
   * ``POST /api/admin/v1/sessions`` -- login, returns bearer token in the
     ``x-hm-authorization`` response header.
   * ``POST /api/admin/global/config/vcenter`` -- register a vCenter Server.

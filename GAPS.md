@@ -1,9 +1,10 @@
 # Known gaps in saltext-vcf
 
-Comparison reference: `saltext-vcf-automation` (internal Broadcom day-0
-VCF deployer in `vcf/mops`, branch
+Comparison reference: `saltext-vcf-automation` (internal Broadcom
+day-0 VCF deployer in `vcf/mops`, branch
 `feature/VCOPS-99999-vcf-salt-automation`). The end-to-end VCF deploy
-test in `saltext-vcf-integration/live_tests/vcf_installer/test_e2e_full_deploy.py`
+test in
+`saltext-vcf-integration/live_tests/vcf_installer/test_e2e_full_deploy.py`
 already exercises the saltext-vcf modules needed for VCF bringup. The
 items below are *operating*-time gaps surfaced by the comparison —
 they don't block the deploy test but they limit how much of the
@@ -12,14 +13,14 @@ they don't block the deploy test but they limit how much of the
 ## NSX transport zone CRUD
 
 `src/saltext/vcf/clients/nsx_transport_zone.py` and
-`src/saltext/vcf/modules/vcf_nsx_transport_zone.py` only expose `list_`
-and `get`. Reference parity needs `create`, `update`, `delete`, plus a
-state module `states/vcf_nsx_transport_zone.py` with a
-`transport_zone_present(name, zone_type)` function.
+`src/saltext/vcf/modules/vcf_nsx_transport_zone.py` only expose
+`list_` and `get`. Reference parity needs `create`, `update`,
+`delete`, plus a state module `states/vcf_nsx_transport_zone.py` with
+a `transport_zone_present(name, zone_type)` function.
 
 NSX transport zones are normally created by the VCF Installer as part
-of bringup (which is why the deploy test doesn't need this), but
-day-2 zone management — adding an overlay TZ for a new workload domain,
+of bringup (which is why the deploy test doesn't need this), but day-2
+zone management — adding an overlay TZ for a new workload domain,
 removing a deprecated VLAN TZ — has no Salt-driven path today.
 
 ## SDDC workload domain CRUD via exec module
@@ -38,12 +39,12 @@ the existing client functions, plus a `states/vcf_sddc_domain.py` with
 ## ESXi config aggregator
 
 `saltext-vcf-automation`'s `vcf_esxi.get_config(fqdn)` /
-`set_config(fqdn, config)` is a single aggregator over ESXi-host config.
-saltext-vcf splits the same surface across six modules —
+`set_config(fqdn, config)` is a single aggregator over ESXi-host
+config. saltext-vcf splits the same surface across six modules —
 `vcf_esxi_advanced`, `vcf_esxi_firewall`, `vcf_esxi_host`,
 `vcf_esxi_ntp`, `vcf_esxi_service`, `vcf_esxi_syslog` — which is more
-faithful to the underlying REST APIs but more friction for callers
-who want one round trip per host.
+faithful to the underlying REST APIs but more friction for callers who
+want one round trip per host.
 
 No new client code is needed; an aggregator module/state would
 orchestrate the existing per-area clients.
@@ -51,7 +52,8 @@ orchestrate the existing per-area clients.
 ## State modules for already-supported exec ops
 
 The following exec modules ship with the operations but have no
-state-module counterpart, so they can't be driven from a `state.apply`:
+state-module counterpart, so they can't be driven from a
+`state.apply`:
 
 - `states/vcf_sddc_domain.py` — wraps the CRUD gap above.
 - `states/vcf_sddc_host.py` — `commissioned(name, host_specs)` /
