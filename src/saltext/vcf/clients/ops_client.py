@@ -145,6 +145,19 @@ class OpsClient:
                 errors.append(str(exc))
         return {"path": None, "response": None, "errors": errors}
 
+    def get_pak_status(self, pak_id=None, pak_status_path=None):
+        """GET the status of one specific pak. Raises on any request error."""
+        if pak_status_path:
+            path = self._path_from_href(pak_status_path)
+        elif pak_id:
+            path = f"/casa/upgrade/cluster/pak/{pak_id}/status"
+        else:
+            raise CommandExecutionError("pak_id or pak_status_path is required")
+        return {
+            "path": path,
+            "response": self.request("GET", path, expected_status=(200, 202)),
+        }
+
     def get_system_status(self):
         errors = []
         for path in (

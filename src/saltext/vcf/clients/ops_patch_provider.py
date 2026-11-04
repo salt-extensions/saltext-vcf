@@ -107,6 +107,9 @@ class OpsPatchProvider:
                 )
             time.sleep(poll_interval_seconds)
 
+    def get_pak_status(self, pak_id=None, pak_status_path=None):
+        return self.client.get_pak_status(pak_id=pak_id, pak_status_path=pak_status_path)
+
     def wait_for_upgrade_completion(
         self,
         timeout_seconds=14400,
@@ -115,55 +118,84 @@ class OpsPatchProvider:
         pak_status_path=None,
         max_transient_errors=None,
     ):
+        """
+        Poll the installed pak's CASA status until the install completes.
+
+        Succeeds when ``cluster_pak_install_status`` is ``COMPLETED`` and fails
+        when the cluster or any slice reports ``FAILED``. Request errors (for
+        example while Operations restarts mid-upgrade) are transient: they are
+        retried until the timeout, or until ``max_transient_errors`` consecutive
+        errors when that is set.
+        """
+        if not pak_id and not pak_status_path:
+            raise CommandExecutionError(
+                "Cannot monitor the VCF Operations upgrade without a pak id or status path. "
+                "Pass pak_id, or run install_pak first so the id is recorded."
+            )
         start = time.time()
         last = None
-        last_progress_key = None
+        last_progress = None
         transient_errors = 0
         while True:
-            status = self.get_upgrade_status(pak_id=pak_id, pak_status_path=pak_status_path)
-            last = status
-            progress = self._extract_progress(status)
-            if self._upgrade_status_unavailable(status):
+            try:
+                status = self.get_pak_status(pak_id=pak_id, pak_status_path=pak_status_path)
+            except Exception as exc:
+                last = str(exc)
                 transient_errors += 1
                 self.log.warning(
-                    "VCF Operations upgrade status temporarily unavailable (%s). Services may be restarting.",
+                    "VCF Operations upgrade status unavailable (%s). Services may be restarting: %s",
                     transient_errors,
+                    exc,
                 )
                 if max_transient_errors and transient_errors >= max_transient_errors:
                     raise CommandExecutionError(
-                        f"VCF Operations upgrade status unavailable after {max_transient_errors} attempts. Last status: {status}"
-                    )
+                        f"VCF Operations upgrade status unavailable after {max_transient_errors} attempts. Last error: {exc}"
+                    ) from exc
             else:
                 transient_errors = 0
-                progress_key = (
-                    progress.get("state"),
-                    progress.get("percent"),
-                    progress.get("step"),
+                last = status
+                progress = self._pak_install_state(status)
+                key = (
+                    progress["cluster_status"],
+                    tuple((s["state"], s["status"]) for s in progress["slices"]),
                 )
-                if progress_key != last_progress_key:
-                    self.log.info(
-                        "VCF Operations upgrade status=%s progress=%s step=%s",
-                        progress.get("state"),
-                        progress.get("percent"),
-                        progress.get("step"),
-                    )
-                    last_progress_key = progress_key
-                else:
-                    self.log.debug(
-                        "VCF Operations upgrade status=%s progress=%s step=%s",
-                        progress.get("state"),
-                        progress.get("percent"),
-                        progress.get("step"),
-                    )
-                if self._upgrade_complete(status):
-                    return {"success": True, "status": status, "progress": progress}
-                if self._upgrade_failed(status):
+                log = self.log.info if key != last_progress else self.log.debug
+                log(
+                    "VCF Operations upgrade cluster_status=%s slices=%s",
+                    progress["cluster_status"],
+                    [(s["address"], s["state"], s["status"]) for s in progress["slices"]],
+                )
+                last_progress = key
+                if progress["cluster_status"] == "FAILED" or any(
+                    s["status"] == "FAILED" for s in progress["slices"]
+                ):
                     raise CommandExecutionError(f"VCF Operations upgrade failed: {status}")
+                if progress["cluster_status"] == "COMPLETED":
+                    return {"success": True, "status": status, "progress": progress}
             if time.time() - start > timeout_seconds:
                 raise CommandExecutionError(
                     f"Timed out waiting for VCF Operations upgrade completion. Last status: {last}"
                 )
             time.sleep(poll_interval_seconds)
+
+    @staticmethod
+    def _pak_install_state(status):
+        """Extract the cluster and per-slice install status from a CASA pak status response."""
+        response = (status or {}).get("response") or {}
+        slices = []
+        for item in response.get("slices") or []:
+            document = (item or {}).get("document") or {}
+            slices.append(
+                {
+                    "address": (item or {}).get("slice_address"),
+                    "state": str(document.get("pak_state") or "").upper(),
+                    "status": str(document.get("pak_install_status") or "").upper(),
+                }
+            )
+        return {
+            "cluster_status": str(response.get("cluster_pak_install_status") or "").upper(),
+            "slices": slices,
+        }
 
     @staticmethod
     def cluster_health(status):
@@ -214,107 +246,3 @@ class OpsPatchProvider:
             "cluster_state": cluster_state,
             "node_states": node_states,
         }
-
-    @staticmethod
-    def _upgrade_status_unavailable(status):
-        text = str(status).lower()
-        return (
-            "'path': none" in text
-            and "response': none" in text
-            and (
-                "http 503" in text
-                or "service unavailable" in text
-                or "operations is not available" in text
-                or "will be redirected" in text
-            )
-        )
-
-    @staticmethod
-    def _extract_progress(status):
-        def unwrap(obj):
-            if isinstance(obj, dict):
-                if "response" in obj:
-                    return unwrap(obj["response"])
-                if "value" in obj:
-                    return unwrap(obj["value"])
-            return obj
-
-        def find_first(obj, keys):
-            if isinstance(obj, dict):
-                for key in keys:
-                    if key in obj and obj.get(key) not in (None, ""):
-                        return obj.get(key)
-                for value in obj.values():
-                    found = find_first(value, keys)
-                    if found not in (None, ""):
-                        return found
-            elif isinstance(obj, list):
-                for item in obj:
-                    found = find_first(item, keys)
-                    if found not in (None, ""):
-                        return found
-            return None
-
-        data = unwrap(status)
-        state = find_first(data, ("state", "status", "upgradeStatus", "cluster_state", "phase"))
-        percent = find_first(
-            data,
-            (
-                "percentage",
-                "percent",
-                "progress",
-                "progressPercentage",
-                "percentComplete",
-                "completedPercentage",
-                "completionPercentage",
-            ),
-        )
-        step = find_first(
-            data,
-            (
-                "currentStep",
-                "current_step",
-                "step",
-                "stage",
-                "phase",
-                "description",
-                "message",
-                "statusMessage",
-                "localized",
-            ),
-        )
-        if isinstance(percent, dict):
-            completed = percent.get("completed")
-            total = percent.get("total")
-            if completed is not None and total:
-                try:
-                    percent = int((float(completed) / float(total)) * 100)
-                except Exception:
-                    percent = str(percent)
-        return {
-            "state": state or "UNKNOWN",
-            "percent": percent if percent is not None else "UNKNOWN",
-            "step": step or "UNKNOWN",
-        }
-
-    @staticmethod
-    def _upgrade_complete(status):
-        text = str(status).lower()
-        return (
-            (
-                "complete" in text
-                or "completed" in text
-                or "success" in text
-                or "succeeded" in text
-                or "up_to_date" in text
-            )
-            and "failed" not in text
-            and "error" not in text
-        )
-
-    @staticmethod
-    def _upgrade_failed(status):
-        if OpsPatchProvider._upgrade_status_unavailable(status):
-            return False
-        text = str(status).lower()
-        return "failed" in text or "exception" in text or "fatal" in text
