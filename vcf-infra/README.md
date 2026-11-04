@@ -32,6 +32,7 @@ vcf-infra/
 ├── nsxt-segment/
 ├── nsxt-tier0/
 ├── nsxt-tier1/
+├── ops-patch/
 ├── permission/
 ├── permission-vccluster/
 ├── role/
@@ -174,6 +175,7 @@ bridges** below for which of those are actually safe to re-run.
 | `vc-dvs-nioc-vccluster/` | `vcf_vcenter_dvs_nioc_vccluster.nioc_enabled` | Yes |
 | `vc-dvs-portgroup/` | `vcf_vim_dvs.portgroup_present` + `portgroup_absent` | Yes (⚠ see note) |
 | `vc-ntp/` | `vcf_vcenter_appliances.ntp_servers` | Yes |
+| `ops-patch/` | `vcf_ops_patch.cluster_health_validated` / `pak_downloaded` / `pak_installed` / `upgrade_monitored` / `cluster_online_verified` / `reported` | **Partial — `connection.password` and `pak.source` need real values** |
 | `vc-patch/` | `vcf_vc_patch.repository_configured` / `update_prepared` / `update_installed` | **Partial — `sso_password` has no default** |
 | `vc-shell/` | `vcf_vcenter_shell.shell_access` | Yes |
 | `vccluster-evc/` | `vcf_vim_cluster_evc.mode` | Yes |
