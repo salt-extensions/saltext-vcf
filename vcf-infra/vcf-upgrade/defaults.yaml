@@ -1,0 +1,9 @@
+# An explicit target and existing SDDC Manager connection pillar are required.
+component_type: SDDC_MANAGER
+target_version: null
+target_build: null
+domain_id: null
+profile: null
+checkpoint_file: null
+sequence: null
+options: {}
