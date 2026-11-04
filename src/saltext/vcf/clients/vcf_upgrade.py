@@ -11,6 +11,8 @@ from saltext.vcf.utils.vcf_upgrade_transport import SddcManagerClient
 from saltext.vcf.utils.vcf_upgrade_transport import boolean
 from saltext.vcf.utils.vcf_upgrade_transport import poll_settings
 
+DEPOT_SYNC_PATH = "/v1/system/settings/depot/depot-sync-info"
+
 SUCCESS_UPGRADE = {"COMPLETED_WITH_SUCCESS", "SUCCESSFUL", "SUCCESS"}
 FAIL_UPGRADE = {
     "FAILED",
@@ -102,7 +104,7 @@ class VcfUpgradeProvider:
         releases = self.client.elements("/v1/releases", params={"includeOnlyCompatible": "true"})
         cur = tuple(
             int(x) if str(x).isdigit() else 0
-            for x in (str(current).split("-")[0].split(".") + ["0"] * 4)[:4]
+            for x in (str(current).split("-", maxsplit=1)[0].split(".") + ["0"] * 4)[:4]
         )
         out = set()
         for r in releases:
@@ -111,7 +113,7 @@ class VcfUpgradeProvider:
                 continue
             vt = tuple(
                 int(x) if str(x).isdigit() else 0
-                for x in (str(v).split("-")[0].split(".") + ["0"] * 4)[:4]
+                for x in (str(v).split("-", maxsplit=1)[0].split(".") + ["0"] * 4)[:4]
             )
             if vt <= cur:
                 continue
@@ -147,6 +149,38 @@ class VcfUpgradeProvider:
             result.append(f"{v} (released {d})" if d else v)
         return result
 
+    def depot_sync_info(self):
+        """Return the SDDC Manager depot sync status (``syncStatus``, ``errorMessage``)."""
+        return self.client.get(DEPOT_SYNC_PATH)
+
+    @staticmethod
+    def _sync_running(info):
+        status = str((info or {}).get("syncStatus", "")).upper()
+        return "PROGRESS" in status or status in {"RUNNING", "PENDING", "STARTED", "SYNCING"}
+
+    def sync_depot(self, timeout=3600, interval=30):
+        """Refresh the online depot, then wait until the sync ends.
+
+        A sync that is already running is waited on instead of started again.
+        Raises if the sync fails or does not finish within *timeout* seconds.
+        """
+        deadline, interval = poll_settings(timeout, interval)
+        info = self.depot_sync_info()
+        if not self._sync_running(info):
+            started = self.client.patch(DEPOT_SYNC_PATH, expected=(200, 201, 202, 204))
+            info = started if started.get("syncStatus") else self.depot_sync_info()
+        while self._sync_running(info):
+            if time.monotonic() >= deadline:
+                raise CommandExecutionError("Timed out waiting for the SDDC Manager depot sync")
+            time.sleep(min(interval, max(0, deadline - time.monotonic())))
+            info = self.depot_sync_info()
+        status = str(info.get("syncStatus", "")).upper()
+        if "FAIL" in status or "ERROR" in status:
+            raise CommandExecutionError(
+                "SDDC Manager depot sync failed: " + str(info.get("errorMessage") or status)
+            )
+        return info
+
     def find_bundle(self, component_type, target_version=None, status=None):
         component_type = _component(component_type)
         bundles = self.client.elements("/v1/bundles")
@@ -165,11 +199,12 @@ class VcfUpgradeProvider:
             )
         if status is not None:
             matches = [b for b in matches if b.get("downloadStatus") == status]
-        ids = {b.get("id") for b in matches}
-        if len(ids) > 1:
-            raise CommandExecutionError(
-                "Multiple bundle IDs match; resolve the catalog ambiguity first"
-            )
+        # The same build can be listed more than once (e.g. one downloaded and one
+        # pending, or online-depot and offline-uploaded copies). Prefer a downloaded
+        # entry; among entries in the same status, take the first one.
+        for b in matches:
+            if b.get("downloadStatus") == "SUCCESSFUL":
+                return b
         return matches[0] if matches else None
 
     def ensure_bundle_download(self, component_type, target_version=None):

@@ -24,6 +24,9 @@ from saltext.vcf.utils.vcf_upgrade_transport import CommandExecutionError
 from saltext.vcf.utils.vcf_upgrade_transport import boolean
 from saltext.vcf.utils.vcf_upgrade_transport import poll_settings
 
+# Fixed execution order for a multi-component sequence, whatever order the caller lists.
+COMPONENT_ORDER = ("SDDC_MANAGER", "NSX_T_MANAGER", "VCENTER", "HOST")
+
 
 class VcfUpgradeOrchestrator:
     def __init__(
@@ -92,14 +95,27 @@ class VcfUpgradeOrchestrator:
         checkpoint["updatedAt"] = datetime.now(timezone.utc).isoformat()
         self._save(state)
 
+    def _sync_depot(self, timeout, interval):
+        self.log.info("Syncing the SDDC Manager depot before looking for bundles")
+        return self.provider.sync_depot(timeout, interval)
+
     def bundle_downloaded(
-        self, component_type, target_version, wait=True, timeout=14400, interval=60, dry_run=False
+        self,
+        component_type,
+        target_version,
+        wait=True,
+        timeout=14400,
+        interval=60,
+        dry_run=False,
+        sync_depot=False,
     ):
         component_type = _component(component_type)
         if not target_version:
             raise CommandExecutionError("An explicit target version/build is required")
         poll_settings(timeout, interval)
         dry_run, wait = boolean(dry_run), boolean(wait)
+        if boolean(sync_depot) and not dry_run:
+            self._sync_depot(3600, interval)
         existing = self.provider.find_bundle(component_type, target_version, "SUCCESSFUL")
         if existing:
             return self.result(
@@ -176,7 +192,7 @@ class VcfUpgradeOrchestrator:
         cp = state.get("components", {}).get(key, {})
         options = spec.get("options") or {}
         phase = cp.get("phase")
-        if phase == "CREATING" or phase == "PRECHECK_SUBMITTING":
+        if phase in ("CREATING", "PRECHECK_SUBMITTING"):
             raise CommandExecutionError(
                 f"{key}: submission outcome is unknown; reconcile remote IDs in checkpoint before retrying"
             )
@@ -343,6 +359,9 @@ class VcfUpgradeOrchestrator:
                 options.get(k) for k in ("cluster_id", "personality_id")
             ):
                 raise CommandExecutionError("HOST requires cluster_id and personality_id")
+        # Stable sort: components run in COMPONENT_ORDER; entries of the same type
+        # (e.g. several HOST clusters) keep the order they were given in.
+        expanded.sort(key=lambda spec: COMPONENT_ORDER.index(spec["type"]))
         return expanded
 
     def sequence(
@@ -354,9 +373,11 @@ class VcfUpgradeOrchestrator:
         dry_run=False,
         reset_checkpoint=False,
         create_only=False,
+        sync_depot=False,
     ):
         dry_run, reset_checkpoint = boolean(dry_run), boolean(reset_checkpoint)
         life = {
+            "depot_sync_timeout_seconds": 3600,
             "bundle_timeout_seconds": 14400,
             "precheck_timeout_seconds": 7200,
             "upgrade_timeout_seconds": 43200,
@@ -373,6 +394,9 @@ class VcfUpgradeOrchestrator:
         expanded = self._expand(components, target_version, domain_id)
         if not expanded:
             return self.result(False, "All sequence components are disabled", sequence=[])
+        if boolean(sync_depot) and not dry_run:
+            # Refresh the catalog first so newly published bundles can be found below.
+            self._sync_depot(life["depot_sync_timeout_seconds"], life["poll_interval_seconds"])
         for spec in expanded:
             spec["domain_id"] = spec["domain_id"] or self.provider.management_domain_id()
             bundle = self.provider.find_bundle(spec["type"], spec["target_version"])

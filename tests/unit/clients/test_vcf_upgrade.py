@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 import requests
+
 from saltext.vcf.clients import vcf_upgrade as api
 from saltext.vcf.modules import vcf_upgrade as execution
 from saltext.vcf.states import vcf_upgrade as states
@@ -154,10 +155,25 @@ def test_duplicate_identical_bundle_rows_are_safe(provider):
     assert provider.find_bundle("SDDC_MANAGER", "9.1.0")["id"] == "bundle-1"
 
 
-def test_different_ids_with_same_version_are_ambiguous(provider):
+def test_different_ids_same_status_selects_the_first(provider):
     provider.client.elements.return_value = [bundle(), bundle(bid="bundle-2")]
-    with pytest.raises(ERROR, match="Multiple bundle IDs"):
-        provider.find_bundle("SDDC_MANAGER", "9.1.0")
+    assert provider.find_bundle("SDDC_MANAGER", "9.1.0")["id"] == "bundle-1"
+
+
+def test_duplicate_build_prefers_the_downloaded_entry(provider):
+    provider.client.elements.return_value = [
+        bundle(status="PENDING", bid="bundle-pending"),
+        bundle(status="SUCCESSFUL", bid="bundle-done"),
+    ]
+    assert provider.find_bundle("SDDC_MANAGER", "9.1.0")["id"] == "bundle-done"
+
+
+def test_duplicate_build_with_no_downloaded_entry_selects_the_first(provider):
+    provider.client.elements.return_value = [
+        bundle(status="PENDING", bid="bundle-1"),
+        bundle(status="PENDING", bid="bundle-2"),
+    ]
+    assert provider.find_bundle("SDDC_MANAGER", "9.1.0")["id"] == "bundle-1"
 
 
 @pytest.mark.parametrize("status", ["SUCCESSFUL", "IN_PROGRESS", "SCHEDULED"])
@@ -400,7 +416,7 @@ def test_checkpoint_rejects_changed_target_and_corruption(workflow):
     orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
     with pytest.raises(ERROR, match="different"):
         orch.full_upgrade("SDDC_MANAGER", "9.2.0-999")
-    with open(orch.checkpoint_file, "w") as stream:
+    with open(orch.checkpoint_file, "w", encoding="utf-8") as stream:
         stream.write("{")
     with pytest.raises(ERROR, match="Cannot read checkpoint"):
         orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
@@ -417,6 +433,37 @@ def test_create_only_draft_then_resume_full_workflow(workflow):
     obj.create_upgrade.assert_called_once()
     obj.start_precheck.assert_called_once()
     obj.execute_upgrade.assert_called_once()
+
+
+def test_sequence_runs_in_fixed_component_order(workflow):
+    orch, _obj = workflow
+    host = {"type": "HOST", "options": {"cluster_id": "c1", "personality_id": "p1"}}
+    expanded = orch._expand([host, "VCENTER", "NSX_T_MANAGER", "SDDC_MANAGER"], "9.1.0-123", None)
+    assert [spec["type"] for spec in expanded] == [
+        "SDDC_MANAGER",
+        "NSX_T_MANAGER",
+        "VCENTER",
+        "HOST",
+    ]
+
+
+def test_same_type_entries_keep_their_given_order(workflow):
+    orch, _obj = workflow
+    expanded = orch._expand(
+        [
+            {
+                "type": "HOST",
+                "clusters": [
+                    {"cluster_id": "c2", "personality_id": "p"},
+                    {"cluster_id": "c1", "personality_id": "p"},
+                ],
+            },
+            "SDDC_MANAGER",
+        ],
+        "9.1.0-123",
+        None,
+    )
+    assert [spec["name"] for spec in expanded] == ["SDDC_MANAGER", "HOST:c2", "HOST:c1"]
 
 
 def test_failed_precheck_never_executes_or_recreates(workflow):
@@ -439,7 +486,7 @@ def test_all_sequence_specs_validated_before_creation(workflow):
 
 
 def test_host_expansion_discards_display_name_and_keeps_cluster_identity(workflow):
-    orch, obj = workflow
+    orch, _obj = workflow
     result = orch._expand(
         [
             {
@@ -503,7 +550,7 @@ class SimulatedSddc:
         self.calls = []
         self.components = ["SDDC_MANAGER", "NSX_T_MANAGER", "VCENTER", "HOST"]
 
-    def request(self, method, url, **kwargs):
+    def request(self, method, url, **kwargs):  # pylint: disable=too-many-return-statements
         from urllib.parse import urlsplit
 
         path = urlsplit(url).path
@@ -803,3 +850,86 @@ def test_completed_dry_run_is_unchanged_and_does_not_write(workflow):
     assert not orch.full_upgrade("SDDC_MANAGER", "9.1.0-123", dry_run=True)["changed"]
     assert Path(orch.checkpoint_file).read_bytes() == before
     obj.create_upgrade.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# depot sync
+# ---------------------------------------------------------------------------
+
+
+def test_sync_depot_triggers_then_waits_for_completion(provider, monkeypatch):
+    monkeypatch.setattr(api.time, "sleep", lambda seconds: None)
+    provider.client.get.side_effect = [
+        {"syncStatus": "SYNC_COMPLETED"},  # idle before
+        {"syncStatus": "SYNC_IN_PROGRESS"},
+        {"syncStatus": "SYNC_COMPLETED", "lastSyncCompletionTimestamp": "t"},
+    ]
+    provider.client.patch.return_value = {"syncStatus": "SYNC_IN_PROGRESS"}
+    info = provider.sync_depot(timeout=60, interval=1)
+    assert info["syncStatus"] == "SYNC_COMPLETED"
+    provider.client.patch.assert_called_once()
+    assert provider.client.patch.call_args.args[0] == api.DEPOT_SYNC_PATH
+
+
+def test_sync_depot_waits_on_a_running_sync_without_starting_another(provider, monkeypatch):
+    monkeypatch.setattr(api.time, "sleep", lambda seconds: None)
+    provider.client.get.side_effect = [
+        {"syncStatus": "SYNC_IN_PROGRESS"},
+        {"syncStatus": "SYNC_COMPLETED"},
+    ]
+    provider.sync_depot(timeout=60, interval=1)
+    provider.client.patch.assert_not_called()
+
+
+def test_sync_depot_failure_reports_the_error_message(provider, monkeypatch):
+    monkeypatch.setattr(api.time, "sleep", lambda seconds: None)
+    provider.client.patch.return_value = {"syncStatus": "SYNC_IN_PROGRESS"}
+    provider.client.get.side_effect = [
+        {"syncStatus": "SYNC_FAILED", "errorMessage": "old failure"},
+        {"syncStatus": "SYNC_FAILED", "errorMessage": "Vmware compatibility data download failed."},
+    ]
+    with pytest.raises(ERROR, match="compatibility data download failed"):
+        provider.sync_depot(timeout=60, interval=1)
+
+
+def test_sync_depot_times_out(provider, monkeypatch):
+    clock = iter([0, 0, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+    monkeypatch.setattr(api.time, "monotonic", lambda: next(clock))
+    monkeypatch.setattr(api.time, "sleep", lambda seconds: None)
+    provider.client.get.return_value = {"syncStatus": "SYNC_IN_PROGRESS"}
+    with pytest.raises(ERROR, match="Timed out"):
+        provider.sync_depot(timeout=5, interval=1)
+
+
+def test_sequence_syncs_depot_before_the_bundle_lookup(workflow):
+    orch, obj = workflow
+    order = Mock()
+    obj.sync_depot = order.sync
+    obj.find_bundle = order.find
+    order.find.return_value = bundle()
+    orch.sequence(["SDDC_MANAGER"], "9.1.0-123", sync_depot=True)
+    names = [call[0] for call in order.mock_calls]
+    assert names.index("sync") < names.index("find")
+
+
+def test_sequence_does_not_sync_in_dry_run_or_when_disabled(workflow):
+    orch, obj = workflow
+    obj.sync_depot = Mock()
+    orch.sequence(["SDDC_MANAGER"], "9.1.0-123", dry_run=True, sync_depot=True)
+    orch.sequence(["SDDC_MANAGER"], "9.1.0-123", sync_depot=False)
+    obj.sync_depot.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "depot, expected",
+    [
+        ({"type": "online"}, True),
+        ({"type": "online", "sync": False}, False),
+        ({"type": "online", "sync": "false"}, False),
+        ({"type": "offline"}, False),
+        ({}, False),
+        (None, False),
+    ],
+)
+def test_depot_sync_enabled_only_for_online_depots(depot, expected):
+    assert execution._sync_depot_enabled({"depot": depot}) is expected
