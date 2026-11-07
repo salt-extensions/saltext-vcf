@@ -165,3 +165,33 @@ def test_install_pak_dry_run_records_nothing(monkeypatch, tmp_path):
     monkeypatch.setattr(mod, "_orch", lambda **kw: Installer())
     mod.install_pak(pak_file="/f.pak", dry_run=True)
     assert not list(tmp_path.iterdir())
+
+
+def test_install_pak_passes_pak_id_from_pillar(orch, pillar):
+    pillar({"pak": {"destination": "/d/y.pak", "id": "from-pillar"}})
+    mod.install_pak()
+    kw = orch.calls[0][1]
+    assert kw["pak_id"] == "from-pillar"
+    assert kw["force_content_update"] is True
+
+
+def test_install_pak_explicit_pak_id_wins(orch, pillar):
+    pillar({"pak": {"destination": "/d/y.pak", "id": "from-pillar"}})
+    mod.install_pak(pak_id="explicit", force_content_update="false")
+    kw = orch.calls[0][1]
+    assert kw["pak_id"] == "explicit"
+    assert kw["force_content_update"] is False
+
+
+def test_install_pak_reuses_saved_id_only_for_the_same_pak_file(orch, monkeypatch, tmp_path):
+    monkeypatch.setattr(mod, "__opts__", {"cachedir": str(tmp_path)}, raising=False)
+    pak = tmp_path / "x.pak"
+    pak.write_bytes(b"one")
+
+    mod._save_last_install({"data": {"pak_id": "old-pak"}}, str(pak))
+    mod.install_pak(pak_file=str(pak))
+    assert orch.calls[0][1]["pak_id"] == "old-pak"
+
+    pak.write_bytes(b"a rebuilt pak with different content")
+    mod.install_pak(pak_file=str(pak))
+    assert orch.calls[1][1]["pak_id"] is None

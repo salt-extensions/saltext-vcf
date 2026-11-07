@@ -77,25 +77,45 @@ def _last_install_file():
     return os.path.join(cachedir, "vcf_ops_patch_last_install.json")
 
 
-def _save_last_install(result):
+def _file_fingerprint(path):
+    """Identify a pak file by path, size and mtime, so a rebuilt pak is never mistaken for an old one."""
+    try:
+        stat = os.stat(path)
+    except (OSError, TypeError):
+        return None
+    return {"path": str(path), "size": stat.st_size, "mtime": int(stat.st_mtime)}
+
+
+def _save_last_install(result, pak_file=None):
     data = (result or {}).get("data") or {}
     if not data.get("pak_id") and not data.get("pak_status_path"):
         return
     try:
         with open(_last_install_file(), "w", encoding="utf-8") as fh:
             json.dump(
-                {"pak_id": data.get("pak_id"), "pak_status_path": data.get("pak_status_path")}, fh
+                {
+                    "pak_id": data.get("pak_id"),
+                    "pak_status_path": data.get("pak_status_path"),
+                    "pak_file": _file_fingerprint(pak_file or data.get("pak_file")),
+                },
+                fh,
             )
     except OSError as exc:
         log.warning("Unable to record last VCF Operations pak install: %s", exc)
 
 
-def _load_last_install():
+def _load_last_install(pak_file=None):
+    """Load the recorded install; with ``pak_file`` only if that exact file was installed."""
     try:
         with open(_last_install_file(), encoding="utf-8") as fh:
-            return json.load(fh) or {}
+            last = json.load(fh) or {}
     except (OSError, ValueError):
         return {}
+    if pak_file is not None:
+        fingerprint = _file_fingerprint(pak_file)
+        if not fingerprint or last.get("pak_file") != fingerprint:
+            return {}
+    return last
 
 
 def get_cluster_status(**kwargs):
@@ -165,12 +185,31 @@ def download_pak(
 
 
 def install_pak(
-    pak_file=None, pak_handling_advice=None, install_timeout=None, dry_run=False, **kwargs
+    pak_file=None,
+    pak_handling_advice=None,
+    install_timeout=None,
+    dry_run=False,
+    pak_id=None,
+    force_content_update=None,
+    **kwargs,
 ):
     pak = _pak_cfg()
     life = _life_cfg()
+    pak_file = pak_file or pak.get("destination") or _pak_source()
+    pak_id = (
+        pak_id or pak.get("id") or pak.get("pak_id") or _load_last_install(pak_file).get("pak_id")
+    )
     result = _orch(**kwargs).pak_installed(
-        pak_file=pak_file or pak.get("destination") or _pak_source(),
+        pak_file=pak_file,
+        pak_id=pak_id,
+        force_content_update=as_bool(
+            (
+                pak.get("force_content_update", True)
+                if force_content_update is None
+                else force_content_update
+            ),
+            True,
+        ),
         pak_handling_advice=pak_handling_advice
         or pak.get("handling_advice", _cfg().get("pak_handling_advice", "CLOBBER")),
         install_timeout=as_int(
@@ -184,7 +223,7 @@ def install_pak(
         dry_run=as_bool(dry_run, False),
     )
     if not as_bool(dry_run, False):
-        _save_last_install(result)
+        _save_last_install(result, pak_file)
     return result
 
 

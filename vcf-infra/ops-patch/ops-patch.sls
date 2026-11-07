@@ -41,6 +41,9 @@ ops-pak-installed:
     - pak_file: {{ cfg.pak.destination }}
     - pak_handling_advice: {{ cfg.pak.handling_advice }}
     - install_timeout: {{ cfg.lifecycle.install_timeout_seconds }}
+    {% if cfg.pak.get('id') %}
+    - pak_id: {{ cfg.pak.id }}
+    {% endif %}
     - require:
       - vcf_ops_patch: ops-pak-downloaded
 

@@ -19,6 +19,12 @@ BAD_CLUSTER_STATES = {"FAILED", "ERROR", "OFFLINE", "UNREACHABLE", "UNKNOWN", "D
 BAD_NODE_STATES = {"FAILED", "ERROR", "OFFLINE", "UNREACHABLE", "UNKNOWN"}
 
 
+# pak_state values seen before the install has been triggered. Later values (VALIDATED,
+# CERT_RENEWED, ...) mean the install is already underway even though the cluster-level
+# status stays CANDIDATE until much later.
+PRE_INSTALL_PAK_STATES = ("", "NOT_DISTRIBUTED", "DEPLOYED_NEW_UPGRADE_CONTENT")
+
+
 class OpsPatchProvider:
     def __init__(
         self,
@@ -110,6 +116,99 @@ class OpsPatchProvider:
     def get_pak_status(self, pak_id=None, pak_status_path=None):
         return self.client.get_pak_status(pak_id=pak_id, pak_status_path=pak_status_path)
 
+    def get_pak_install_status(self, pak_id):
+        """Return the cluster install status of a pak (for example CANDIDATE), or None if Operations has no such pak."""
+        try:
+            status = self.get_pak_status(pak_id=pak_id)
+        except Exception as exc:
+            self.log.info("No status for VCF Operations pak %s: %s", pak_id, exc)
+            return None
+        return self._pak_install_state(status)["cluster_status"] or None
+
+    @staticmethod
+    def _snapshot_underway(snapshot):
+        if not snapshot:
+            return False
+        cluster, slices = snapshot
+        return (
+            cluster not in ("CANDIDATE", "INITIAL", "")
+            or any(item[2] for item in slices)
+            or any(item[0] not in PRE_INSTALL_PAK_STATES for item in slices)
+        )
+
+    def pak_install_underway(self, pak_id):
+        """True if Operations has already started installing the pak."""
+        return self._snapshot_underway(self.get_pak_snapshot(pak_id))
+
+    def pak_content_missing(self, pak_id):
+        """True if Operations lists the pak but has not distributed its content (a stale record)."""
+        try:
+            status = self.get_pak_status(pak_id=pak_id)
+        except Exception:
+            return False
+        return any(
+            s["state"] == "NOT_DISTRIBUTED" for s in self._pak_install_state(status)["slices"]
+        )
+
+    def get_pak_snapshot(self, pak_id):
+        """Cluster status plus each slice's pak_state/status/action, or None if unreadable."""
+        try:
+            status = self.get_pak_status(pak_id=pak_id)
+        except Exception:
+            return None
+        state = self._pak_install_state(status)
+        return (
+            state["cluster_status"],
+            tuple((s["state"], s["status"], s["action"]) for s in state["slices"]),
+        )
+
+    def confirm_pak_install_started(
+        self, pak_id, baseline=None, timeout_seconds=600, poll_interval_seconds=10
+    ):
+        """
+        After an install request that ended in a gateway error, check whether Operations accepted it.
+
+        Started means the install is underway (see ``pak_install_underway``) or a
+        slice's pak_state/status differs from ``baseline`` (taken before the request).
+        Returns the snapshot when started. If Operations is unreachable when the
+        timeout ends (it restarts its services during an upgrade), returns
+        ``("UNKNOWN", ())``. Returns None if it was reachable and nothing changed.
+        """
+        start = time.time()
+        snapshot = None
+        while True:
+            snapshot = self.get_pak_snapshot(pak_id)
+            if snapshot:
+                cluster, slices = snapshot
+                if cluster == "FAILED" or any(item[1] == "FAILED" for item in slices):
+                    raise CommandExecutionError(f"VCF Operations pak {pak_id} install failed")
+                if self._snapshot_underway(snapshot) or (
+                    baseline is not None and snapshot != baseline
+                ):
+                    return snapshot
+            if time.time() - start > timeout_seconds:
+                return None if snapshot else ("UNKNOWN", ())
+            time.sleep(poll_interval_seconds)
+
+    def trigger_pak_install(self, pak_id, force_content_update=True):
+        return self.client.install_pak(pak_id, force_content_update=force_content_update)
+
+    def wait_for_pak_candidate(self, pak_id, timeout_seconds=600, poll_interval_seconds=10):
+        """Wait until an uploaded pak reaches CANDIDATE, i.e. it can be installed."""
+        start = time.time()
+        last = None
+        while True:
+            last = self.get_pak_install_status(pak_id)
+            if last == "CANDIDATE":
+                return last
+            if last == "FAILED":
+                raise CommandExecutionError(f"VCF Operations pak {pak_id} failed after upload")
+            if time.time() - start > timeout_seconds:
+                raise CommandExecutionError(
+                    f"Timed out waiting for VCF Operations pak {pak_id} to become CANDIDATE. Last status: {last}"
+                )
+            time.sleep(poll_interval_seconds)
+
     def wait_for_upgrade_completion(
         self,
         timeout_seconds=14400,
@@ -190,6 +289,7 @@ class OpsPatchProvider:
                     "address": (item or {}).get("slice_address"),
                     "state": str(document.get("pak_state") or "").upper(),
                     "status": str(document.get("pak_install_status") or "").upper(),
+                    "action": document.get("current_action"),
                 }
             )
         return {

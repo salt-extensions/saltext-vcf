@@ -20,6 +20,19 @@ except Exception:
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
+class OpsApiError(CommandExecutionError):
+    """An Operations API failure; ``transient`` means the request may still have reached CASA."""
+
+    def __init__(self, message, status_code=None, transient=False):
+        super().__init__(message)
+        self.status_code = status_code
+        self.transient = transient
+
+
+# Gateway answers that mean the request may still have reached CASA (for example while it restarts).
+TRANSIENT_HTTP_CODES = (502, 503, 504)
+
+
 class OpsClient:
     """
     CASA/Admin API client for VCF Operations lifecycle.
@@ -83,10 +96,12 @@ class OpsClient:
             detail = response.json()
         except Exception:
             detail = response.text
-        return CommandExecutionError(
+        return OpsApiError(
             "VCF Operations API {} {} failed. HTTP {}. Response: {}".format(
                 method, path, response.status_code, detail
-            )
+            ),
+            status_code=response.status_code,
+            transient=response.status_code in TRANSIENT_HTTP_CODES,
         )
 
     @staticmethod
@@ -157,6 +172,22 @@ class OpsClient:
             "path": path,
             "response": self.request("GET", path, expected_status=(200, 202)),
         }
+
+    def install_pak(self, pak_id, force_content_update=True):
+        """Trigger the install of a pak that is already uploaded (state CANDIDATE)."""
+        if not pak_id:
+            raise CommandExecutionError("pak_id is required to install an uploaded pak")
+        try:
+            return self.request(
+                "POST",
+                f"/casa/upgrade/cluster/pak/{pak_id}/operation/install",
+                expected_status=(200, 201, 202),
+                json={"force_content_update": bool(force_content_update)},
+            )
+        except requests.RequestException as exc:
+            raise OpsApiError(
+                f"VCF Operations pak install request failed: {exc}", transient=True
+            ) from exc
 
     def get_system_status(self):
         errors = []

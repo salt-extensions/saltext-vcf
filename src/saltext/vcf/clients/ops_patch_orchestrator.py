@@ -96,7 +96,19 @@ class OpsPatchOrchestrator:
         pak_handling_advice="CLOBBER",
         install_timeout=7200,
         dry_run=False,
+        pak_id=None,
+        force_content_update=True,
     ):
+        """
+        Upload the pak (unless Operations already has it) and start its install.
+
+        With a known ``pak_id`` the pak's status on Operations decides what is
+        needed: ``CANDIDATE`` skips the upload and only starts the install, an
+        install that is already running or ``COMPLETED`` is left alone, and
+        anything else uploads the pak again. A ``CANDIDATE`` pak whose pak_state
+        shows the install already underway is not started a second time. A ``CANDIDATE`` pak whose content
+        was never distributed (``NOT_DISTRIBUTED``, a stale record) is uploaded again too.
+        """
         if not pak_file:
             raise CommandExecutionError("pak_file is required for install")
 
@@ -104,9 +116,31 @@ class OpsPatchOrchestrator:
             "pak_file": pak_file,
             "pak_handling_advice": pak_handling_advice,
             "install_response": None,
-            "pak_id": None,
+            "pak_id": pak_id,
             "pak_status_path": None,
+            "uploaded": False,
+            "install_triggered": False,
         }
+
+        existing = self.provider.get_pak_install_status(pak_id) if pak_id and not dry_run else None
+        if existing == "CANDIDATE" and self.provider.pak_content_missing(pak_id):
+            existing = None
+        elif existing == "CANDIDATE" and self.provider.pak_install_underway(pak_id):
+            data["pak_status_path"] = f"/casa/upgrade/cluster/pak/{pak_id}/status"
+            return self._result(
+                changed=False,
+                success=True,
+                comment=f"VCF Operations pak {pak_id} install is already underway; not starting it again",
+                data=data,
+            )
+        if existing and existing != "CANDIDATE" and existing != "FAILED":
+            data["pak_status_path"] = f"/casa/upgrade/cluster/pak/{pak_id}/status"
+            return self._result(
+                changed=False,
+                success=True,
+                comment=f"VCF Operations pak {pak_id} is already {existing}; nothing to install",
+                data=data,
+            )
 
         if dry_run:
             return self._result(
@@ -116,15 +150,46 @@ class OpsPatchOrchestrator:
                 data=data,
             )
 
-        install_response = self.provider.upload_and_install_pak(
-            pak_file=pak_file,
-            pak_handling_advice=pak_handling_advice,
-            timeout=install_timeout,
-        )
-        data["install_response"] = install_response
-        if isinstance(install_response, dict):
-            data["pak_id"] = install_response.get("pak_id")
-            data["pak_status_path"] = install_response.get("pak_status_path")
+        if existing != "CANDIDATE":
+            install_response = self.provider.upload_and_install_pak(
+                pak_file=pak_file,
+                pak_handling_advice=pak_handling_advice,
+                timeout=install_timeout,
+            )
+            data["install_response"] = install_response
+            data["uploaded"] = True
+            if isinstance(install_response, dict):
+                data["pak_id"] = install_response.get("pak_id") or data["pak_id"]
+                data["pak_status_path"] = install_response.get("pak_status_path")
+        if not data["pak_id"]:
+            raise CommandExecutionError(
+                "VCF Operations did not return a pak id after upload; cannot start the install"
+            )
+        if not data["pak_status_path"]:
+            data["pak_status_path"] = f"/casa/upgrade/cluster/pak/{data['pak_id']}/status"
+
+        self.provider.wait_for_pak_candidate(data["pak_id"])
+        baseline = self.provider.get_pak_snapshot(data["pak_id"])
+        try:
+            self.provider.trigger_pak_install(
+                data["pak_id"], force_content_update=force_content_update
+            )
+        except CommandExecutionError as exc:
+            if not getattr(exc, "transient", False):
+                raise
+            self.log.warning(
+                "VCF Operations install request ended with a gateway error (%s); checking whether it was accepted",
+                exc,
+            )
+            started = self.provider.confirm_pak_install_started(data["pak_id"], baseline=baseline)
+            if not started:
+                raise
+            data["install_note"] = "install request returned a gateway error; " + (
+                "Operations was unreachable afterwards (it restarts during an upgrade), so the install is unconfirmed"
+                if started[0] == "UNKNOWN"
+                else f"the pak is now {started[0]} {list(started[1])}"
+            )
+        data["install_triggered"] = True
 
         return self._result(
             changed=True,
