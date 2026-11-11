@@ -1,0 +1,26 @@
+connection:
+  host: ops.example.com
+  username: admin
+  password: ""
+  protocol: https
+  port: 443
+  verify_ssl: false
+
+pak:
+  source: http://repo.example.com/ops/vcf-operations-upgrade.pak
+  destination: /tmp/vcf-operations-upgrade.pak
+  handling_advice: CLOBBER
+  verify_download_ssl: false
+  calculate_checksum: false
+  checksum: null
+  id: null
+
+lifecycle:
+  download_dir: /tmp
+  download_timeout_seconds: 1800
+  install_timeout_seconds: 7200
+  upgrade_timeout_seconds: 14400
+  cluster_online_timeout_seconds: 7200
+  poll_interval_seconds: 60
+  max_transient_errors: 0
+  validate_health: true

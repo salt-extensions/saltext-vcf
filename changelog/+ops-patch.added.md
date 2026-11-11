@@ -1,0 +1,1 @@
+Add `vcf_ops_patch` execution and state modules, with `ops_client`, `ops_patch_provider` and `ops_patch_orchestrator` clients, for patching VCF Operations with a `.pak` upgrade: cluster health validation, pak download and install, upgrade and cluster-online monitoring, and reporting. Includes the `vcf-infra/ops-patch` formula.
