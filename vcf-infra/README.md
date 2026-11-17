@@ -22,6 +22,7 @@ vcf-infra/
 ├── esxi-config/
 ├── esxi-kernel-module/
 ├── esxi-shell-access/
+├── fleet-lcm-upgrade/
 ├── guest-vm-vccluster/
 ├── installer-depot/
 ├── log-forwarder/
@@ -175,6 +176,7 @@ bridges** below for which of those are actually safe to re-run.
 | `vc-dvs-nioc-vccluster/` | `vcf_vcenter_dvs_nioc_vccluster.nioc_enabled` | Yes |
 | `vc-dvs-portgroup/` | `vcf_vim_dvs.portgroup_present` + `portgroup_absent` | Yes (⚠ see note) |
 | `vc-ntp/` | `vcf_vcenter_appliances.ntp_servers` | Yes |
+| `fleet-lcm-upgrade/` | `vcf_fleet_lcm.ready_validated` / `plan_configured` / `upgrade_applied` / `reported` | **Partial — `connection.host` (Fleet Lifecycle FQDN), `connection.ops_host` and `connection.password` need real values** |
 | `ops-patch/` | `vcf_ops_patch.cluster_health_validated` / `pak_downloaded` / `pak_installed` / `upgrade_monitored` / `cluster_online_verified` / `reported` | **Partial — `connection.password` and `pak.source` need real values** |
 | `vc-patch/` | `vcf_vc_patch.repository_configured` / `update_prepared` / `update_installed` | **Partial — `sso_password` has no default** |
 | `vc-shell/` | `vcf_vcenter_shell.shell_access` | Yes |
