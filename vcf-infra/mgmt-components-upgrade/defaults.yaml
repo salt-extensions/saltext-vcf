@@ -1,0 +1,22 @@
+connection:
+  # Fleet Lifecycle FQDN: VCF Operations > Build > Lifecycle > VCF Management > Upgrade
+  host: flt-fc01.example.local
+  # VCF Operations FQDN; it brokers the token exchange for Fleet Lifecycle
+  ops_host: ops.example.com
+  # VCF Operations credentials
+  username: admin
+  password: ""
+  verify_ssl: false
+
+upgrade:
+  # null selects the first available target version
+  target_version: null
+  # null picks the newest READY upgrade plan; set an id to pin one when several exist
+  plan_id: null
+  # Components are upgraded sequentially in this order. null uses the built-in order:
+  # VCF_SDDC_LCM, OPS, VSP, VCFA, OPS_NETWORKS, SALT_RAAS, SALT, OPS_DATA_PLATFORM (VODAP), OPS_LOGS,
+  # TELEMETRY_ACCEPTOR, VIDB, VCF_FLEET_DEPOT. Set a list of componentType names to override.
+  order: null
+  plan_timeout_seconds: 3600
+  apply_timeout_seconds: 7200
+  poll_interval_seconds: 15

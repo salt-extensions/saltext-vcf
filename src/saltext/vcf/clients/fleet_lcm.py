@@ -32,6 +32,7 @@ except Exception:
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 RUNNING_STATES = ("IN_PROGRESS", "PENDING", "RUNNING")
+MAX_TASK_NOT_FOUND = 5
 SUCCESS_STATES = ("COMPLETED", "SUCCEEDED")
 
 
@@ -196,23 +197,57 @@ class FleetLcmClient:
             raise FleetLcmError(f"Fleet Lifecycle returned no task id for POST {path}: {response}")
         return task_id
 
+    @staticmethod
+    def _timeout_message(task_id, status, timeout_seconds, last_response):
+        """The wait gave up, not the appliance: say what the task is and what to do about it."""
+        detail = []
+        if isinstance(last_response, dict):
+            name = (last_response.get("description") or {}).get("args", {}).get("componentName")
+            for label, value in (
+                ("component", name or last_response.get("resourceType")),
+                ("task", last_response.get("name")),
+                ("last update", last_response.get("updateTime")),
+            ):
+                if value:
+                    detail.append(f"{label}: {value}")
+        return (
+            f"Task {task_id} still {status} after {timeout_seconds}s"
+            + (f" ({'; '.join(detail)})" if detail else "")
+            + ". The wait timed out; the task may still be running on the appliance, so check it "
+            "(VCF Operations > Build > Lifecycle > VCF Management > Upgrade) before starting "
+            "another run, and raise the apply timeout if it is just slow."
+        )
+
     def wait_for_task(
         self, task_id, timeout_seconds=7200, poll_interval_seconds=15, sleep=time.sleep
     ):
         """Poll until the task leaves a running state; connection errors are retried (the appliance restarts)."""
         deadline = time.monotonic() + timeout_seconds
         status, response = "IN_PROGRESS", {}
+        not_found = 0
         while status in RUNNING_STATES:
             if time.monotonic() >= deadline:
-                raise FleetLcmError(f"Task {task_id} still {status} after {timeout_seconds}s")
+                raise FleetLcmError(
+                    self._timeout_message(task_id, status, timeout_seconds, response)
+                )
             sleep(poll_interval_seconds)
             try:
                 response = self.request("GET", f"/fleet-lcm/v1/tasks/{task_id}") or {}
                 status = response.get("status") or "UNKNOWN"
             except FleetLcmError as exc:
+                # A task id that keeps returning 404 does not exist (for example a plan id mistaken
+                # for a task id); retrying for the whole timeout would only hide that.
+                not_found = not_found + 1 if exc.status_code == 404 else 0
+                if not_found >= MAX_TASK_NOT_FOUND:
+                    raise FleetLcmError(
+                        f"Task {task_id} not found (HTTP 404 {not_found} times in a row); "
+                        "the id is not a task. Not waiting any longer.",
+                        status_code=404,
+                    )
                 self.log.info("Fleet Lifecycle not reachable yet, retrying: %s", exc)
                 status = "RUNNING"
                 continue
+            not_found = 0
             self.log.info("Fleet Lifecycle task %s status: %s", task_id, status)
         if status not in SUCCESS_STATES:
             raise FleetLcmError(f"Task {task_id} ended with status {status}: {response}")

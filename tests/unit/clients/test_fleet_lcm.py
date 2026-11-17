@@ -74,6 +74,23 @@ def test_wait_times_out(client, monkeypatch):
         client.wait_for_task("t1", timeout_seconds=0, sleep=lambda _s: None)
 
 
+def test_timeout_message_names_the_component_and_warns_the_task_may_still_run(client, monkeypatch):
+    task = {
+        "status": "RUNNING",
+        "name": "OPS_UPGRADE_91",
+        "updateTime": "2026-11-18T05:00:00Z",
+        "description": {"args": {"componentName": "VCF Operations"}},
+    }
+    _scripted(client, monkeypatch, [task, task])
+    ticks = iter([0, 0, 10, 10])  # first poll succeeds, the next deadline check expires
+    monkeypatch.setattr("saltext.vcf.clients.fleet_lcm.time.monotonic", lambda: next(ticks))
+    with pytest.raises(FleetLcmError) as exc:
+        client.wait_for_task("t1", timeout_seconds=5, sleep=lambda _s: None)
+    msg = str(exc.value)
+    assert "component: VCF Operations" in msg and "last update: 2026-11-18T05:00:00Z" in msg
+    assert "may still be running on the appliance" in msg
+
+
 class _Resp:
     def __init__(self, payload, status=200):
         self._payload, self.status_code, self.ok = payload, status, status < 400
@@ -149,3 +166,32 @@ def test_request_gives_up_after_one_retry_but_next_call_refreshes_again(client, 
         client.request("GET", "/a")
     assert client.request("GET", "/a") == {"ok": True}
     assert seen == ["Bearer jwt-1", "Bearer jwt-2", "Bearer jwt-2"]
+
+
+def test_wait_fails_fast_when_the_task_id_does_not_exist(client, monkeypatch):
+    """A plan id mistaken for a task id returns 404 forever; do not retry for the whole timeout."""
+    calls = []
+
+    def request(method, path, body=None):
+        calls.append(path)
+        raise FleetLcmError("HTTP 404", status_code=404)
+
+    monkeypatch.setattr(client, "request", request)
+    with pytest.raises(FleetLcmError, match="not found.*not a task"):
+        client.wait_for_task("plan-id", timeout_seconds=3600, sleep=lambda _s: None)
+    assert len(calls) == 5
+
+
+def test_wait_keeps_retrying_other_errors_and_resets_the_404_count(client, monkeypatch):
+    _scripted(
+        client,
+        monkeypatch,
+        [
+            FleetLcmError("nf", status_code=404),
+            FleetLcmError("nf", status_code=404),
+            FleetLcmError("down", status_code=503),
+            FleetLcmError("nf", status_code=404),
+            {"status": "SUCCEEDED"},
+        ],
+    )
+    assert client.wait_for_task("t1", sleep=lambda _s: None)["status"] == "SUCCEEDED"
