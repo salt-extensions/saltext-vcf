@@ -21,9 +21,12 @@ class SddcConnectionError(CommandExecutionError):
 class SddcHttpError(CommandExecutionError):
     """An HTTP failure with a status available to read-only polling policy."""
 
-    def __init__(self, method, path, status_code):
+    def __init__(self, method, path, status_code, detail=None):
         self.status_code = status_code
-        super().__init__(f"SDDC Manager API {method} {path} failed: HTTP {status_code}")
+        message = f"SDDC Manager API {method} {path} failed: HTTP {status_code}"
+        if detail:
+            message = f"{message}: {detail}"
+        super().__init__(message)
 
 
 def boolean(value, name="value"):
@@ -99,6 +102,36 @@ class SddcManagerClient:
         self._token = token
         return token
 
+    def _error_detail(self, path, response):
+        """SDDC Manager's own error text; only whitelisted fields, never the request body."""
+        if path.startswith("/v1/tokens"):
+            return None
+        try:
+            data = response.json()
+        except ValueError:
+            data = None
+        if isinstance(data, dict):
+            parts = [data.get("errorCode"), data.get("message"), data.get("remediationMessage")]
+            for cause in data.get("causes") or []:
+                if isinstance(cause, dict):
+                    parts.append(cause.get("message"))
+            text = "; ".join(str(x) for x in parts if x)
+            if not text:
+                # Gateway/validation errors use other keys; show them rather than nothing.
+                text = "; ".join(
+                    str(data[k])
+                    for k in ("error", "error_description", "details", "errors")
+                    if data.get(k)
+                )
+        else:
+            text = ""
+        if not text:
+            # Last resort: a short slice of the raw body (credentials are redacted below).
+            text = (response.text or "").strip()
+        if self.password:
+            text = text.replace(str(self.password), "***")
+        return text[:500] or None
+
     def _request_raw(self, method, path, json=None, params=None, auth=True, expected=(200,)):
         if not str(path).startswith("/v1/") or "?" in path or "#" in path:
             raise CommandExecutionError("API path must be a relative /v1/ path")
@@ -120,7 +153,7 @@ class SddcManagerClient:
                     timeout=self.timeout,
                     allow_redirects=False,
                 )
-            except requests.RequestException as exc:
+            except requests.RequestException:
                 # Exception and response text can contain credentials; do not echo either.
                 raise SddcConnectionError(
                     f"SDDC Manager API {method} {path} connection failed"
@@ -128,7 +161,9 @@ class SddcManagerClient:
             if response.status_code == 401 and auth and attempt == 0:
                 continue
             if response.status_code not in expected:
-                raise SddcHttpError(method, path, response.status_code)
+                raise SddcHttpError(
+                    method, path, response.status_code, self._error_detail(path, response)
+                )
             if not response.text.strip():
                 return {}
             try:

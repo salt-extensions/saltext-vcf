@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import tempfile
+import time
 from contextlib import contextmanager
 from datetime import datetime
 from datetime import timezone
@@ -21,11 +22,18 @@ from saltext.vcf.clients.vcf_upgrade import VcfUpgradeProvider
 from saltext.vcf.clients.vcf_upgrade import _component
 from saltext.vcf.clients.vcf_upgrade import _version
 from saltext.vcf.utils.vcf_upgrade_transport import CommandExecutionError
+from saltext.vcf.utils.vcf_upgrade_transport import SddcConnectionError
+from saltext.vcf.utils.vcf_upgrade_transport import SddcHttpError
 from saltext.vcf.utils.vcf_upgrade_transport import boolean
 from saltext.vcf.utils.vcf_upgrade_transport import poll_settings
 
 # Fixed execution order for a multi-component sequence, whatever order the caller lists.
-COMPONENT_ORDER = ("SDDC_MANAGER", "NSX_T_MANAGER", "VCENTER", "HOST")
+COMPONENT_ORDER = ("SDDC_MANAGER", "NSX_T_MANAGER", "VCENTER", "HOST", "NSX_EDGE")
+
+# SDDC Manager services can restart right after an upgrade; retry read-only validation.
+HEALTH_RETRY_ATTEMPTS = 5
+HEALTH_RETRY_DELAY_SECONDS = 60
+TRANSIENT_HTTP = {408, 429, 500, 502, 503, 504}
 
 
 class VcfUpgradeOrchestrator:
@@ -176,15 +184,42 @@ class VcfUpgradeOrchestrator:
         )
 
     def _health(self, plan, ctype, options):
-        health = self.provider.validate_post_upgrade(
-            plan["domainId"],
-            ctype,
-            plan["targetVersion"],
-            bundle_id=plan["bundleId"],
-            cluster_id=options.get("cluster_id"),
+        # An NSX run without the datapath phase stops before FINALIZE_UPGRADE, so the cluster
+        # still reports the pre-upgrade system version.
+        mp_only = ctype == "NSX_T_MANAGER" and not boolean(
+            options.get("nsx_datapath_appliance_upgrade", False)
         )
+        for attempt in range(1, HEALTH_RETRY_ATTEMPTS + 1):
+            try:
+                health = self.provider.validate_post_upgrade(
+                    plan["domainId"],
+                    ctype,
+                    plan["targetVersion"],
+                    bundle_id=plan["bundleId"],
+                    cluster_id=options.get("cluster_id"),
+                    check_version=not mp_only,
+                )
+                break
+            except (SddcConnectionError, SddcHttpError) as exc:
+                transient = (
+                    isinstance(exc, SddcConnectionError) or exc.status_code in TRANSIENT_HTTP
+                )
+                if not transient or attempt == HEALTH_RETRY_ATTEMPTS:
+                    raise
+                self.log.warning(
+                    "Post-upgrade validation unreachable (attempt %s/%s): %s",
+                    attempt,
+                    HEALTH_RETRY_ATTEMPTS,
+                    exc,
+                )
+                time.sleep(HEALTH_RETRY_DELAY_SECONDS)
         if not health.get("healthy"):
-            raise CommandExecutionError(f"Post-upgrade inventory validation failed for {ctype}")
+            raise CommandExecutionError(
+                f"Post-upgrade inventory validation failed for {ctype}: "
+                f"versions={health.get('componentVersions')} "
+                f"expected={health.get('expectedVersion')} "
+                f"domainStatus={health.get('domainStatus')}"
+            )
         return health
 
     def _component(self, spec, target, domain_id, lifecycle, state, create_only=False):

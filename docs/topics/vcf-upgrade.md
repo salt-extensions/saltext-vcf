@@ -95,7 +95,7 @@ saltext.vcf:
 The NSX defaults perform an MP-only upgrade, following the supplied capture;
 this does not establish that the NSX datapath has been upgraded. HOST requires
 an already imported, compatible personality. Personality import remains a
-separate prerequisite. vCenter temporary networking supports `AUTOMATIC` only.
+separate prerequisite. For `ReducedDowntimeMigration`, vCenter temporary networking is `AUTOMATIC` (DHCP, the default) or `STATIC`; `STATIC` requires `vcenter_temporary_ip`, `vcenter_temporary_subnet_mask` and `vcenter_temporary_gateway` in `options`.
 Component options are passed in the `options` dictionary, not as connection
 keywords.
 
