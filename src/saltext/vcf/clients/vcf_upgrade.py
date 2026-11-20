@@ -1,5 +1,6 @@
 """SDDC Manager upgrade API payloads, discovery, prechecks and monitoring."""
 
+import ipaddress
 import logging
 import re
 import time
@@ -26,7 +27,9 @@ FAIL_UPGRADE = {
 BUNDLE_TERMINAL = {"SUCCESSFUL", "FAILED", "CANCELLED"}
 
 
-COMPONENTS = {"SDDC_MANAGER", "NSX_T_MANAGER", "VCENTER", "HOST"}
+COMPONENTS = {"SDDC_MANAGER", "NSX_T_MANAGER", "NSX_EDGE", "VCENTER", "HOST"}
+# NSX_EDGE is a sequence/user-facing component; SDDC Manager upgrades it through the NSX bundle.
+API_COMPONENT = {"NSX_EDGE": "NSX_T_MANAGER"}
 
 
 def _version(value):
@@ -65,6 +68,11 @@ def _component(value):
     return value
 
 
+def _api_component(value):
+    value = _component(value)
+    return API_COMPONENT.get(value, value)
+
+
 def _id(value, name):
     if not value or not re.fullmatch(r"[A-Za-z0-9_.:-]+", str(value)):
         raise CommandExecutionError(f"A valid {name} is required")
@@ -95,7 +103,7 @@ class VcfUpgradeProvider:
         current_version=None,
         min_bump="MAJOR_OR_MINOR",
     ):
-        component_type = _component(component_type)
+        component_type = _api_component(component_type)
         if min_bump not in {"MAJOR_OR_MINOR", "ANY"}:
             raise CommandExecutionError("min_bump must be MAJOR_OR_MINOR or ANY")
         if not domain_id:
@@ -129,7 +137,7 @@ class VcfUpgradeProvider:
         )
 
     def list_bundle_builds(self, release_version, component_type="SDDC_MANAGER"):
-        component_type = _component(component_type)
+        component_type = _api_component(component_type)
         bundles = self.client.elements("/v1/bundles")
         matches = {}
         for b in bundles:
@@ -182,7 +190,7 @@ class VcfUpgradeProvider:
         return info
 
     def find_bundle(self, component_type, target_version=None, status=None):
-        component_type = _component(component_type)
+        component_type = _api_component(component_type)
         bundles = self.client.elements("/v1/bundles")
         matches = []
         for b in bundles:
@@ -286,7 +294,7 @@ class VcfUpgradeProvider:
         d = self.client.get(f"/v1/domains/{domain_id}")
         return (d.get("nsxtCluster") or {}).get("vipFqdn")
 
-    def build_upgrade_payload(
+    def build_upgrade_payload(  # pylint: disable=too-many-locals
         self,
         domain_id,
         bundle_id,
@@ -306,6 +314,9 @@ class VcfUpgradeProvider:
         vcenter_appliance_size="MEDIUM",
         vcenter_appliance_storage_size="REGULAR",
         vcenter_network_mode="AUTOMATIC",
+        vcenter_temporary_ip=None,
+        vcenter_temporary_subnet_mask=None,
+        vcenter_temporary_gateway=None,
         parallel_upgrade=True,
         esx_enable_quickboot=True,
         esx_enable_quick_patch=True,
@@ -317,7 +328,13 @@ class VcfUpgradeProvider:
         esx_upgrade_failure_retry_delay=300,
         esx_quick_patch_mode="AUTO",
     ):
-        component_type = _component(component_type)
+        if _component(component_type) == "NSX_EDGE":
+            # Datapath (Edge) phase only. VCF 9.0+ rejects isEdgeOnlyUpgrade=true, so the
+            # management plane is skipped via isMpUpgrade=false instead.
+            nsx_mp_upgrade = False
+            nsx_datapath_appliance_upgrade = True
+            nsx_edge_only_upgrade = False
+        component_type = _api_component(component_type)
         _id(domain_id, "domain_id")
         _id(bundle_id, "bundle_id")
         if not target_version:
@@ -348,8 +365,29 @@ class VcfUpgradeProvider:
         if component_type == "VCENTER":
             if vcenter_upgrade_mechanism not in {"InPlace", "ReducedDowntimeMigration"}:
                 raise CommandExecutionError("Unsupported vcenter_upgrade_mechanism")
-            if vcenter_network_mode != "AUTOMATIC":
-                raise CommandExecutionError("Only AUTOMATIC temporary networking is supported")
+            vcenter_network_mode = str(vcenter_network_mode).upper()
+            if vcenter_network_mode not in {"AUTOMATIC", "STATIC"}:
+                raise CommandExecutionError(
+                    "vcenter_network_mode must be AUTOMATIC (DHCP) or STATIC"
+                )
+            static_fields = {
+                "vcenter_temporary_ip": vcenter_temporary_ip,
+                "vcenter_temporary_subnet_mask": vcenter_temporary_subnet_mask,
+                "vcenter_temporary_gateway": vcenter_temporary_gateway,
+            }
+            if vcenter_network_mode == "STATIC":
+                missing = [k for k, val in static_fields.items() if not val]
+                if missing:
+                    raise CommandExecutionError(f"STATIC temporary networking requires {missing}")
+                for key, val in static_fields.items():
+                    try:
+                        ipaddress.IPv4Address(str(val))
+                    except ValueError as exc:
+                        raise CommandExecutionError(f"{key} is not a valid IPv4 address") from exc
+            elif any(static_fields.values()):
+                raise CommandExecutionError(
+                    "vcenter_temporary_* addresses require vcenter_network_mode=STATIC"
+                )
         if component_type == "NSX_T_MANAGER" and not (
             boolean(nsx_mp_upgrade) or boolean(nsx_datapath_appliance_upgrade)
         ):
@@ -421,6 +459,14 @@ class VcfUpgradeProvider:
                     "storageSize": vcenter_appliance_storage_size,
                 }
                 v["temporaryNetwork"] = {"networkMode": vcenter_network_mode}
+                if vcenter_network_mode == "STATIC":
+                    v["temporaryNetwork"].update(
+                        {
+                            "ipAddress": vcenter_temporary_ip,
+                            "subnetMask": vcenter_temporary_subnet_mask,
+                            "gateway": vcenter_temporary_gateway,
+                        }
+                    )
             payload["vcenterUpgradeUserInputSpecs"] = [v]
 
         return payload
@@ -487,6 +533,7 @@ class VcfUpgradeProvider:
         return self.client.get(f"/v1/upgrades/{_id(upgrade_id, 'upgrade_id')}")
 
     def _component_to_version(self, bundle_id, component_type):
+        component_type = _api_component(component_type)
         b = self.client.get(f"/v1/bundles/{_id(bundle_id, 'bundle_id')}")
         for c in b.get("components", []):
             if c.get("type") == component_type:
@@ -499,6 +546,19 @@ class VcfUpgradeProvider:
     def _precheck_resource_id(self, domain_id, component_type):
         if component_type == "HOST":
             return None
+        if component_type == "SDDC_MANAGER":
+            managers = [
+                x
+                for x in self.client.elements("/v1/sddc-managers")
+                if (x.get("domain") or {}).get("id") == domain_id
+            ]
+            rid = managers[0].get("fqdn") if managers else None
+            if not rid:
+                raise CommandExecutionError(
+                    f"Unable to resolve check-set resourceId for {component_type} "
+                    f"in domain {domain_id}"
+                )
+            return rid
         d = self.client.get(f"/v1/domains/{domain_id}")
         if component_type == "NSX_T_MANAGER":
             rid = (d.get("nsxtCluster") or {}).get("vipFqdn")
@@ -516,12 +576,7 @@ class VcfUpgradeProvider:
         return rid
 
     def start_precheck(self, upgrade_id, domain_id, bundle_id, component_type):
-        component_type = _component(component_type)
-        if component_type == "SDDC_MANAGER":
-            return {
-                "skipped": True,
-                "reason": "SDDC_MANAGER upgrade is created with draftMode=false and self-starts",
-            }
+        component_type = _api_component(component_type)
         to_version = self._component_to_version(bundle_id, component_type)
         entry = {"resourceType": component_type, "resourceTargetVersion": to_version}
         rid = self._precheck_resource_id(domain_id, component_type)
@@ -545,22 +600,25 @@ class VcfUpgradeProvider:
                 for c in resource.get("checkSets", [])
                 if c.get("checkSetId")
             ]
-            if not resource.get("resourceId") or not checks:
-                raise CommandExecutionError(
-                    "Check-set query returned no selectable checks for a resource"
-                )
+            if not resource.get("resourceId"):
+                raise CommandExecutionError("Check-set query returned a resource without an id")
             selected = {
                 k: resource[k]
                 for k in ("resourceName", "resourceId", "resourceType", "domain")
                 if k in resource
             }
-            selected["checkSets"] = checks
+            # SDDC Manager may list no selectable check sets and still run the component's
+            # checks; the UI triggers the run without a checkSets selection in that case.
+            if checks:
+                selected["checkSets"] = checks
             trigger_resources.append(selected)
         metadata = {"targetVersion": to_version}
         payload = {"queryId": query_id, "resources": trigger_resources, "metadata": metadata}
-        if component_type == "HOST":
+        # SDDC Manager upgrades cannot be drafted, so their precheck runs before any
+        # upgrade exists and there is no upgradeId to attach.
+        if upgrade_id and component_type == "HOST":
             metadata["upgradeId"] = upgrade_id
-        else:
+        elif upgrade_id:
             payload["contextVariables"] = {"upgradeId": upgrade_id}
         run = self.client.post("/v1/system/check-sets", payload)
         check_set_id = run.get("id")
@@ -579,14 +637,20 @@ class VcfUpgradeProvider:
             return
         ctx = node.get("context") or {}
         if node.get("errorCode"):
-            out.append(
-                {
-                    "severity": "ERROR",
-                    "resource": resource_hint,
-                    "validationName": ctx.get("validationName"),
-                    "message": node.get("message"),
-                }
-            )
+            # Successful runs also carry an errorCode (e.g. ``...info``) with INFO severity.
+            # A missing or unknown severity is treated as an error.
+            severity = str(ctx.get("severity") or "ERROR").upper()
+            if severity not in {"INFO", "WARNING"}:
+                severity = "ERROR"
+            if severity != "INFO":
+                out.append(
+                    {
+                        "severity": severity,
+                        "resource": resource_hint,
+                        "validationName": ctx.get("validationName"),
+                        "message": node.get("message"),
+                    }
+                )
         notes = node.get("notifications")
         if notes:
             for n in notes:
@@ -614,7 +678,7 @@ class VcfUpgradeProvider:
         issues = []
         if vr is not None:
             self._flatten_issues(vr, issues)
-        failed = status in FAIL_UPGRADE or bool((vr or {}).get("errorCode"))
+        failed = status in FAIL_UPGRADE
         failed = failed or any(i.get("severity") == "ERROR" for i in issues)
         failed = failed or any(
             (x.get("criticalGapsCount") or 0) > 0 or (x.get("errorValidationsCount") or 0) > 0
@@ -652,18 +716,33 @@ class VcfUpgradeProvider:
             )
             if last.get("isFinished"):
                 if last.get("failed") and fail_on_error:
-                    raise CommandExecutionError(
-                        f"VCF precheck {check_set_id} failed; inspect get_precheck_status for details"
-                    )
+                    names = [
+                        i["validationName"]
+                        for i in last.get("issues") or []
+                        if i.get("validationName")
+                    ]
+                    detail = f": {', '.join(names)}" if names else "; inspect get_precheck_status"
+                    raise CommandExecutionError(f"VCF precheck {check_set_id} failed{detail}")
                 return last
             time.sleep(min(interval, max(0, deadline - time.monotonic())))
         raise CommandExecutionError(f"Timed out waiting for VCF precheck {check_set_id}")
 
     def validate_post_upgrade(
-        self, domain_id, component_type, target_version=None, bundle_id=None, cluster_id=None
+        self,
+        domain_id,
+        component_type,
+        target_version=None,
+        bundle_id=None,
+        cluster_id=None,
+        check_version=True,
     ):
-        """Verify inventory versions against the bundle's component target, not its VCF release."""
-        component_type = _component(component_type)
+        """Verify inventory versions against the bundle's component target, not its VCF release.
+
+        ``check_version=False`` skips only the version comparison, for an NSX management-plane-only
+        upgrade: SDDC Manager's NSX cluster version is the system version, which NSX moves only at
+        its final ``FINALIZE_UPGRADE`` step.
+        """
+        component_type = _api_component(component_type)
         domain = self.client.get(f"/v1/domains/{_id(domain_id, 'domain_id')}")
         expected = (
             self._component_to_version(bundle_id, component_type) if bundle_id else target_version
@@ -695,10 +774,15 @@ class VcfUpgradeProvider:
         versions = [
             x.get("esxiVersion") if component_type == "HOST" else x.get("version") for x in items
         ]
-        healthy = bool(items) and all(v and _version_match(expected, v) for v in versions)
+        healthy = bool(items)
+        if check_version:
+            healthy = healthy and all(v and _version_match(expected, v) for v in versions)
         healthy = healthy and str(domain.get("status", "")).upper() == "ACTIVE"
         if component_type == "NSX_T_MANAGER":
-            healthy = healthy and all(x.get("status") == "STABLE" for x in items)
+            # SDDC Manager reports ACTIVE for a healthy NSX cluster; older builds said STABLE.
+            healthy = healthy and all(
+                str(x.get("status", "")).upper() in {"ACTIVE", "STABLE"} for x in items
+            )
         if component_type == "HOST":
             healthy = healthy and cluster.get("status") == "ACTIVE"
             healthy = healthy and all(x.get("configurationStatus") == "ACTIVE" for x in items)
@@ -709,6 +793,7 @@ class VcfUpgradeProvider:
             "domainStatus": domain.get("status"),
             "componentVersions": versions,
             "expectedVersion": expected,
+            "versionChecked": bool(check_version),
         }
 
     def wait_upgrade(self, upgrade_id, timeout=43200, interval=60, tolerate_unreachable=True):

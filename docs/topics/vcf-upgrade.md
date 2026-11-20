@@ -61,8 +61,10 @@ still needs API access and valid configuration; it does not run actual prechecks
 
 SDDC Manager creation uses `draftMode=false` and commits execution timing
 immediately. Calling `create_upgrade` or its state for SDDC Manager can start
-the upgrade. NSX, vCenter, and HOST use drafts, check-set selection and polling,
-then execution. `execute_upgrade` is an explicit low-level commit operation;
+the upgrade, so `upgraded`/`sequence_completed` run and enforce the check-set
+precheck *before* creating it; a failed precheck blocks creation, and a rerun
+starts a fresh precheck. NSX, vCenter, and HOST use drafts, check-set selection
+and polling, then execution. `execute_upgrade` is an explicit low-level commit operation;
 use `upgraded`/`sequence_completed` to enforce the automatic precheck workflow.
 
 ## Explicit component sequencing
@@ -95,7 +97,7 @@ saltext.vcf:
 The NSX defaults perform an MP-only upgrade, following the supplied capture;
 this does not establish that the NSX datapath has been upgraded. HOST requires
 an already imported, compatible personality. Personality import remains a
-separate prerequisite. vCenter temporary networking supports `AUTOMATIC` only.
+separate prerequisite. For `ReducedDowntimeMigration`, vCenter temporary networking is `AUTOMATIC` (DHCP, the default) or `STATIC`; `STATIC` requires `vcenter_temporary_ip`, `vcenter_temporary_subnet_mask` and `vcenter_temporary_gateway` in `options`.
 Component options are passed in the `options` dictionary, not as connection
 keywords.
 

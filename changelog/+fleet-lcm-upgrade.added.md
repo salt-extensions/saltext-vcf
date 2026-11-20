@@ -1,0 +1,1 @@
+Add `vcf_fleet_lcm` execution and state modules, with the `fleet_lcm` client, for upgrading the Fleet Lifecycle appliance from VCF Operations: readiness check, upgrade plan, apply with task monitoring, and reporting. Includes the `vcf-infra/fleet-lcm-upgrade` formula and `upgrade_fleet_lcm.sh`.

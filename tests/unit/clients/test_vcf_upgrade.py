@@ -39,6 +39,27 @@ def response(status=200, data=None, text=None):
     return obj
 
 
+def test_http_error_reports_whitelisted_api_message_without_secrets():
+    obj = transport.SddcManagerClient("manager.test", "u", "secret")
+    obj._token = "token"
+    obj.session.request = Mock(
+        return_value=response(
+            400,
+            {
+                "errorCode": "UPGRADE_EXISTS",
+                "message": "An upgrade already exists secret",
+                "causes": [{"message": "draft 1"}],
+                "ignored": "x",
+            },
+        )
+    )
+    with pytest.raises(transport.SddcHttpError) as err:
+        obj.post("/v1/upgrades", {"password": "secret"})
+    text = str(err.value)
+    assert "HTTP 400" in text and "UPGRADE_EXISTS" in text and "draft 1" in text
+    assert "secret" not in text and "ignored" not in text
+
+
 def test_transport_refreshes_token_once_and_disables_redirects():
     obj = transport.SddcManagerClient("manager.test", "u", "secret")
     obj.session.request = Mock(
@@ -229,6 +250,69 @@ def test_create_payloads(provider, component):
         )
 
 
+def _rdu_payload(provider, **options):
+    return provider.build_upgrade_payload(
+        "domain-1",
+        "bundle-1",
+        "9.1.0-123",
+        "VCENTER",
+        vcenter_upgrade_mechanism="ReducedDowntimeMigration",
+        **options,
+    )["vcenterUpgradeUserInputSpecs"][0]["temporaryNetwork"]
+
+
+def test_vcenter_rdu_static_network_payload(provider):
+    net = _rdu_payload(
+        provider,
+        vcenter_network_mode="static",
+        vcenter_temporary_ip="10.0.0.5",
+        vcenter_temporary_subnet_mask="255.255.255.0",
+        vcenter_temporary_gateway="10.0.0.1",
+    )
+    assert net == {
+        "networkMode": "STATIC",
+        "ipAddress": "10.0.0.5",
+        "subnetMask": "255.255.255.0",
+        "gateway": "10.0.0.1",
+    }
+
+
+def test_vcenter_rdu_automatic_network_payload(provider):
+    assert _rdu_payload(provider) == {"networkMode": "AUTOMATIC"}
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"vcenter_network_mode": "STATIC"},
+        {
+            "vcenter_network_mode": "STATIC",
+            "vcenter_temporary_ip": "bad",
+            "vcenter_temporary_subnet_mask": "255.255.255.0",
+            "vcenter_temporary_gateway": "10.0.0.1",
+        },
+        {"vcenter_temporary_ip": "10.0.0.5"},
+        {"vcenter_network_mode": "MANUAL"},
+    ],
+)
+def test_vcenter_rdu_invalid_network_options(provider, options):
+    with pytest.raises(Exception):
+        _rdu_payload(provider, **options)
+
+
+def test_nsx_edge_payload_is_edge_only(provider):
+    provider.client.get.return_value = {"nsxtCluster": {"vipFqdn": "nsx.test"}}
+    payload = provider.build_upgrade_payload("domain-1", "bundle-1", "9.1.0-123", "NSX_EDGE")
+    assert payload["draftMode"] is True
+    assert payload["nsxtUpgradeUserInputSpecs"][0]["nsxtUpgradeOptions"] == {
+        "isMpUpgrade": False,
+        "isDatapathApplianceUpgrade": True,
+        "isEdgeOnlyUpgrade": False,
+        "isHostClustersUpgradeParallel": False,
+        "isEdgeClustersUpgradeParallel": False,
+    }
+
+
 @pytest.mark.parametrize(
     "kwargs",
     [
@@ -327,6 +411,32 @@ def test_precheck_failure_blocks_upgrade(provider, data):
         provider.wait_precheck("run-1", timeout=1, interval=0.01)
 
 
+def test_info_error_codes_do_not_fail_a_successful_precheck(provider):
+    info = {"errorCode": "BASELINER_TARGET_STATE_VALIDATION.info", "context": {"severity": "INFO"}}
+    provider.client.get.return_value = {
+        "status": "COMPLETED_WITH_SUCCESS",
+        "validationResult": {**info, "nestedErrors": [info]},
+        "presentedArtifactsMap": {
+            "validation-domain-summary": [{"criticalGapsCount": 0.0, "errorValidationsCount": 0.0}]
+        },
+    }
+    result = provider.wait_precheck("run-1", timeout=1, interval=0.01)
+    assert result["failed"] is False and result["issues"] == []
+
+
+def test_error_severity_error_code_still_fails(provider):
+    provider.client.get.return_value = {
+        "status": "COMPLETED_WITH_SUCCESS",
+        "validationResult": {
+            "errorCode": "X.error",
+            "context": {"severity": "ERROR"},
+            "message": "bad",
+        },
+    }
+    with pytest.raises(ERROR, match="failed"):
+        provider.wait_precheck("run-1", timeout=1, interval=0.01)
+
+
 def test_partial_validation_does_not_mean_finished(provider):
     provider.client.get.return_value = {"status": "IN_PROGRESS", "validationResult": {}}
     assert provider.precheck_status("run-1")["isFinished"] is False
@@ -389,6 +499,57 @@ def test_single_component_runs_and_rerun_skips(workflow):
     assert orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")["changed"] is False
     obj.create_upgrade.assert_called_once()
     assert obj.validate_post_upgrade.call_count == 2
+
+
+def test_post_upgrade_validation_retries_transient_connection_error(workflow, monkeypatch):
+    orch, obj = workflow
+    monkeypatch.setattr(orchestration.time, "sleep", lambda _s: None)
+    obj.validate_post_upgrade.side_effect = [
+        orchestration.SddcConnectionError("connection failed"),
+        {"healthy": True},
+    ]
+    result = orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    assert result["data"]["sequence"][0]["status"] == "COMPLETED"
+    assert obj.validate_post_upgrade.call_count == 2
+
+
+def test_post_upgrade_validation_does_not_retry_client_error(workflow, monkeypatch):
+    orch, obj = workflow
+    monkeypatch.setattr(orchestration.time, "sleep", lambda _s: None)
+    obj.validate_post_upgrade.side_effect = orchestration.SddcHttpError("GET", "/v1/x", 404)
+    with pytest.raises(orchestration.SddcHttpError):
+        orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    assert obj.validate_post_upgrade.call_count == 1
+
+
+def test_sddc_manager_precheck_runs_before_create(workflow):
+    orch, obj = workflow
+    calls = []
+    obj.start_precheck.side_effect = lambda *a, **k: calls.append("precheck") or {
+        "checkSetId": "run-1"
+    }
+    obj.create_upgrade.side_effect = lambda **k: calls.append("create") or {
+        "upgradeId": "upgrade-1",
+        "draftModeUsed": False,
+    }
+    orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    assert calls == ["precheck", "create"]
+    assert obj.start_precheck.call_args.args[0] is None
+
+
+def test_sddc_manager_failed_precheck_blocks_create_and_rerun_starts_fresh(workflow):
+    orch, obj = workflow
+    obj.wait_precheck.return_value = {
+        "failed": True,
+        "issues": [{"validationName": "Disk space"}],
+    }
+    with pytest.raises(orchestration.CommandExecutionError, match="Disk space"):
+        orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    obj.create_upgrade.assert_not_called()
+    obj.wait_precheck.return_value = {"failed": False}
+    orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    assert obj.start_precheck.call_count == 2
+    obj.create_upgrade.assert_called_once()
 
 
 def test_resume_after_monitor_failure_reuses_upgrade_id(workflow):
@@ -596,7 +757,15 @@ class SimulatedSddc:
                 return response(data={"version": "9.1.0.0-456"})
             if path == "/v1/sddc-managers":
                 return response(
-                    data={"elements": [{"domain": {"id": "domain-1"}, "version": "9.1.0.0-456"}]}
+                    data={
+                        "elements": [
+                            {
+                                "domain": {"id": "domain-1"},
+                                "fqdn": "sddc.example.test",
+                                "version": "9.1.0.0-456",
+                            }
+                        ]
+                    }
                 )
             if path.startswith("/v1/upgrades/"):
                 return response(data=self.upgrades[path.rsplit("/", 1)[-1]])
@@ -628,8 +797,10 @@ class SimulatedSddc:
                 )
             if path == "/v1/system/check-sets":
                 assert body["resources"][0]["checkSets"] == [{"checkSetId": "selected-1"}]
-                uid = body.get("contextVariables", body["metadata"])["upgradeId"]
-                self.prechecked.add(uid)
+                # SDDC Manager prechecks run before any upgrade exists.
+                uid = body.get("contextVariables", body["metadata"]).get("upgradeId")
+                if uid:
+                    self.prechecked.add(uid)
                 return response(202, {"id": "run-1"})
         if method == "PATCH" and path.startswith("/v1/upgrades/"):
             uid = path.rsplit("/", 1)[-1]
@@ -683,6 +854,49 @@ def test_postcondition_rejects_unhealthy_domain_even_with_matching_version(provi
     ]
 
 
+def _nsx_domain_provider(provider, version="9.1.1.0100.25762940"):
+    provider.client.get.side_effect = lambda path: (
+        {"status": "ACTIVE", "nsxtCluster": {"id": "nsx-1"}}
+        if path.startswith("/v1/domains/")
+        else {"version": version, "status": "ACTIVE"}
+    )
+    return provider
+
+
+def test_nsx_mp_only_skips_system_version_but_keeps_status_checks(provider):
+    _nsx_domain_provider(provider)
+    full = provider.validate_post_upgrade(
+        "domain-1", "NSX_T_MANAGER", "9.1.2.0.25929667", check_version=True
+    )
+    mp_only = provider.validate_post_upgrade(
+        "domain-1", "NSX_T_MANAGER", "9.1.2.0.25929667", check_version=False
+    )
+    assert full["healthy"] is False and full["versionChecked"] is True
+    assert mp_only["healthy"] is True and mp_only["versionChecked"] is False
+
+
+def test_nsx_mp_only_still_fails_on_unhealthy_status(provider):
+    provider.client.get.side_effect = lambda path: (
+        {"status": "ACTIVE", "nsxtCluster": {"id": "nsx-1"}}
+        if path.startswith("/v1/domains/")
+        else {"version": "x", "status": "DEGRADED"}
+    )
+    assert not provider.validate_post_upgrade(
+        "domain-1", "NSX_T_MANAGER", "9.1.2.0.25929667", check_version=False
+    )["healthy"]
+
+
+def test_health_skips_version_only_for_nsx_without_datapath(workflow):
+    orch, obj = workflow
+    plan = {"domainId": "domain-1", "bundleId": "bundle-1", "targetVersion": "9.1.2-1"}
+    orch._health(plan, "NSX_T_MANAGER", {})
+    assert obj.validate_post_upgrade.call_args.kwargs["check_version"] is False
+    orch._health(plan, "NSX_T_MANAGER", {"nsx_datapath_appliance_upgrade": True})
+    assert obj.validate_post_upgrade.call_args.kwargs["check_version"] is True
+    orch._health(plan, "VCENTER", {})
+    assert obj.validate_post_upgrade.call_args.kwargs["check_version"] is True
+
+
 def test_incomplete_reset_rejected(workflow):
     orch, obj = workflow
     obj.wait_upgrade.side_effect = ERROR("monitor interrupted")
@@ -693,15 +907,40 @@ def test_incomplete_reset_rejected(workflow):
     obj.create_upgrade.assert_called_once()
 
 
-def test_missing_selected_checks_never_triggers_run(provider):
+def test_resource_without_id_never_triggers_run(provider):
     provider.client.get.side_effect = [
         bundle(component="VCENTER"),
         {"vcenters": [{"fqdn": "vc.test"}]},
     ]
-    provider.client.post.return_value = {"queryId": "q", "resources": [{"resourceId": "vc-1"}]}
-    with pytest.raises(ERROR, match="no selectable checks"):
+    provider.client.post.return_value = {"queryId": "q", "resources": [{"checkSets": []}]}
+    with pytest.raises(ERROR, match="without an id"):
         provider.start_precheck("u-1", "domain-1", "bundle-1", "VCENTER")
     assert provider.client.post.call_count == 1
+
+
+def test_empty_check_sets_trigger_run_without_selection(provider):
+    provider.client.get.side_effect = [
+        bundle(component="NSX_T_MANAGER"),
+        {"nsxtCluster": {"vipFqdn": "nsx.test"}},
+    ]
+    provider.client.post.side_effect = [
+        {
+            "queryId": "q",
+            "resources": [
+                {"resourceId": "nsx-1", "resourceType": "NSX_T_MANAGER", "resourceName": "nsx.test"}
+            ],
+        },
+        {"id": "run-1"},
+    ]
+    assert (
+        provider.start_precheck("u-1", "domain-1", "bundle-1", "NSX_T_MANAGER")["checkSetId"]
+        == "run-1"
+    )
+    path, payload = provider.client.post.call_args.args
+    assert path == "/v1/system/check-sets"
+    assert "checkSets" not in payload["resources"][0]
+    assert payload["resources"][0]["resourceId"] == "nsx-1"
+    assert payload["contextVariables"] == {"upgradeId": "u-1"}
 
 
 def test_state_dry_run_false_string_does_not_mask_live_result(monkeypatch):

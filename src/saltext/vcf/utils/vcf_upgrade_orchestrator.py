@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import tempfile
+import time
 from contextlib import contextmanager
 from datetime import datetime
 from datetime import timezone
@@ -21,11 +22,18 @@ from saltext.vcf.clients.vcf_upgrade import VcfUpgradeProvider
 from saltext.vcf.clients.vcf_upgrade import _component
 from saltext.vcf.clients.vcf_upgrade import _version
 from saltext.vcf.utils.vcf_upgrade_transport import CommandExecutionError
+from saltext.vcf.utils.vcf_upgrade_transport import SddcConnectionError
+from saltext.vcf.utils.vcf_upgrade_transport import SddcHttpError
 from saltext.vcf.utils.vcf_upgrade_transport import boolean
 from saltext.vcf.utils.vcf_upgrade_transport import poll_settings
 
 # Fixed execution order for a multi-component sequence, whatever order the caller lists.
-COMPONENT_ORDER = ("SDDC_MANAGER", "NSX_T_MANAGER", "VCENTER", "HOST")
+COMPONENT_ORDER = ("SDDC_MANAGER", "NSX_T_MANAGER", "VCENTER", "HOST", "NSX_EDGE")
+
+# SDDC Manager services can restart right after an upgrade; retry read-only validation.
+HEALTH_RETRY_ATTEMPTS = 5
+HEALTH_RETRY_DELAY_SECONDS = 60
+TRANSIENT_HTTP = {408, 429, 500, 502, 503, 504}
 
 
 class VcfUpgradeOrchestrator:
@@ -176,16 +184,72 @@ class VcfUpgradeOrchestrator:
         )
 
     def _health(self, plan, ctype, options):
-        health = self.provider.validate_post_upgrade(
-            plan["domainId"],
-            ctype,
-            plan["targetVersion"],
-            bundle_id=plan["bundleId"],
-            cluster_id=options.get("cluster_id"),
+        # An NSX run without the datapath phase stops before FINALIZE_UPGRADE, so the cluster
+        # still reports the pre-upgrade system version.
+        mp_only = ctype == "NSX_T_MANAGER" and not boolean(
+            options.get("nsx_datapath_appliance_upgrade", False)
         )
+        for attempt in range(1, HEALTH_RETRY_ATTEMPTS + 1):
+            try:
+                health = self.provider.validate_post_upgrade(
+                    plan["domainId"],
+                    ctype,
+                    plan["targetVersion"],
+                    bundle_id=plan["bundleId"],
+                    cluster_id=options.get("cluster_id"),
+                    check_version=not mp_only,
+                )
+                break
+            except (SddcConnectionError, SddcHttpError) as exc:
+                transient = (
+                    isinstance(exc, SddcConnectionError) or exc.status_code in TRANSIENT_HTTP
+                )
+                if not transient or attempt == HEALTH_RETRY_ATTEMPTS:
+                    raise
+                self.log.warning(
+                    "Post-upgrade validation unreachable (attempt %s/%s): %s",
+                    attempt,
+                    HEALTH_RETRY_ATTEMPTS,
+                    exc,
+                )
+                time.sleep(HEALTH_RETRY_DELAY_SECONDS)
         if not health.get("healthy"):
-            raise CommandExecutionError(f"Post-upgrade inventory validation failed for {ctype}")
+            raise CommandExecutionError(
+                f"Post-upgrade inventory validation failed for {ctype}: "
+                f"versions={health.get('componentVersions')} "
+                f"expected={health.get('expectedVersion')} "
+                f"domainStatus={health.get('domainStatus')}"
+            )
         return health
+
+    def _precheck_before_create(self, state, key, plan, ctype, lifecycle):
+        """Run and enforce a precheck ahead of an upgrade that starts on creation."""
+        cp = state.get("components", {}).get(key, {})
+        if cp.get("phase") == "PRECHECK_COMPLETED":
+            return False
+        started = False
+        if not cp.get("checkSetId"):
+            self._mark(state, key, "PRECHECK_SUBMITTING", **plan)
+            precheck = self.provider.start_precheck(None, plan["domainId"], plan["bundleId"], ctype)
+            self._mark(state, key, "PRECHECK_RUNNING", checkSetId=precheck["checkSetId"])
+            started = True
+        check_set_id = state["components"][key]["checkSetId"]
+        result = self.provider.wait_precheck(
+            check_set_id,
+            lifecycle["precheck_timeout_seconds"],
+            lifecycle["poll_interval_seconds"],
+            False,
+        )
+        if result.get("failed"):
+            # Drop the finished check set so a rerun after remediation starts a fresh one.
+            self._mark(state, key, "PRECHECK_FAILED", checkSetId=None)
+            names = [
+                i["validationName"] for i in result.get("issues") or [] if i.get("validationName")
+            ]
+            detail = f": {', '.join(names)}" if names else "; inspect get_precheck_status"
+            raise CommandExecutionError(f"Precheck failed for {key} ({check_set_id}){detail}")
+        self._mark(state, key, "PRECHECK_COMPLETED")
+        return started
 
     def _component(self, spec, target, domain_id, lifecycle, state, create_only=False):
         ctype, key = spec["type"], spec["name"]
@@ -213,6 +277,11 @@ class VcfUpgradeOrchestrator:
             )
             changed = bundle["changed"]
             plan = self.provider.plan(ctype, target, spec.get("domain_id") or domain_id)
+            if ctype == "SDDC_MANAGER":
+                # Cannot be drafted: creation starts the upgrade, so gate it on a precheck.
+                changed = (
+                    self._precheck_before_create(state, key, plan, ctype, lifecycle) or changed
+                )
             self._mark(state, key, "CREATING", **plan)
             created = self.provider.create_upgrade(
                 domain_id=plan["domainId"],
