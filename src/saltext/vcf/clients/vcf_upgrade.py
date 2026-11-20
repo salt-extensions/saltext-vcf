@@ -546,6 +546,19 @@ class VcfUpgradeProvider:
     def _precheck_resource_id(self, domain_id, component_type):
         if component_type == "HOST":
             return None
+        if component_type == "SDDC_MANAGER":
+            managers = [
+                x
+                for x in self.client.elements("/v1/sddc-managers")
+                if (x.get("domain") or {}).get("id") == domain_id
+            ]
+            rid = managers[0].get("fqdn") if managers else None
+            if not rid:
+                raise CommandExecutionError(
+                    f"Unable to resolve check-set resourceId for {component_type} "
+                    f"in domain {domain_id}"
+                )
+            return rid
         d = self.client.get(f"/v1/domains/{domain_id}")
         if component_type == "NSX_T_MANAGER":
             rid = (d.get("nsxtCluster") or {}).get("vipFqdn")
@@ -564,11 +577,6 @@ class VcfUpgradeProvider:
 
     def start_precheck(self, upgrade_id, domain_id, bundle_id, component_type):
         component_type = _api_component(component_type)
-        if component_type == "SDDC_MANAGER":
-            return {
-                "skipped": True,
-                "reason": "SDDC_MANAGER upgrade is created with draftMode=false and self-starts",
-            }
         to_version = self._component_to_version(bundle_id, component_type)
         entry = {"resourceType": component_type, "resourceTargetVersion": to_version}
         rid = self._precheck_resource_id(domain_id, component_type)
@@ -606,9 +614,11 @@ class VcfUpgradeProvider:
             trigger_resources.append(selected)
         metadata = {"targetVersion": to_version}
         payload = {"queryId": query_id, "resources": trigger_resources, "metadata": metadata}
-        if component_type == "HOST":
+        # SDDC Manager upgrades cannot be drafted, so their precheck runs before any
+        # upgrade exists and there is no upgradeId to attach.
+        if upgrade_id and component_type == "HOST":
             metadata["upgradeId"] = upgrade_id
-        else:
+        elif upgrade_id:
             payload["contextVariables"] = {"upgradeId": upgrade_id}
         run = self.client.post("/v1/system/check-sets", payload)
         check_set_id = run.get("id")

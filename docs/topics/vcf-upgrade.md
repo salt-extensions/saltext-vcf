@@ -61,8 +61,10 @@ still needs API access and valid configuration; it does not run actual prechecks
 
 SDDC Manager creation uses `draftMode=false` and commits execution timing
 immediately. Calling `create_upgrade` or its state for SDDC Manager can start
-the upgrade. NSX, vCenter, and HOST use drafts, check-set selection and polling,
-then execution. `execute_upgrade` is an explicit low-level commit operation;
+the upgrade, so `upgraded`/`sequence_completed` run and enforce the check-set
+precheck *before* creating it; a failed precheck blocks creation, and a rerun
+starts a fresh precheck. NSX, vCenter, and HOST use drafts, check-set selection
+and polling, then execution. `execute_upgrade` is an explicit low-level commit operation;
 use `upgraded`/`sequence_completed` to enforce the automatic precheck workflow.
 
 ## Explicit component sequencing

@@ -508,7 +508,8 @@ def test_post_upgrade_validation_retries_transient_connection_error(workflow, mo
         orchestration.SddcConnectionError("connection failed"),
         {"healthy": True},
     ]
-    assert orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")["status"] == "COMPLETED"
+    result = orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    assert result["data"]["sequence"][0]["status"] == "COMPLETED"
     assert obj.validate_post_upgrade.call_count == 2
 
 
@@ -519,6 +520,36 @@ def test_post_upgrade_validation_does_not_retry_client_error(workflow, monkeypat
     with pytest.raises(orchestration.SddcHttpError):
         orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
     assert obj.validate_post_upgrade.call_count == 1
+
+
+def test_sddc_manager_precheck_runs_before_create(workflow):
+    orch, obj = workflow
+    calls = []
+    obj.start_precheck.side_effect = lambda *a, **k: calls.append("precheck") or {
+        "checkSetId": "run-1"
+    }
+    obj.create_upgrade.side_effect = lambda **k: calls.append("create") or {
+        "upgradeId": "upgrade-1",
+        "draftModeUsed": False,
+    }
+    orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    assert calls == ["precheck", "create"]
+    assert obj.start_precheck.call_args.args[0] is None
+
+
+def test_sddc_manager_failed_precheck_blocks_create_and_rerun_starts_fresh(workflow):
+    orch, obj = workflow
+    obj.wait_precheck.return_value = {
+        "failed": True,
+        "issues": [{"validationName": "Disk space"}],
+    }
+    with pytest.raises(orchestration.CommandExecutionError, match="Disk space"):
+        orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    obj.create_upgrade.assert_not_called()
+    obj.wait_precheck.return_value = {"failed": False}
+    orch.full_upgrade("SDDC_MANAGER", "9.1.0-123")
+    assert obj.start_precheck.call_count == 2
+    obj.create_upgrade.assert_called_once()
 
 
 def test_resume_after_monitor_failure_reuses_upgrade_id(workflow):
@@ -726,7 +757,15 @@ class SimulatedSddc:
                 return response(data={"version": "9.1.0.0-456"})
             if path == "/v1/sddc-managers":
                 return response(
-                    data={"elements": [{"domain": {"id": "domain-1"}, "version": "9.1.0.0-456"}]}
+                    data={
+                        "elements": [
+                            {
+                                "domain": {"id": "domain-1"},
+                                "fqdn": "sddc.example.test",
+                                "version": "9.1.0.0-456",
+                            }
+                        ]
+                    }
                 )
             if path.startswith("/v1/upgrades/"):
                 return response(data=self.upgrades[path.rsplit("/", 1)[-1]])
@@ -758,8 +797,10 @@ class SimulatedSddc:
                 )
             if path == "/v1/system/check-sets":
                 assert body["resources"][0]["checkSets"] == [{"checkSetId": "selected-1"}]
-                uid = body.get("contextVariables", body["metadata"])["upgradeId"]
-                self.prechecked.add(uid)
+                # SDDC Manager prechecks run before any upgrade exists.
+                uid = body.get("contextVariables", body["metadata"]).get("upgradeId")
+                if uid:
+                    self.prechecked.add(uid)
                 return response(202, {"id": "run-1"})
         if method == "PATCH" and path.startswith("/v1/upgrades/"):
             uid = path.rsplit("/", 1)[-1]

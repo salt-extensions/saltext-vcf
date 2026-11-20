@@ -222,6 +222,35 @@ class VcfUpgradeOrchestrator:
             )
         return health
 
+    def _precheck_before_create(self, state, key, plan, ctype, lifecycle):
+        """Run and enforce a precheck ahead of an upgrade that starts on creation."""
+        cp = state.get("components", {}).get(key, {})
+        if cp.get("phase") == "PRECHECK_COMPLETED":
+            return False
+        started = False
+        if not cp.get("checkSetId"):
+            self._mark(state, key, "PRECHECK_SUBMITTING", **plan)
+            precheck = self.provider.start_precheck(None, plan["domainId"], plan["bundleId"], ctype)
+            self._mark(state, key, "PRECHECK_RUNNING", checkSetId=precheck["checkSetId"])
+            started = True
+        check_set_id = state["components"][key]["checkSetId"]
+        result = self.provider.wait_precheck(
+            check_set_id,
+            lifecycle["precheck_timeout_seconds"],
+            lifecycle["poll_interval_seconds"],
+            False,
+        )
+        if result.get("failed"):
+            # Drop the finished check set so a rerun after remediation starts a fresh one.
+            self._mark(state, key, "PRECHECK_FAILED", checkSetId=None)
+            names = [
+                i["validationName"] for i in result.get("issues") or [] if i.get("validationName")
+            ]
+            detail = f": {', '.join(names)}" if names else "; inspect get_precheck_status"
+            raise CommandExecutionError(f"Precheck failed for {key} ({check_set_id}){detail}")
+        self._mark(state, key, "PRECHECK_COMPLETED")
+        return started
+
     def _component(self, spec, target, domain_id, lifecycle, state, create_only=False):
         ctype, key = spec["type"], spec["name"]
         cp = state.get("components", {}).get(key, {})
@@ -248,6 +277,11 @@ class VcfUpgradeOrchestrator:
             )
             changed = bundle["changed"]
             plan = self.provider.plan(ctype, target, spec.get("domain_id") or domain_id)
+            if ctype == "SDDC_MANAGER":
+                # Cannot be drafted: creation starts the upgrade, so gate it on a precheck.
+                changed = (
+                    self._precheck_before_create(state, key, plan, ctype, lifecycle) or changed
+                )
             self._mark(state, key, "CREATING", **plan)
             created = self.provider.create_upgrade(
                 domain_id=plan["domainId"],
